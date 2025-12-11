@@ -1,4 +1,4 @@
-import { Clock, ExternalLink, Tag, Bookmark } from "lucide-react";
+import { Clock, ExternalLink, Tag, Bookmark, Share2 } from "lucide-react";
 
 interface NewsCardProps {
   title: string;
@@ -71,7 +71,28 @@ export const NewsCard = ({
           <Clock className="h-3 w-3" />
           {time}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {url && (
+            <button
+              onClick={async (e) => {
+                e.stopPropagation();
+                if (navigator.share) {
+                  try {
+                    await navigator.share({ title, url });
+                  } catch { }
+                } else {
+                  await navigator.clipboard.writeText(url);
+                  if (typeof window !== 'undefined' && window.dispatchEvent) {
+                    window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Link copied to clipboard' } }));
+                  }
+                }
+              }}
+              className="transition-colors"
+              title="Share article"
+            >
+              <Share2 className="h-5 w-5 text-muted-foreground hover:text-primary" />
+            </button>
+          )}
           {onToggleSave && (
             <button
               onClick={(e) => {
@@ -79,24 +100,15 @@ export const NewsCard = ({
                 onToggleSave();
               }}
               className="transition-colors"
+              title={isSaved ? "Remove from saved" : "Save article"}
             >
               <Bookmark
-                className={`h-3 w-3 ${isSaved
+                className={`h-5 w-5 ${isSaved
                   ? "fill-primary text-primary"
                   : "text-muted-foreground hover:text-primary"
                   }`}
               />
             </button>
-          )}
-          {url && (
-            <a
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={e => e.stopPropagation()}
-            >
-              <ExternalLink className="h-3 w-3 text-muted-foreground group-hover:text-primary transition-colors" />
-            </a>
           )}
         </div>
       </div>

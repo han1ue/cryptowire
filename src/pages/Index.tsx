@@ -6,7 +6,8 @@ import { SettingsDialog } from "@/components/SettingsDialog";
 import { NewsCard } from "@/components/NewsCard";
 import { sources } from "@/data/mockNews";
 import { useState, useEffect } from "react";
-import { Bookmark } from "lucide-react";
+import { toast } from "@/components/ui/sonner";
+import { Bookmark, Share2 } from "lucide-react";
 
 type NotificationItem = {
   id: string;
@@ -76,12 +77,27 @@ const Index = () => {
   }, [notifications]);
 
   const toggleSaveArticle = (title: string) => {
-    setSavedArticles(prev =>
-      prev.includes(title)
-        ? prev.filter(t => t !== title)
-        : [...prev, title]
-    );
+    setSavedArticles(prev => {
+      const isSaved = prev.includes(title);
+      if (isSaved) {
+        toast("Removed from saved articles");
+        return prev.filter(t => t !== title);
+      } else {
+        toast("Added to saved articles");
+        return [...prev, title];
+      }
+    });
   };
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      if (e instanceof CustomEvent && e.detail?.message) {
+        toast(e.detail.message);
+      }
+    };
+    window.addEventListener('show-toast', handler);
+    return () => window.removeEventListener('show-toast', handler);
+  }, []);
 
   const markAllNotificationsRead = () => {
     setNotifications(prev =>
@@ -217,20 +233,44 @@ const Index = () => {
                           <span>{item.sourceName}</span>
                         </div>
                       </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleSaveArticle(item.title);
-                        }}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 p-1"
-                      >
-                        <Bookmark
-                          className={`h-3 w-3 ${savedArticles.includes(item.title)
-                            ? "fill-primary text-primary"
-                            : "text-muted-foreground hover:text-primary"
-                            }`}
-                        />
-                      </button>
+                      <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 flex-col sm:flex-row">
+                        {item.url && (
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (navigator.share) {
+                                try {
+                                  await navigator.share({ title: item.title, url: item.url });
+                                } catch { }
+                              } else {
+                                await navigator.clipboard.writeText(item.url);
+                                if (typeof window !== 'undefined' && window.dispatchEvent) {
+                                  window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Link copied to clipboard' } }));
+                                }
+                              }
+                            }}
+                            className="transition-colors"
+                            title="Share article"
+                          >
+                            <Share2 className="h-5 w-5 text-muted-foreground hover:text-primary" />
+                          </button>
+                        )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleSaveArticle(item.title);
+                          }}
+                          className="transition-colors"
+                          title={savedArticles.includes(item.title) ? "Remove from saved" : "Save article"}
+                        >
+                          <Bookmark
+                            className={`h-5 w-5 ${savedArticles.includes(item.title)
+                              ? "fill-primary text-primary"
+                              : "text-muted-foreground hover:text-primary"
+                              }`}
+                          />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
