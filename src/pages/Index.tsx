@@ -144,7 +144,10 @@ const Index = () => {
           <Sidebar
             savedArticlesCount={savedArticles.length}
             showSavedOnly={showSavedOnly}
-            onToggleSavedView={() => setShowSavedOnly(!showSavedOnly)}
+            onToggleSavedView={() => {
+              setShowSavedOnly(!showSavedOnly);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
             savedArticleTitles={savedArticles}
             allNews={activeSources
               .flatMap(source =>
@@ -155,6 +158,7 @@ const Index = () => {
             onCategorySelect={cat => {
               setSelectedCategory(cat);
               setShowSavedOnly(false);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
           />
         </div>
@@ -173,6 +177,7 @@ const Index = () => {
                 onToggleSavedView={() => {
                   setShowSavedOnly(!showSavedOnly);
                   setSidebarOpen(false);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 savedArticleTitles={savedArticles}
                 allNews={activeSources
