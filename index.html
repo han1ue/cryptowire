@@ -18,6 +18,19 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:site" content="@CryptoWire" />
   <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+
+  <script>
+    (() => {
+      try {
+        const savedTheme = localStorage.getItem("theme");
+        if (savedTheme === "light") {
+          document.documentElement.classList.remove("dark");
+        }
+      } catch (err) {
+        console.warn("Theme preload failed", err);
+      }
+    })();
+  </script>
 </head>
 
 <body>

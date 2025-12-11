@@ -1,5 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Newspaper, LayoutList } from "lucide-react";
+import { Newspaper, LayoutList, Sun, Moon } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { sources } from "@/data/mockNews";
 
 interface SettingsDialogProps {
@@ -9,6 +10,8 @@ interface SettingsDialogProps {
   onSelectedSourcesChange: (sources: string[]) => void;
   lineView: boolean;
   onLineViewChange: (lineView: boolean) => void;
+  theme: "light" | "dark";
+  onThemeChange: (theme: "light" | "dark") => void;
 }
 
 export const SettingsDialog = ({
@@ -18,6 +21,8 @@ export const SettingsDialog = ({
   onSelectedSourcesChange,
   lineView,
   onLineViewChange,
+  theme,
+  onThemeChange,
 }: SettingsDialogProps) => {
   const handleSourceToggle = (sourceName: string, checked: boolean) => {
     if (checked) {
@@ -34,6 +39,31 @@ export const SettingsDialog = ({
           <DialogTitle className="mb-4">Settings</DialogTitle>
         </DialogHeader>
         <div className="space-y-6">
+          {/* Theme */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                {theme === "dark" ? (
+                  <Moon className="h-4 w-4 text-primary" />
+                ) : (
+                  <Sun className="h-4 w-4 text-primary" />
+                )}
+                <span className="text-xs font-medium uppercase tracking-wider text-foreground">
+                  Theme
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                <span>Light</span>
+                <Switch
+                  checked={theme === "dark"}
+                  onCheckedChange={(checked) => onThemeChange(checked ? "dark" : "light")}
+                  aria-label="Toggle dark mode"
+                />
+                <span>Dark</span>
+              </div>
+            </div>
+          </div>
+
           {/* Display Mode */}
           <div>
             <div className="flex items-center gap-2 mb-3">
@@ -73,26 +103,28 @@ export const SettingsDialog = ({
               </span>
             </div>
             <div className="space-y-4">
-              {sources.map((source) => (
-                <label
-                  key={source.name}
-                  className="flex items-center justify-between cursor-pointer"
-                  onClick={() => handleSourceToggle(source.name, !selectedSources.includes(source.name))}
-                >
-                  <span className="text-xs text-foreground">
-                    {source.name}
-                  </span>
-                  <div
-                    className={`w-8 h-4 rounded-full transition-colors ${selectedSources.includes(source.name) ? "bg-primary" : "bg-muted"
-                      }`}
+              {sources.map((source) => {
+                const isChecked = selectedSources.includes(source.name);
+                return (
+                  <label
+                    key={source.name}
+                    className="flex items-center justify-between cursor-pointer"
+                    onClick={(event) => {
+                      if ((event.target as HTMLElement).closest('[role="switch"]')) return;
+                      handleSourceToggle(source.name, !isChecked);
+                    }}
                   >
-                    <div
-                      className={`w-3 h-3 rounded-full bg-background transition-transform mt-0.5 ${selectedSources.includes(source.name) ? "translate-x-4.5 ml-0.5" : "translate-x-0.5"
-                        }`}
+                    <span className="text-xs text-foreground">
+                      {source.name}
+                    </span>
+                    <Switch
+                      checked={isChecked}
+                      onCheckedChange={(checked) => handleSourceToggle(source.name, checked)}
+                      aria-label={`Toggle ${source.name}`}
                     />
-                  </div>
-                </label>
-              ))}
+                  </label>
+                );
+              })}
             </div>
           </div>
         </div>

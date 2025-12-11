@@ -33,6 +33,10 @@ const Index = () => {
     return saved ? JSON.parse(saved) : sources.map(s => s.name);
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    const saved = localStorage.getItem("theme");
+    return saved === "light" ? "light" : "dark";
+  });
   const [lineView, setLineView] = useState(() => {
     const saved = localStorage.getItem("lineView");
     return saved ? JSON.parse(saved) : true;
@@ -52,6 +56,15 @@ const Index = () => {
   useEffect(() => {
     localStorage.setItem("selectedSources", JSON.stringify(selectedSources));
   }, [selectedSources]);
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === "dark") {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
+    localStorage.setItem("theme", theme);
+  }, [theme]);
   useEffect(() => {
     localStorage.setItem("lineView", JSON.stringify(lineView));
   }, [lineView]);
@@ -295,6 +308,8 @@ const Index = () => {
         onSelectedSourcesChange={setSelectedSources}
         lineView={lineView}
         onLineViewChange={setLineView}
+        theme={theme}
+        onThemeChange={setTheme}
       />
     </div>
   );
