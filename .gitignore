@@ -12,6 +12,12 @@ dist
 dist-ssr
 *.local
 
+# Allow committing built outputs for internal workspace packages (needed for Vercel deploy)
+!packages/types/dist/
+!packages/types/dist/**
+!packages/adapters/dist/
+!packages/adapters/dist/**
+
 # Local environment (never commit)
 .env
 .env.*
