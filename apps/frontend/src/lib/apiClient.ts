@@ -1,7 +1,15 @@
 import type { NewsListResponse, PriceResponse } from "@cryptowire/types";
 
+const getApiBaseUrl = (): string => {
+    const configured = (import.meta as any).env?.VITE_API_BASE_URL as string | undefined;
+    if (configured && typeof configured === "string" && configured.trim().length > 0) {
+        return configured.replace(/\/+$/, "");
+    }
+    return window.location.origin;
+};
+
 export const fetchNews = async (params?: { limit?: number; retentionDays?: number; offset?: number }): Promise<NewsListResponse> => {
-    const url = new URL("/api/news", window.location.origin);
+    const url = new URL("/api/news", getApiBaseUrl());
     if (params?.limit) url.searchParams.set("limit", String(params.limit));
     if (params?.retentionDays) url.searchParams.set("retentionDays", String(params.retentionDays));
     if (typeof params?.offset === "number") url.searchParams.set("offset", String(params.offset));
@@ -12,7 +20,7 @@ export const fetchNews = async (params?: { limit?: number; retentionDays?: numbe
 };
 
 export const fetchPrices = async (symbols?: string[]): Promise<PriceResponse> => {
-    const url = new URL("/api/prices", window.location.origin);
+    const url = new URL("/api/prices", getApiBaseUrl());
     if (symbols && symbols.length > 0) url.searchParams.set("symbols", symbols.join(","));
 
     const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });
