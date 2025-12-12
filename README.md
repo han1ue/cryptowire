@@ -28,7 +28,6 @@ Local URLs:
 
 Environment:
 
-- Copy `.env.example` → `.env`
 - Set `COINDESK_API_KEY` to enable live news
 - News retention defaults to 7 days via `NEWS_RETENTION_DAYS`
 
@@ -50,7 +49,21 @@ Create two Vercel projects pointing at the same Git repo:
 - Frontend project Root Directory: `apps/frontend`
 - API project Root Directory: `apps/api`
 
-Set the API project env vars from `.env.example`.
+Set the API project env vars from `.env`.
+
+### Scheduled refresh (Hobby-friendly)
+
+Vercel Hobby cron jobs are limited; this repo uses GitHub Actions to periodically hit the refresh endpoint so users aren’t triggering upstream CoinDesk fetches.
+
+- Configure the API env var `NEWS_REFRESH_SECRET` (any random string)
+- Add GitHub repo secrets:
+	- `CRYPTOWIRE_API_BASE_URL` = your API deployment base URL, e.g. `https://your-api.vercel.app`
+	- `CRYPTOWIRE_REFRESH_SECRET` = same value as `NEWS_REFRESH_SECRET`
+- The workflow is in `.github/workflows/refresh-news.yml`
+
+To persist cached news on Vercel (recommended), also set KV env vars in the API project:
+- `KV_REST_API_URL`
+- `KV_REST_API_TOKEN`
 
 ---
 MIT License
