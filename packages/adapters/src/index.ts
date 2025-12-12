@@ -1,2 +1,2 @@
-export * from "./providers/coindeskNews";
-export * from "./providers/coingeckoPrices";
+export * from "./providers/coindeskNews.js";
+export * from "./providers/coingeckoPrices.js";

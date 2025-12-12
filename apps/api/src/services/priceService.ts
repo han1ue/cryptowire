@@ -1,8 +1,8 @@
 import type { PriceQuote } from "@cryptowire/types";
 import type { PriceProvider } from "@cryptowire/types";
 import { CoinGeckoPriceProvider } from "@cryptowire/adapters";
-import { SimpleTtlCache } from "../lib/cache";
-import type { AppConfig } from "../config";
+import { SimpleTtlCache } from "../lib/cache.js";
+import type { AppConfig } from "../config.js";
 
 export class PriceService {
     private readonly cache = new SimpleTtlCache();

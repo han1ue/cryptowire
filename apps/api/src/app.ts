@@ -1,11 +1,11 @@
 import express from "express";
 import cors from "cors";
-import { getConfig } from "./config";
-import { NewsService } from "./services/newsService";
-import { PriceService } from "./services/priceService";
-import { createNewsRouter } from "./routes/news";
-import { createPricesRouter } from "./routes/prices";
-import { createNewsStore } from "./stores/newsStore";
+import { getConfig } from "./config.js";
+import { NewsService } from "./services/newsService.js";
+import { PriceService } from "./services/priceService.js";
+import { createNewsRouter } from "./routes/news.js";
+import { createPricesRouter } from "./routes/prices.js";
+import { createNewsStore } from "./stores/newsStore.js";
 
 export const app = express();
 

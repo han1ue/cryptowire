@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { PriceResponseSchema } from "@cryptowire/types";
-import type { PriceService } from "../services/priceService";
+import type { PriceService } from "../services/priceService.js";
 
 export const createPricesRouter = (priceService: PriceService) => {
     const router = Router();

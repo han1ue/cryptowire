@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { z } from "zod";
 import { NewsListResponseSchema } from "@cryptowire/types";
-import type { NewsService } from "../services/newsService";
-import type { NewsStore } from "../stores/newsStore";
+import type { NewsService } from "../services/newsService.js";
+import type { NewsStore } from "../stores/newsStore.js";
 
 export const createNewsRouter = (
     newsService: NewsService,

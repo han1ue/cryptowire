@@ -1,8 +1,8 @@
-import { loadDotEnvIfPresent } from "./env";
+import { loadDotEnvIfPresent } from "./env.js";
 
 await loadDotEnvIfPresent();
 
-const [{ app }, { getConfig }] = await Promise.all([import("./app"), import("./config")]);
+const [{ app }, { getConfig }] = await Promise.all([import("./app.js"), import("./config.js")]);
 
 const config = getConfig();
 

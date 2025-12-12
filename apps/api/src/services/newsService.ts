@@ -1,8 +1,8 @@
 import type { NewsItem } from "@cryptowire/types";
 import type { NewsProvider } from "@cryptowire/types";
 import { CoindeskNewsProvider } from "@cryptowire/adapters";
-import { SimpleTtlCache } from "../lib/cache";
-import type { AppConfig } from "../config";
+import { SimpleTtlCache } from "../lib/cache.js";
+import type { AppConfig } from "../config.js";
 
 export class NewsService {
     private readonly cache = new SimpleTtlCache();
