@@ -3,8 +3,10 @@ import cors from "cors";
 import { getConfig } from "./config.js";
 import { NewsService } from "./services/newsService.js";
 import { PriceService } from "./services/priceService.js";
+import { MarketService } from "./services/marketService.js";
 import { createNewsRouter } from "./routes/news.js";
 import { createPricesRouter } from "./routes/prices.js";
+import { createMarketRouter } from "./routes/market.js";
 import { createNewsStore } from "./stores/newsStore.js";
 
 export const app = express();
@@ -34,6 +36,7 @@ const config = getConfig();
 const newsService = new NewsService(config);
 const newsStore = createNewsStore();
 const priceService = new PriceService(config);
+const marketService = new MarketService();
 
 const kvEnabled = Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
 const KV_LAST_REFRESH_KEY = "news:lastRefreshAt";
@@ -76,6 +79,7 @@ app.get("/api/stats", async (_req, res) => {
             news: "/api/news?limit=40&offset=0",
             refresh: "/api/news/refresh?limit=30",
             prices: "/api/prices?symbols=BTC,ETH,SOL",
+            market: "/api/market",
         },
     });
 });
@@ -91,11 +95,13 @@ app.get("/api", async (_req, res) => {
             news: "/api/news?limit=40&offset=0",
             refresh: "/api/news/refresh?limit=30",
             prices: "/api/prices?symbols=BTC,ETH,SOL",
+            market: "/api/market",
         },
     });
 });
 
 app.use("/api", createNewsRouter(newsService, newsStore, { refreshSecret: config.NEWS_REFRESH_SECRET }));
 app.use("/api", createPricesRouter(priceService));
+app.use("/api", createMarketRouter(marketService));
 
 export default app;

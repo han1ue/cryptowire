@@ -9,6 +9,8 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import { useMarketOverview } from '@/hooks/useMarketOverview';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // Helper component for scrollable category list with dynamic gradient
 function CategoryScrollWithDynamicGradient({
@@ -98,6 +100,7 @@ export const Sidebar = ({
   selectedCategory = 'All News',
   onCategorySelect = () => { },
 }: SidebarProps) => {
+  const { data: marketData, isLoading: marketLoading } = useMarketOverview();
   const [categoriesCollapsed, setCategoriesCollapsed] = useState(false);
   const [categorySearch, setCategorySearch] = useState('');
   // Removed showMoreCategories and related logic; always show all filtered categories
@@ -137,33 +140,124 @@ export const Sidebar = ({
           </span>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <div className="p-2 bg-muted/30 border border-border">
-            <span className="text-[10px] text-muted-foreground block">
-              Market Cap
-            </span>
-            <span className="text-sm font-medium text-foreground">$3.42T</span>
-            <span className="text-[10px] text-terminal-green ml-1">+2.4%</span>
-          </div>
-          <div className="p-2 bg-muted/30 border border-border">
-            <span className="text-[10px] text-muted-foreground block">
-              24h Volume
-            </span>
-            <span className="text-sm font-medium text-foreground">$142B</span>
-            <span className="text-[10px] text-terminal-red ml-1">-1.2%</span>
+          {(() => {
+            const o = marketData?.overview;
 
-          </div>
-          <div className="p-2 bg-muted/30 border border-border">
-            <span className="text-[10px] text-muted-foreground block">
-              BTC Dom
-            </span>
-            <span className="text-sm font-medium text-foreground">52.3%</span>
-          </div>
-          <div className="p-2 bg-muted/30 border border-border">
-            <span className="text-[10px] text-muted-foreground block">
-              Fear/Greed
-            </span>
-            <span className="text-sm font-medium text-terminal-green">74</span>
-          </div>
+            const formatUsdCompact = (value: number): string => {
+              const abs = Math.abs(value);
+              const sign = value < 0 ? '-' : '';
+              const fmt = (n: number) => n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+
+              if (abs >= 1_000_000_000_000) return `${sign}$${fmt(abs / 1_000_000_000_000)}T`;
+              if (abs >= 1_000_000_000) return `${sign}$${fmt(abs / 1_000_000_000)}B`;
+              if (abs >= 1_000_000) return `${sign}$${fmt(abs / 1_000_000)}M`;
+              if (abs >= 1_000) return `${sign}$${fmt(abs / 1_000)}K`;
+              return `${sign}$${abs.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+            };
+
+            const fmtPct = (value: number) => {
+              const rounded = Math.round(value * 10) / 10;
+              const prefix = rounded > 0 ? '+' : '';
+              return `${prefix}${rounded.toFixed(1)}%`;
+            };
+            const capChange = typeof o?.marketCapChange24hPct === 'number' ? o.marketCapChange24hPct : null;
+            const capChangeClass = capChange === null
+              ? 'text-muted-foreground'
+              : capChange >= 0
+                ? 'text-terminal-green'
+                : 'text-terminal-red';
+
+            const fngValue = typeof o?.fearGreed?.value === 'number' && Number.isFinite(o.fearGreed.value) ? o.fearGreed.value : null;
+            const fngClass = o?.fearGreed?.classification ?? null;
+            const fngTone = (() => {
+              if (!fngClass) return 'text-muted-foreground';
+              const v = fngClass.toLowerCase();
+              if (v.includes('greed')) return 'text-terminal-green';
+              if (v.includes('neutral')) return 'text-terminal-amber';
+              if (v.includes('fear')) return 'text-terminal-red';
+              return 'text-muted-foreground';
+            })();
+
+            if (marketLoading || !o) {
+              return (
+                <>
+                  <div className="p-2 bg-muted/30 border border-border">
+                    <span className="text-[10px] text-muted-foreground block">Market Cap</span>
+                    <div className="mt-1 flex items-baseline gap-2">
+                      <Skeleton className="h-4 w-20" />
+                      <Skeleton className="h-3 w-10" />
+                    </div>
+                  </div>
+
+                  <div className="p-2 bg-muted/30 border border-border">
+                    <span className="text-[10px] text-muted-foreground block">24h Volume</span>
+                    <div className="mt-1">
+                      <Skeleton className="h-4 w-20" />
+                    </div>
+                  </div>
+
+                  <div className="p-2 bg-muted/30 border border-border">
+                    <span className="text-[10px] text-muted-foreground block">BTC Dom</span>
+                    <div className="mt-1">
+                      <Skeleton className="h-4 w-14" />
+                    </div>
+                  </div>
+
+                  <div className="p-2 bg-muted/30 border border-border">
+                    <span className="text-[10px] text-muted-foreground block">Fear/Greed</span>
+                    <div className="mt-1 flex items-baseline gap-2">
+                      <Skeleton className="h-4 w-8" />
+                      <Skeleton className="h-3 w-14" />
+                    </div>
+                  </div>
+                </>
+              );
+            }
+
+            return (
+              <>
+                <div className="p-2 bg-muted/30 border border-border">
+                  <span className="text-[10px] text-muted-foreground block">Market Cap</span>
+                  <div className="mt-1 flex items-baseline gap-1.5">
+                    <span className="text-sm font-medium text-foreground">
+                      {typeof o.marketCapUsd === 'number' ? formatUsdCompact(o.marketCapUsd) : '—'}
+                    </span>
+                    {capChange === null ? null : (
+                      <span className={`text-[10px] ${capChangeClass}`}>{fmtPct(capChange)}</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="p-2 bg-muted/30 border border-border">
+                  <span className="text-[10px] text-muted-foreground block">24h Volume</span>
+                  <div className="mt-1 flex items-baseline gap-2">
+                    <span className="text-sm font-medium text-foreground">
+                      {typeof o.volume24hUsd === 'number' ? formatUsdCompact(o.volume24hUsd) : '—'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-2 bg-muted/30 border border-border">
+                  <span className="text-[10px] text-muted-foreground block">BTC Dom</span>
+                  <div className="mt-1 flex items-baseline gap-2">
+                    <span className="text-sm font-medium text-foreground">
+                      {typeof o.btcDominancePct === 'number' ? `${o.btcDominancePct.toFixed(1)}%` : '—'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-2 bg-muted/30 border border-border">
+                  <span className="text-[10px] text-muted-foreground block">Fear/Greed</span>
+                  <div className="mt-1 flex items-baseline gap-2">
+                    <span className="text-sm font-medium text-foreground">{fngValue === null ? '—' : String(fngValue)}</span>
+                    {fngClass ? (
+                      <span className={`text-[10px] ${fngTone}`}>{fngClass}</span>
+                    ) : null}
+                  </div>
+                </div>
+              </>
+            );
+          })()}
         </div>
       </div>
 
