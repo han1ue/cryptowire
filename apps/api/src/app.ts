@@ -12,6 +12,20 @@ export const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.get("/", (_req, res) => {
+    return res.json({
+        ok: true,
+        name: "CryptoWire API",
+        endpoints: {
+            api: "/api",
+            stats: "/api/stats",
+            health: "/api/health",
+            news: "/api/news?limit=40&offset=0",
+            prices: "/api/prices?symbols=BTC,ETH,SOL",
+        },
+    });
+});
+
 app.get("/api/health", (_req, res) => {
     res.json({ ok: true });
 });
