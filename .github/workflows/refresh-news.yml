@@ -58,10 +58,10 @@ jobs:
           }
 
           # Primary: current API route
-          try_url "${base}/api/news/refresh?limit=200&force=1" && exit 0
+          try_url "${base}/api/news/refresh?limit=30&force=1" && exit 0
 
           # Fallback: if someone deploys without the /api prefix (older setup)
-          try_url "${base}/news/refresh?limit=200&force=1" && exit 0
+          try_url "${base}/news/refresh?limit=30&force=1" && exit 0
 
           echo "Refresh failed for both candidate endpoints."
           exit 22

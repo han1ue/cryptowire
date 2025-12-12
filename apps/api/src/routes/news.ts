@@ -26,7 +26,7 @@ export const createNewsRouter = (
 
     router.get("/news/refresh", async (req, res) => {
         const querySchema = z.object({
-            limit: z.coerce.number().int().positive().max(500).default(100),
+            limit: z.coerce.number().int().positive().max(500).default(30),
             retentionDays: z.coerce.number().int().positive().max(30).optional(),
             force: z
                 .union([z.literal("1"), z.literal("true"), z.literal("0"), z.literal("false")])
@@ -48,7 +48,8 @@ export const createNewsRouter = (
             return res.status(401).json({ error: "Unauthorized" });
         }
 
-        const limit = Math.min(parsed.data.limit, 500);
+        // CoinDesk commonly rejects very large limits; keep this conservative.
+        const limit = Math.min(parsed.data.limit, 100);
         const retentionDays = Math.min(parsed.data.retentionDays ?? 7, 7);
         const items = await newsService.refreshHeadlines({
             limit,
@@ -64,12 +65,32 @@ export const createNewsRouter = (
 
         await setLastRefreshAt(new Date().toISOString());
 
-        return res.json({ ok: true, count: items.length, refreshedAt: new Date().toISOString() });
+        return res.json({
+            ok: true,
+            count: items.length,
+            limit,
+            retentionDays,
+            force: Boolean(parsed.data.force),
+            refreshedAt: new Date().toISOString(),
+            note:
+                items.length === 0
+                    ? "Upstream returned 0 items. Try /api/news/diagnose?limit=100 to see the CoinDesk response details (status/body)."
+                    : null,
+        });
     });
 
     // Debug helper to understand why refresh returns 0 items in production.
     // Protected by the same refresh secret as /news/refresh.
     router.get("/news/diagnose", async (req, res) => {
+        const querySchema = z.object({
+            limit: z.coerce.number().int().positive().max(200).default(5),
+        });
+
+        const parsedQuery = querySchema.safeParse(req.query);
+        if (!parsedQuery.success) {
+            return res.status(400).json({ error: parsedQuery.error.message });
+        }
+
         const expected = opts?.refreshSecret;
         const isVercelCron = req.header("x-vercel-cron") === "1";
         if (!isVercelCron && expected && req.header("x-refresh-secret") !== expected) {
@@ -83,7 +104,7 @@ export const createNewsRouter = (
 
         const buildUrl = (includeSources: boolean) => {
             const url = new URL(endpointPath, baseUrl);
-            url.searchParams.set("limit", "5");
+            url.searchParams.set("limit", String(parsedQuery.data.limit));
             url.searchParams.set("lang", "EN");
             if (includeSources && sourceIds) url.searchParams.set("source_ids", sourceIds);
             // CoinDesk Data API supports api_key as a query param.
@@ -177,7 +198,7 @@ export const createNewsRouter = (
         if (items.length === 0 && offset === 0) {
             // Cold start: warm the store once.
             const warmed = await newsService.refreshHeadlines({
-                limit: 200,
+                limit: 100,
                 retentionDays,
                 force: true,
             });
