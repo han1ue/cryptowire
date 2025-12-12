@@ -196,7 +196,7 @@ const Index = () => {
           </>
         )}
 
-        <main className="flex-1 p-4 overflow-hidden">
+        <main className="flex-1 p-2 sm:p-4 overflow-hidden">
           {allNews.length === 0 && showSavedOnly ? (
             <div className="flex-1 flex items-center justify-center bg-card/30 border border-border rounded p-12 sm:p-20">
               <div className="text-center text-muted-foreground">
@@ -206,12 +206,12 @@ const Index = () => {
               </div>
             </div>
           ) : lineView ? (
-            <div className="flex-1 overflow-y-auto p-2 sm:p-4 bg-card/30 border border-border rounded">
-              <div className="space-y-2">
+            <div className="flex-1 overflow-y-auto p-1 sm:p-4 bg-card/30 border border-border rounded">
+              <div className="space-y-1 sm:space-y-2">
                 {allNews.map((item, index) => (
                   <div
                     key={index}
-                    className="group hover:bg-muted/30 p-2 rounded transition-colors"
+                    className="group hover-enabled p-2 rounded transition-colors"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
@@ -229,7 +229,7 @@ const Index = () => {
                           <span className="text-xs sm:text-sm text-foreground block">{item.title}</span>
                         )}
                         <div className="flex flex-wrap items-center gap-2 mt-1 text-[10px] text-muted-foreground">
-                          <span className="text-terminal-green tabular-nums">
+                          <span className="text-news-time tabular-nums">
                             {item.time}
                           </span>
                           <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary uppercase tracking-wider font-medium">
@@ -282,7 +282,7 @@ const Index = () => {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 overflow-y-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-3 overflow-y-auto">
               {allNews.map((item, index) => (
                 <NewsCard
                   key={index}

@@ -25,7 +25,7 @@ export const NewsCard = ({
 }: NewsCardProps) => {
   return (
     <article
-      className="group p-4 bg-card border border-border hover:border-primary/30 transition-all duration-200 cursor-pointer terminal-glow flex flex-col h-full"
+      className="group p-3 sm:p-4 bg-card border border-border hover:border-primary/30 transition-all duration-200 cursor-pointer terminal-glow flex flex-col h-full"
       onClick={() => {
         if (url) window.open(url, '_blank', 'noopener,noreferrer');
       }}
@@ -67,9 +67,9 @@ export const NewsCard = ({
       </p>
 
       <div className="flex items-center justify-between mt-auto">
-        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-          <Clock className="h-3 w-3" />
-          {time}
+        <div className="flex items-center gap-1 text-[10px]">
+          <Clock className="h-3 w-3 text-muted-foreground" />
+          <span className="text-news-time">{time}</span>
         </div>
         <div className="flex items-center gap-3">
           {url && (

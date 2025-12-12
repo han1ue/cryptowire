@@ -46,6 +46,7 @@
     --terminal-cyan: 186 70% 38%;
     --terminal-red: 0 70% 45%;
     --terminal-glow: 156 64% 32%;
+    --news-time-green: 156 64% 32%;
 
     /* Gradients */
     --gradient-glow: linear-gradient(90deg, hsl(156 100% 50% / 0.1), hsl(186 100% 50% / 0.1));
@@ -86,6 +87,7 @@
     --terminal-cyan: 186 100% 50%;
     --terminal-red: 0 84% 60%;
     --terminal-glow: 156 100% 50%;
+    --news-time-green: 156 70% 42%;
     --sidebar-background: 0 0% 4%;
     --sidebar-foreground: 150 100% 95%;
     --sidebar-primary: 156 100% 50%;
@@ -121,6 +123,17 @@
   .border-glow {
     border-color: hsl(var(--terminal-green) / 0.3);
     box-shadow: 0 0 10px hsl(var(--terminal-green) / 0.1);
+  }
+
+  .text-news-time {
+    color: hsl(var(--news-time-green));
+  }
+
+  /* Only apply hover effects on devices that support hover */
+  @media (hover: hover) and (pointer: fine) {
+    .hover-enabled:hover {
+      background-color: hsl(var(--muted) / 0.3);
+    }
   }
 
   .scanlines {
