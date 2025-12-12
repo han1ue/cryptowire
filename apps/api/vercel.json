@@ -3,5 +3,11 @@
         "api/[...path].ts": {
             "maxDuration": 10
         }
-    }
+    },
+    "rewrites": [
+        {
+            "source": "/",
+            "destination": "/api"
+        }
+    ]
 }

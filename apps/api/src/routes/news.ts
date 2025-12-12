@@ -11,6 +11,19 @@ export const createNewsRouter = (
 ) => {
     const router = Router();
 
+    const kvEnabled = Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
+    const KV_LAST_REFRESH_KEY = "news:lastRefreshAt";
+    const setLastRefreshAt = async (iso: string) => {
+        if (!kvEnabled) return;
+        try {
+            const { kv } = await import("@vercel/kv");
+            // keep for a bit longer than retention so it's visible even if cache is empty
+            await kv.set(KV_LAST_REFRESH_KEY, iso, { ex: 8 * 24 * 60 * 60 });
+        } catch {
+            // ignore
+        }
+    };
+
     router.get("/news/refresh", async (req, res) => {
         const querySchema = z.object({
             limit: z.coerce.number().int().positive().max(500).default(100),
@@ -49,6 +62,8 @@ export const createNewsRouter = (
         const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000).toISOString();
         await newsStore.pruneOlderThan(cutoff);
 
+        await setLastRefreshAt(new Date().toISOString());
+
         return res.json({ ok: true, count: items.length, refreshedAt: new Date().toISOString() });
     });
 
@@ -81,6 +96,7 @@ export const createNewsRouter = (
             await newsStore.putMany(warmed);
             const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000).toISOString();
             await newsStore.pruneOlderThan(cutoff);
+            await setLastRefreshAt(new Date().toISOString());
             items = await newsStore.getPage({ limit, offset });
         }
 
