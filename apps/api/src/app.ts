@@ -25,52 +25,52 @@ const kvEnabled = Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API
 const KV_LAST_REFRESH_KEY = "news:lastRefreshAt";
 
 const getLastRefreshAt = async (): Promise<string | null> => {
-        if (!kvEnabled) return null;
-        try {
-                const { kv } = await import("@vercel/kv");
-                const v = await kv.get(KV_LAST_REFRESH_KEY);
-                return typeof v === "string" ? v : null;
-        } catch {
-                return null;
-        }
+    if (!kvEnabled) return null;
+    try {
+        const { kv } = await import("@vercel/kv");
+        const v = await kv.get(KV_LAST_REFRESH_KEY);
+        return typeof v === "string" ? v : null;
+    } catch {
+        return null;
+    }
 };
 
 app.get("/api/stats", async (_req, res) => {
-        const now = new Date().toISOString();
-        const newsCount = await newsStore.count();
-        const newest = (await newsStore.getPage({ limit: 1, offset: 0 }))[0] ?? null;
-        const oldest =
-                newsCount > 0 ? (await newsStore.getPage({ limit: 1, offset: Math.max(0, newsCount - 1) }))[0] ?? null : null;
-        const lastRefreshAt = await getLastRefreshAt();
+    const now = new Date().toISOString();
+    const newsCount = await newsStore.count();
+    const newest = (await newsStore.getPage({ limit: 1, offset: 0 }))[0] ?? null;
+    const oldest =
+        newsCount > 0 ? (await newsStore.getPage({ limit: 1, offset: Math.max(0, newsCount - 1) }))[0] ?? null : null;
+    const lastRefreshAt = await getLastRefreshAt();
 
-        return res.json({
-                ok: true,
-                now,
-                kvEnabled,
-                retentionDays: config.NEWS_RETENTION_DAYS,
-                cacheTtlSeconds: config.NEWS_CACHE_TTL_SECONDS,
-                newsCount,
-                newestPublishedAt: newest?.publishedAt ?? null,
-                oldestPublishedAt: oldest?.publishedAt ?? null,
-                lastRefreshAt,
-                endpoints: {
-                        health: "/api/health",
-                        news: "/api/news?limit=40&offset=0",
-                        refresh: "/api/news/refresh?limit=200",
-                        prices: "/api/prices?symbols=BTC,ETH,SOL",
-                },
-        });
+    return res.json({
+        ok: true,
+        now,
+        kvEnabled,
+        retentionDays: config.NEWS_RETENTION_DAYS,
+        cacheTtlSeconds: config.NEWS_CACHE_TTL_SECONDS,
+        newsCount,
+        newestPublishedAt: newest?.publishedAt ?? null,
+        oldestPublishedAt: oldest?.publishedAt ?? null,
+        lastRefreshAt,
+        endpoints: {
+            health: "/api/health",
+            news: "/api/news?limit=40&offset=0",
+            refresh: "/api/news/refresh?limit=200",
+            prices: "/api/prices?symbols=BTC,ETH,SOL",
+        },
+    });
 });
 
 app.get("/api", async (_req, res) => {
-        const stats = await (async () => {
-                const newsCount = await newsStore.count();
-                const newest = (await newsStore.getPage({ limit: 1, offset: 0 }))[0] ?? null;
-                const lastRefreshAt = await getLastRefreshAt();
-                return { newsCount, newestPublishedAt: newest?.publishedAt ?? null, lastRefreshAt };
-        })();
+    const stats = await (async () => {
+        const newsCount = await newsStore.count();
+        const newest = (await newsStore.getPage({ limit: 1, offset: 0 }))[0] ?? null;
+        const lastRefreshAt = await getLastRefreshAt();
+        return { newsCount, newestPublishedAt: newest?.publishedAt ?? null, lastRefreshAt };
+    })();
 
-        const html = `<!doctype html>
+    const html = `<!doctype html>
 <html lang="en">
     <head>
         <meta charset="utf-8" />
@@ -104,8 +104,8 @@ app.get("/api", async (_req, res) => {
     </body>
 </html>`;
 
-        res.setHeader("content-type", "text/html; charset=utf-8");
-        return res.status(200).send(html);
+    res.setHeader("content-type", "text/html; charset=utf-8");
+    return res.status(200).send(html);
 });
 
 app.use("/api", createNewsRouter(newsService, newsStore, { refreshSecret: config.NEWS_REFRESH_SECRET }));
