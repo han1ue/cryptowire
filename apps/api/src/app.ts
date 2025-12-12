@@ -110,3 +110,5 @@ app.get("/api", async (_req, res) => {
 
 app.use("/api", createNewsRouter(newsService, newsStore, { refreshSecret: config.NEWS_REFRESH_SECRET }));
 app.use("/api", createPricesRouter(priceService));
+
+export default app;
