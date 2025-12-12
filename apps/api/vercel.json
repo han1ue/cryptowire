@@ -1,0 +1,13 @@
+{
+    "functions": {
+        "api/[...path].ts": {
+            "maxDuration": 10
+        }
+    },
+    "crons": [
+        {
+            "path": "/api/news/refresh?limit=200",
+            "schedule": "*/3 * * * *"
+        }
+    ]
+}

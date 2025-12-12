@@ -4,10 +4,25 @@ import { NewsTicker } from "@/components/NewsTicker";
 import { Sidebar } from "@/components/Sidebar";
 import { SettingsDialog } from "@/components/SettingsDialog";
 import { NewsCard } from "@/components/NewsCard";
-import { sources } from "@/data/mockNews";
+import { sources as sourcesConfig } from "@/data/sources";
+import { useNews } from "@/hooks/useNews";
+import { useInfiniteNews } from "@/hooks/useInfiniteNews";
 import { useState, useEffect } from "react";
 import { toast } from "@/components/ui/sonner";
 import { Bookmark, Share2 } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogCancel,
+  AlertDialogFooter,
+} from "@/components/ui/alert-dialog";
+import { Switch } from "@/components/ui/switch";
+import { zodToJsonSchema } from "zod-to-json-schema";
+import { NewsItemSchema } from "@cryptowire/types";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 type NotificationItem = {
   id: string;
@@ -31,7 +46,7 @@ const initialNotifications: NotificationItem[] = [
 const Index = () => {
   const [selectedSources, setSelectedSources] = useState<string[]>(() => {
     const saved = localStorage.getItem("selectedSources");
-    return saved ? JSON.parse(saved) : sources.map(s => s.name);
+    return saved ? JSON.parse(saved) : sourcesConfig.map(s => s.name);
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">(() => {
@@ -53,6 +68,37 @@ const Index = () => {
     return saved ? JSON.parse(saved) : initialNotifications;
   });
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Used by ticker/header components that want a small, frequently-updated set.
+  const { data: newsData, isLoading: newsLoading, error: newsError } = useNews({ limit: 40 });
+
+  // Used by the main list/cards view: loads 40 at a time as you scroll.
+  const infinite = useInfiniteNews({ pageSize: 40 });
+  const infiniteItems = infinite.data?.pages.flatMap((p) => p.items ?? []) ?? [];
+
+  const [devToolsOpen, setDevToolsOpen] = useState(false);
+  const [devShowSchemaButtons, setDevShowSchemaButtons] = useState(() => {
+    const saved = localStorage.getItem("devShowSchemaButtons");
+    return saved === "true";
+  });
+  useEffect(() => {
+    localStorage.setItem("devShowSchemaButtons", String(devShowSchemaButtons));
+  }, [devShowSchemaButtons]);
+
+  const [schemaDialogOpen, setSchemaDialogOpen] = useState(false);
+  const [schemaDialogText, setSchemaDialogText] = useState<string>("");
+
+  const showNewsItemSchema = () => {
+    const jsonSchema = zodToJsonSchema(NewsItemSchema, "NewsItem");
+    setSchemaDialogText(JSON.stringify(jsonSchema, null, 2));
+    setSchemaDialogOpen(true);
+  };
+
+  useEffect(() => {
+    if (newsError) {
+      toast("Failed to load news");
+    }
+  }, [newsError]);
 
   useEffect(() => {
     localStorage.setItem("selectedSources", JSON.stringify(selectedSources));
@@ -105,20 +151,75 @@ const Index = () => {
     );
   };
 
-  const activeSources = sources.filter(source => selectedSources.includes(source.name));
+  const sourcesWithNews = (() => {
+    // If we have API data, use it
+    if (infiniteItems.length > 0) {
+      const bySource = new Map<string, typeof infiniteItems>();
+      for (const item of infiniteItems) {
+        const list = bySource.get(item.source) ?? [];
+        list.push(item);
+        bySource.set(item.source, list);
+      }
+
+      return sourcesConfig.map((s) => {
+        const items = (bySource.get(s.name) ?? [])
+          .slice(0, 50)
+          .map((n) => ({
+            title: n.title,
+            summary: n.summary || "",
+            time: formatDistanceToNow(new Date(n.publishedAt), { addSuffix: true }),
+            category: n.category || "News",
+            url: n.url,
+            isBreaking: false,
+            publishedAt: n.publishedAt,
+          }));
+
+        return {
+          name: s.name,
+          icon: s.icon,
+          news: items,
+        };
+      });
+    }
+
+    // No API data (yet) – don't mask it with mock content.
+    return sourcesConfig.map((s) => ({
+      name: s.name,
+      icon: s.icon,
+      news: [],
+    }));
+  })();
+
+  // Auto-load more when near the bottom
+  useEffect(() => {
+    const el = document.getElementById("news-infinite-sentinel");
+    if (!el) return;
+    if (!infinite.hasNextPage) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry?.isIntersecting && !infinite.isFetchingNextPage) {
+          void infinite.fetchNextPage();
+        }
+      },
+      { root: null, rootMargin: "400px", threshold: 0 },
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [infinite.hasNextPage, infinite.isFetchingNextPage]);
+
+  const activeSources = sourcesWithNews.filter(source => selectedSources.includes(source.name));
 
   let allNews = activeSources
     .flatMap(source =>
-      source.news.map(item => ({ ...item, sourceName: source.name, sourceIcon: source.icon }))
+      source.news.map((item: any) => ({ ...item, sourceName: source.name, sourceIcon: source.icon }))
     )
-    .sort((a, b) => {
-      const parseTime = (timeStr: string) => {
-        if (timeStr.includes('Just now')) return 0;
-        if (timeStr.includes('min ago')) return parseInt(timeStr) * 60;
-        if (timeStr.includes('hour ago')) return parseInt(timeStr) * 3600;
-        return 999999; // fallback
-      };
-      return parseTime(a.time) - parseTime(b.time);
+    .sort((a: any, b: any) => {
+      const aTime = new Date(a.publishedAt ?? 0).getTime();
+      const bTime = new Date(b.publishedAt ?? 0).getTime();
+      return bTime - aTime;
     });
   if (showSavedOnly) {
     allNews = allNews.filter(item => savedArticles.includes(item.title));
@@ -239,6 +340,18 @@ const Index = () => {
                         </div>
                       </div>
                       <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 flex-col sm:flex-row">
+                        {devShowSchemaButtons && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              showNewsItemSchema();
+                            }}
+                            className="transition-colors"
+                            title="Show news item schema"
+                          >
+                            <span className="text-[10px] text-muted-foreground hover:text-primary">schema</span>
+                          </button>
+                        )}
                         {item.url && (
                           <button
                             onClick={async (e) => {
@@ -294,8 +407,11 @@ const Index = () => {
                   url={item.url}
                   isSaved={savedArticles.includes(item.title)}
                   onToggleSave={() => toggleSaveArticle(item.title)}
+                  showSchemaButton={devShowSchemaButtons}
+                  onShowSchema={showNewsItemSchema}
                 />
               ))}
+              <div id="news-infinite-sentinel" className="h-1 w-full" />
             </div>
           )}
         </main>
@@ -307,14 +423,14 @@ const Index = () => {
           <span className="text-[10px] text-muted-foreground flex items-center gap-2">
             <span
               className={
-                activeSources.length === sources.length ? "text-terminal-green" : "text-terminal-amber"
+                activeSources.length === sourcesConfig.length ? "text-terminal-green" : "text-terminal-amber"
               }
             >
               {/* Slight upward shift keeps the dot optically centered with the text */}
               <span className="inline-block -translate-y-[1px]">●</span>
             </span>
-            <span className={activeSources.length === sources.length ? "text-terminal-green" : "text-muted-foreground"}>
-              {activeSources.length}/{sources.length} Sources Active
+            <span className={activeSources.length === sourcesConfig.length ? "text-terminal-green" : "text-muted-foreground"}>
+              {activeSources.length}/{sourcesConfig.length} Sources Active
             </span>
           </span>
           <span className="text-[10px] text-muted-foreground">
@@ -342,9 +458,54 @@ const Index = () => {
             </svg>
             <span>Android</span>
           </a>
-          <span className="text-[10px] text-muted-foreground">v1.0.0</span>
+          <Popover open={devToolsOpen} onOpenChange={setDevToolsOpen}>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className="text-[10px] text-muted-foreground hover:text-primary transition-colors"
+                title="Developer tools"
+              >
+                v1.0.0
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-64">
+              <div className="space-y-3">
+                <div className="text-xs font-medium uppercase tracking-wider text-foreground">Dev tools</div>
+                <button
+                  type="button"
+                  className="w-full text-left text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => {
+                    localStorage.clear();
+                    window.location.reload();
+                  }}
+                >
+                  Clear local storage
+                </button>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs text-muted-foreground">Schema buttons</span>
+                  <Switch checked={devShowSchemaButtons} onCheckedChange={setDevShowSchemaButtons} />
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
       </footer>
+
+      <AlertDialog open={schemaDialogOpen} onOpenChange={setSchemaDialogOpen}>
+        <AlertDialogContent className="max-w-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>News item JSON schema</AlertDialogTitle>
+          </AlertDialogHeader>
+          <div className="max-h-[60vh] overflow-auto rounded border border-border bg-muted/30 p-3">
+            <pre className="text-[11px] leading-snug text-muted-foreground whitespace-pre-wrap break-words">
+              {schemaDialogText}
+            </pre>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Close</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <SettingsDialog
         open={settingsOpen}

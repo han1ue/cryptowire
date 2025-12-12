@@ -1,6 +1,6 @@
 
 import { Zap } from "lucide-react";
-import { sources } from "@/data/mockNews";
+import { useNews } from "@/hooks/useNews";
 
 type Headline = {
   title: string;
@@ -18,22 +18,12 @@ const fallbackHeadlines: Headline[] = [
   { title: "DeFi protocol suffers $50M exploit, investigation ongoing" },
 ];
 
-const buildHeadlines = (): Headline[] => {
-  const latestNews = sources
-    .flatMap(source => source.news)
-    .map(news => ({ title: news.title, url: news.url }))
-    .slice(0, 8);
-
-  if (latestNews.length > 0) {
-    return latestNews;
-  }
-
-  return fallbackHeadlines;
-};
-
-const headlines = buildHeadlines();
-
 export const NewsTicker = () => {
+  const { data } = useNews({ limit: 30 });
+
+  const headlines: Headline[] =
+    data?.items?.slice(0, 8).map((n) => ({ title: n.title, url: n.url })) ?? fallbackHeadlines;
+
   return (
     <div className="bg-muted/30 border-b border-border overflow-hidden">
       <div className="flex items-center">

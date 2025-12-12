@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Newspaper, LayoutList, Sun, Moon } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { sources } from "@/data/mockNews";
+import { sources } from "@/data/sources";
 
 interface SettingsDialogProps {
   open: boolean;

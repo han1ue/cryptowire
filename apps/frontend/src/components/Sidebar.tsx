@@ -10,21 +10,6 @@ import {
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 
-const categories = [
-  'All News',
-  'Bitcoin',
-  'Ethereum',
-  'DeFi',
-  'NFTs',
-  'Regulation',
-  'Mining',
-  'Markets',
-  'Solana',
-  'CBDC',
-  'Layer 2',
-  'Staking',
-];
-
 // Helper component for scrollable category list with dynamic gradient
 function CategoryScrollWithDynamicGradient({
   categories,
@@ -119,6 +104,7 @@ export const Sidebar = ({
   const savedArticlesPreviews = allNews
     .filter(article => savedArticleTitles.includes(article.title))
     .slice(0, 3);
+
   // Count articles per category
   const categoryCounts: Record<string, number> = { 'All News': allNews.length };
   allNews.forEach(article => {
@@ -126,6 +112,20 @@ export const Sidebar = ({
       categoryCounts[article.category] = (categoryCounts[article.category] || 0) + 1;
     }
   });
+
+  const categories = [
+    "All News",
+    ...Array.from(
+      new Set(allNews.map((a) => a.category).filter((c): c is string => Boolean(c)))
+    ),
+  ].sort((a, b) => {
+    if (a === "All News") return -1;
+    if (b === "All News") return 1;
+    const diff = (categoryCounts[b] || 0) - (categoryCounts[a] || 0);
+    if (diff !== 0) return diff;
+    return a.localeCompare(b);
+  });
+
   return (
     <aside className="w-64 border-r border-border bg-card flex flex-col h-full overflow-y-auto">
       {/* Quick Stats */}

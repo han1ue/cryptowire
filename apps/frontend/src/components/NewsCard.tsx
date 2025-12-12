@@ -1,4 +1,4 @@
-import { Clock, ExternalLink, Tag, Bookmark, Share2 } from "lucide-react";
+import { Clock, Bookmark, Share2 } from "lucide-react";
 
 interface NewsCardProps {
   title: string;
@@ -10,6 +10,8 @@ interface NewsCardProps {
   isBreaking?: boolean;
   isSaved?: boolean;
   onToggleSave?: () => void;
+  showSchemaButton?: boolean;
+  onShowSchema?: () => void;
 }
 
 export const NewsCard = ({
@@ -22,6 +24,8 @@ export const NewsCard = ({
   isBreaking,
   isSaved,
   onToggleSave,
+  showSchemaButton,
+  onShowSchema,
 }: NewsCardProps) => {
   return (
     <article
@@ -72,6 +76,18 @@ export const NewsCard = ({
           <span className="text-news-time">{time}</span>
         </div>
         <div className="flex items-center gap-3">
+          {showSchemaButton && onShowSchema && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onShowSchema();
+              }}
+              className="transition-colors"
+              title="Show news item schema"
+            >
+              <span className="text-[10px] text-muted-foreground hover:text-primary">schema</span>
+            </button>
+          )}
           {url && (
             <button
               onClick={async (e) => {

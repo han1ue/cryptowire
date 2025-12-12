@@ -1,23 +1,27 @@
 import { TrendingUp, TrendingDown } from "lucide-react";
-
-interface PriceData {
-  symbol: string;
-  price: string;
-  change: number;
-}
-
-const prices: PriceData[] = [
-  { symbol: "BTC", price: "97,432.18", change: 2.34 },
-  { symbol: "ETH", price: "3,891.45", change: -1.23 },
-  { symbol: "SOL", price: "234.67", change: 5.67 },
-  { symbol: "BNB", price: "712.89", change: 0.45 },
-  { symbol: "XRP", price: "2.34", change: -0.89 },
-  { symbol: "ADA", price: "1.12", change: 3.21 },
-  { symbol: "DOGE", price: "0.42", change: -2.45 },
-  { symbol: "AVAX", price: "45.67", change: 1.89 },
-];
+import { usePrices } from "@/hooks/usePrices";
 
 export const PriceBar = () => {
+  const symbols = ["BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "DOGE", "AVAX"];
+  const { data } = usePrices(symbols);
+
+  const prices =
+    data?.quotes?.map((q) => ({
+      symbol: q.symbol,
+      price: q.usd.toLocaleString(undefined, { maximumFractionDigits: q.usd >= 1 ? 2 : 6 }),
+      change: q.usd24hChange ?? 0,
+    })) ??
+    [
+      { symbol: "BTC", price: "97,432.18", change: 2.34 },
+      { symbol: "ETH", price: "3,891.45", change: -1.23 },
+      { symbol: "SOL", price: "234.67", change: 5.67 },
+      { symbol: "BNB", price: "712.89", change: 0.45 },
+      { symbol: "XRP", price: "2.34", change: -0.89 },
+      { symbol: "ADA", price: "1.12", change: 3.21 },
+      { symbol: "DOGE", price: "0.42", change: -2.45 },
+      { symbol: "AVAX", price: "45.67", change: 1.89 },
+    ];
+
   return (
     <div className="border-b border-border bg-card/50 overflow-hidden">
       <div className="flex items-center gap-6 px-4 py-2">
@@ -34,16 +38,15 @@ export const PriceBar = () => {
                 ${item.price}
               </span>
               <span
-                className={`flex items-center gap-0.5 text-xs ${
-                  item.change >= 0 ? "text-terminal-green" : "text-terminal-red"
-                }`}
+                className={`flex items-center gap-0.5 text-xs ${item.change >= 0 ? "text-terminal-green" : "text-terminal-red"
+                  }`}
               >
                 {item.change >= 0 ? (
                   <TrendingUp className="h-3 w-3" />
                 ) : (
                   <TrendingDown className="h-3 w-3" />
                 )}
-                {Math.abs(item.change)}%
+                {Math.abs(item.change).toFixed(2)}%
               </span>
             </div>
           ))}
