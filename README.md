@@ -57,7 +57,7 @@ Vercel Hobby cron jobs are limited; this repo uses GitHub Actions to periodicall
 
 - Configure the API env var `NEWS_REFRESH_SECRET` (any random string)
 - Add GitHub repo secrets:
-	- `CRYPTOWIRE_API_BASE_URL` = your API deployment base URL, e.g. `https://your-api.vercel.app`
+	- `CRYPTOWIRE_API_BASE_URL` = your API deployment root URL (no trailing `/api`), e.g. `https://your-api.vercel.app`
 	- `CRYPTOWIRE_REFRESH_SECRET` = same value as `NEWS_REFRESH_SECRET`
 - The workflow is in `.github/workflows/refresh-news.yml`
 

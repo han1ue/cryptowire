@@ -29,6 +29,31 @@ jobs:
             exit 1
           fi
 
-          curl -fsS --retry 3 --retry-all-errors --retry-delay 5 \
-            -H "x-refresh-secret: ${REFRESH_SECRET}" \
-            "${API_BASE_URL%/}/api/news/refresh?limit=200"
+          base="${API_BASE_URL%/}"
+
+          try_url() {
+            url="$1"
+            echo "Requesting: ${url}"
+            http_code=$(curl -sS -o /tmp/refresh_body.json -w "%{http_code}" \
+              --retry 3 --retry-all-errors --retry-delay 5 \
+              -H "x-refresh-secret: ${REFRESH_SECRET}" \
+              "${url}" || true)
+
+            if [ "${http_code}" = "200" ]; then
+              cat /tmp/refresh_body.json
+              return 0
+            fi
+
+            echo "HTTP ${http_code}"
+            cat /tmp/refresh_body.json || true
+            return 1
+          }
+
+          # Primary: current API route
+          try_url "${base}/api/news/refresh?limit=200" && exit 0
+
+          # Fallback: if someone deploys without the /api prefix (older setup)
+          try_url "${base}/news/refresh?limit=200" && exit 0
+
+          echo "Refresh failed for both candidate endpoints."
+          exit 22
