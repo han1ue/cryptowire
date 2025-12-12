@@ -63,49 +63,18 @@ app.get("/api/stats", async (_req, res) => {
 });
 
 app.get("/api", async (_req, res) => {
-    const stats = await (async () => {
-        const newsCount = await newsStore.count();
-        const newest = (await newsStore.getPage({ limit: 1, offset: 0 }))[0] ?? null;
-        const lastRefreshAt = await getLastRefreshAt();
-        return { newsCount, newestPublishedAt: newest?.publishedAt ?? null, lastRefreshAt };
-    })();
-
-    const html = `<!doctype html>
-<html lang="en">
-    <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>CryptoWire API</title>
-        <style>
-            body{font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; padding:24px; line-height:1.4;}
-            code{background:#f4f4f5; padding:2px 6px; border-radius:6px;}
-            .card{border:1px solid #e4e4e7; border-radius:12px; padding:16px; max-width:720px;}
-            a{color:#2563eb; text-decoration:none;}
-            a:hover{text-decoration:underline;}
-            ul{margin:8px 0 0 18px;}
-        </style>
-    </head>
-    <body>
-        <div class="card">
-            <h1>CryptoWire API</h1>
-            <p>Status: <code>ok</code></p>
-            <p>KV enabled: <code>${kvEnabled ? "true" : "false"}</code></p>
-            <p>News cached: <code>${stats.newsCount}</code></p>
-            <p>Newest article: <code>${stats.newestPublishedAt ?? "(none)"}</code></p>
-            <p>Last refresh: <code>${stats.lastRefreshAt ?? "(unknown)"}</code></p>
-
-            <p>Useful endpoints:</p>
-            <ul>
-                <li><a href="/api/stats">/api/stats</a></li>
-                <li><a href="/api/health">/api/health</a></li>
-                <li><a href="/api/news?limit=40&offset=0">/api/news?limit=40&amp;offset=0</a></li>
-            </ul>
-        </div>
-    </body>
-</html>`;
-
-    res.setHeader("content-type", "text/html; charset=utf-8");
-    return res.status(200).send(html);
+    return res.json({
+        ok: true,
+        name: "CryptoWire API",
+        kvEnabled,
+        endpoints: {
+            stats: "/api/stats",
+            health: "/api/health",
+            news: "/api/news?limit=40&offset=0",
+            refresh: "/api/news/refresh?limit=200",
+            prices: "/api/prices?symbols=BTC,ETH,SOL",
+        },
+    });
 });
 
 app.use("/api", createNewsRouter(newsService, newsStore, { refreshSecret: config.NEWS_REFRESH_SECRET }));
