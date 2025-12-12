@@ -169,47 +169,47 @@ export const Sidebar = ({
 
       {/* Categories */}
       <div className="p-4 border-b border-border">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-primary" />
-            <span className="text-xs font-medium uppercase tracking-wider text-foreground">
-              Categories
-            </span>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-primary" />
+              <span className="text-xs font-medium uppercase tracking-wider text-foreground">
+                Categories
+              </span>
+            </div>
+            <button
+              className="p-1 rounded hover:bg-muted/30"
+              onClick={() => setCategoriesCollapsed(v => !v)}
+              aria-label="Toggle categories"
+            >
+              {categoriesCollapsed ? (
+                <ChevronUp className="h-3 w-3 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="h-3 w-3 text-muted-foreground" />
+              )}
+            </button>
           </div>
-          <button
-            className="p-1 rounded hover:bg-muted/30"
-            onClick={() => setCategoriesCollapsed(v => !v)}
-            aria-label="Toggle categories"
-          >
-            {categoriesCollapsed ? (
-              <ChevronUp className="h-3 w-3 text-muted-foreground" />
-            ) : (
-              <ChevronDown className="h-3 w-3 text-muted-foreground" />
-            )}
-          </button>
+          {!categoriesCollapsed && (
+            <>
+              <input
+                type="text"
+                value={categorySearch}
+                onChange={e => setCategorySearch(e.target.value)}
+                placeholder="Search categories..."
+                className="mb-2 w-full px-2 py-1 text-xs rounded border border-border bg-muted/40 focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+              <CategoryScrollWithDynamicGradient
+                categories={categories}
+                categorySearch={categorySearch}
+                selectedCategory={selectedCategory}
+                onCategorySelect={onCategorySelect}
+                categoryCounts={categoryCounts}
+              />
+            </>
+          )}
         </div>
-        {!categoriesCollapsed && (
-          <>
-            <input
-              type="text"
-              value={categorySearch}
-              onChange={e => setCategorySearch(e.target.value)}
-              placeholder="Search categories..."
-              className="mb-2 w-full px-2 py-1 text-xs rounded border border-border bg-muted/40 focus:outline-none focus:ring-1 focus:ring-primary"
-            />
-            <CategoryScrollWithDynamicGradient
-              categories={categories}
-              categorySearch={categorySearch}
-              selectedCategory={selectedCategory}
-              onCategorySelect={onCategorySelect}
-              categoryCounts={categoryCounts}
-            />
-          </>
-        )}
-      </div>
 
-      {/* Bookmarks */}
-      <div className="p-4 flex-1 overflow-y-auto">
+        {/* Bookmarks */}
+        <div className="p-4 flex-1 overflow-y-auto">
         <button
           onClick={onToggleSavedView}
           className={`w-full text-left p-2 -mx-2 rounded transition-colors ${showSavedOnly ? "bg-primary/10" : "hover:bg-muted/30"
@@ -256,7 +256,6 @@ export const Sidebar = ({
           </div>
         )}
       </div>
-
     </aside>
   );
 };

@@ -8,8 +8,8 @@ interface SettingsDialogProps {
   onOpenChange: (open: boolean) => void;
   selectedSources: string[];
   onSelectedSourcesChange: (sources: string[]) => void;
-  lineView: boolean;
-  onLineViewChange: (lineView: boolean) => void;
+  displayMode: "compact" | "line" | "cards";
+  onDisplayModeChange: (mode: "compact" | "line" | "cards") => void;
   theme: "light" | "dark";
   onThemeChange: (theme: "light" | "dark") => void;
 }
@@ -19,8 +19,8 @@ export const SettingsDialog = ({
   onOpenChange,
   selectedSources,
   onSelectedSourcesChange,
-  lineView,
-  onLineViewChange,
+  displayMode,
+  onDisplayModeChange,
   theme,
   onThemeChange,
 }: SettingsDialogProps) => {
@@ -74,8 +74,17 @@ export const SettingsDialog = ({
             </div>
             <div className="flex gap-2">
               <button
-                onClick={() => onLineViewChange(true)}
-                className={`flex-1 px-3 py-2 text-xs font-medium uppercase tracking-wider transition-colors ${lineView
+                onClick={() => onDisplayModeChange("compact")}
+                className={`flex-1 px-3 py-2 text-xs font-medium uppercase tracking-wider transition-colors ${displayMode === "compact"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:text-foreground"
+                  }`}
+              >
+                Compact
+              </button>
+              <button
+                onClick={() => onDisplayModeChange("line")}
+                className={`flex-1 px-3 py-2 text-xs font-medium uppercase tracking-wider transition-colors ${displayMode === "line"
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted text-muted-foreground hover:text-foreground"
                   }`}
@@ -83,8 +92,8 @@ export const SettingsDialog = ({
                 Line
               </button>
               <button
-                onClick={() => onLineViewChange(false)}
-                className={`flex-1 px-3 py-2 text-xs font-medium uppercase tracking-wider transition-colors ${!lineView
+                onClick={() => onDisplayModeChange("cards")}
+                className={`flex-1 px-3 py-2 text-xs font-medium uppercase tracking-wider transition-colors ${displayMode === "cards"
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted text-muted-foreground hover:text-foreground"
                   }`}

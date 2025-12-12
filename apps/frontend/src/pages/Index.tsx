@@ -23,6 +23,7 @@ import { Switch } from "@/components/ui/switch";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { NewsItemSchema } from "@cryptowire/types";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type NotificationItem = {
   id: string;
@@ -53,9 +54,23 @@ const Index = () => {
     const saved = localStorage.getItem("theme");
     return saved === "light" ? "light" : "dark";
   });
-  const [lineView, setLineView] = useState(() => {
-    const saved = localStorage.getItem("lineView");
-    return saved ? JSON.parse(saved) : true;
+  const [displayMode, setDisplayMode] = useState<"compact" | "line" | "cards">(() => {
+    const saved = localStorage.getItem("displayMode");
+    if (saved === "compact" || saved === "line" || saved === "cards") return saved;
+
+    // Back-compat: older builds stored a boolean in `lineView`.
+    const legacy = localStorage.getItem("lineView");
+    if (legacy) {
+      try {
+        const parsed = JSON.parse(legacy);
+        return parsed ? "line" : "cards";
+      } catch {
+        // ignore
+      }
+    }
+
+    // Default stays as the previous default (line).
+    return "line";
   });
   const [savedArticles, setSavedArticles] = useState<string[]>(() => {
     const saved = localStorage.getItem("savedArticles");
@@ -70,10 +85,10 @@ const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Used by ticker/header components that want a small, frequently-updated set.
-  const { data: newsData, isLoading: newsLoading, error: newsError } = useNews({ limit: 40 });
+  const { data: newsData, isLoading: newsLoading, error: newsError } = useNews({ limit: 25 });
 
   // Used by the main list/cards view: loads 40 at a time as you scroll.
-  const infinite = useInfiniteNews({ pageSize: 40 });
+  const infinite = useInfiniteNews({ pageSize: 25 });
   const infiniteItems = infinite.data?.pages.flatMap((p) => p.items ?? []) ?? [];
 
   const [devToolsOpen, setDevToolsOpen] = useState(false);
@@ -113,8 +128,10 @@ const Index = () => {
     localStorage.setItem("theme", theme);
   }, [theme]);
   useEffect(() => {
-    localStorage.setItem("lineView", JSON.stringify(lineView));
-  }, [lineView]);
+    localStorage.setItem("displayMode", displayMode);
+    // Keep legacy key in sync for older deployments that might still read it.
+    localStorage.setItem("lineView", JSON.stringify(displayMode !== "cards"));
+  }, [displayMode]);
   useEffect(() => {
     localStorage.setItem("savedArticles", JSON.stringify(savedArticles));
   }, [savedArticles]);
@@ -167,7 +184,7 @@ const Index = () => {
           .map((n) => ({
             title: n.title,
             summary: n.summary || "",
-            time: formatDistanceToNow(new Date(n.publishedAt), { addSuffix: true }),
+            time: formatDistanceToNow(new Date(n.publishedAt), { addSuffix: true }).replace(/^about /, ''),
             category: n.category || "News",
             url: n.url,
             isBreaking: false,
@@ -190,25 +207,25 @@ const Index = () => {
     }));
   })();
 
-  // Auto-load more when near the bottom
+  // Auto-load more when near the bottom of the scrollable list.
   useEffect(() => {
     const el = document.getElementById("news-infinite-sentinel");
     if (!el) return;
-    if (!infinite.hasNextPage) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         const [entry] = entries;
-        if (entry?.isIntersecting && !infinite.isFetchingNextPage) {
-          void infinite.fetchNextPage();
-        }
+        if (!entry?.isIntersecting) return;
+        if (!infinite.hasNextPage) return;
+        if (infinite.isFetchingNextPage) return;
+        void infinite.fetchNextPage();
       },
       { root: null, rootMargin: "400px", threshold: 0 },
     );
 
     observer.observe(el);
     return () => observer.disconnect();
-  }, [infinite.hasNextPage, infinite.isFetchingNextPage]);
+  }, [infinite.hasNextPage, infinite.isFetchingNextPage, infinite.fetchNextPage]);
 
   const activeSources = sourcesWithNews.filter(source => selectedSources.includes(source.name));
 
@@ -239,9 +256,9 @@ const Index = () => {
       <PriceBar />
       <NewsTicker />
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1">
         {/* Desktop Sidebar */}
-        <div className="hidden lg:block">
+        <div className="hidden lg:block self-start">
           <Sidebar
             savedArticlesCount={savedArticles.length}
             showSavedOnly={showSavedOnly}
@@ -297,7 +314,7 @@ const Index = () => {
           </>
         )}
 
-        <main className="flex-1 p-2 sm:p-4 overflow-hidden">
+        <main className="flex-1 p-2 sm:p-4">
           {allNews.length === 0 && showSavedOnly ? (
             <div className="flex-1 flex items-center justify-center bg-card/30 border border-border rounded p-12 sm:p-20">
               <div className="text-center text-muted-foreground">
@@ -306,41 +323,48 @@ const Index = () => {
                 <p className="text-xs mt-2">Click the bookmark icon on any article to save it</p>
               </div>
             </div>
-          ) : lineView ? (
-            <div className="flex-1 overflow-y-auto p-1 sm:p-4 bg-card/30 border border-border rounded">
-              <div className="space-y-1 sm:space-y-2">
+          ) : displayMode === "compact" ? (
+            <div className="bg-card/30 border border-border rounded p-1 sm:p-4">
+              <div className="space-y-0.5 sm:space-y-1">
+                {(infinite.isLoading || infinite.isFetching) && allNews.length === 0 && !showSavedOnly ? (
+                  <div className="space-y-2">
+                    {Array.from({ length: 10 }).map((_, i) => (
+                      <div key={i} className="p-2">
+                        <Skeleton className="h-4 w-full" />
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+
                 {allNews.map((item, index) => (
-                  <div
-                    key={index}
-                    className="group hover-enabled p-2 rounded transition-colors"
-                  >
+                  <div key={index} className="group hover-enabled px-2 py-1.5 rounded transition-colors">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        {item.url ? (
-                          <a
-                            href={item.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs sm:text-sm text-foreground group-hover:text-primary transition-colors block"
-                            onClick={e => e.stopPropagation()}
-                          >
-                            {item.title}
-                          </a>
-                        ) : (
-                          <span className="text-xs sm:text-sm text-foreground block">{item.title}</span>
-                        )}
-                        <div className="flex flex-wrap items-center gap-2 mt-1 text-[10px] text-muted-foreground">
-                          <span className="text-news-time tabular-nums">
-                            {item.time}
-                          </span>
-                          <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary uppercase tracking-wider font-medium">
-                            {item.category}
-                          </span>
-                          <span>{item.sourceName}</span>
+                        <div className="flex items-start gap-3">
+                          <div className="hidden sm:block shrink-0 w-24">
+                            <div className="text-news-time tabular-nums text-[10px] whitespace-nowrap">{item.time}</div>
+                          </div>
+                          <div className="min-w-0 flex-1 flex items-baseline gap-2">
+                            {item.url ? (
+                              <a
+                                href={item.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[11px] sm:text-xs leading-snug text-foreground group-hover:text-primary transition-colors block"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {item.title}
+                              </a>
+                            ) : (
+                              <span className="text-[11px] sm:text-xs leading-snug text-foreground block">{item.title}</span>
+                            )}
+                            <span className="hidden sm:inline text-[10px] text-muted-foreground whitespace-nowrap">{item.sourceName}</span>
+                          </div>
                         </div>
                       </div>
+
                       <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 flex-col sm:flex-row">
-                        {devShowSchemaButtons && (
+                        {devShowSchemaButtons ? (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -351,19 +375,24 @@ const Index = () => {
                           >
                             <span className="text-[10px] text-muted-foreground hover:text-primary">schema</span>
                           </button>
-                        )}
-                        {item.url && (
+                        ) : null}
+
+                        {item.url ? (
                           <button
                             onClick={async (e) => {
                               e.stopPropagation();
                               if (navigator.share) {
                                 try {
                                   await navigator.share({ title: item.title, url: item.url });
-                                } catch { }
+                                } catch {
+                                  // ignore
+                                }
                               } else {
                                 await navigator.clipboard.writeText(item.url);
-                                if (typeof window !== 'undefined' && window.dispatchEvent) {
-                                  window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Link copied to clipboard' } }));
+                                if (typeof window !== "undefined" && window.dispatchEvent) {
+                                  window.dispatchEvent(
+                                    new CustomEvent("show-toast", { detail: { message: "Link copied to clipboard" } })
+                                  );
                                 }
                               }
                             }}
@@ -372,7 +401,8 @@ const Index = () => {
                           >
                             <Share2 className="h-5 w-5 text-muted-foreground hover:text-primary" />
                           </button>
-                        )}
+                        ) : null}
+
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -384,18 +414,164 @@ const Index = () => {
                           <Bookmark
                             className={`h-5 w-5 ${savedArticles.includes(item.title)
                               ? "fill-primary text-primary"
-                              : "text-muted-foreground hover:text-primary"
-                              }`}
+                              : "text-muted-foreground hover:text-primary"}`}
                           />
                         </button>
                       </div>
                     </div>
                   </div>
                 ))}
+
+                <div id="news-infinite-sentinel" className="h-8 w-full" />
+
+                {infinite.isFetchingNextPage ? (
+                  <div className="px-2 py-3">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="inline-block h-2 w-2 rounded-full bg-terminal-amber" />
+                      <span>Loading more…</span>
+                    </div>
+                  </div>
+                ) : null}
+
+                {!showSavedOnly && !infinite.isFetchingNextPage && allNews.length > 0 && !infinite.hasNextPage ? (
+                  <div className="px-2 py-4 text-xs text-muted-foreground">You’ve reached the end.</div>
+                ) : null}
+              </div>
+            </div>
+          ) : displayMode === "line" ? (
+            <div className="bg-card/30 border border-border rounded p-1 sm:p-4">
+              <div className="space-y-1 sm:space-y-2">
+                {(infinite.isLoading || infinite.isFetching) && allNews.length === 0 && !showSavedOnly ? (
+                  <div className="space-y-2">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <div key={i} className="p-2">
+                        <Skeleton className="h-4 w-full" />
+                        <div className="mt-2 flex gap-2">
+                          <Skeleton className="h-3 w-16" />
+                          <Skeleton className="h-3 w-24" />
+                          <Skeleton className="h-3 w-20" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+
+                {allNews.map((item, index) => (
+                  <div key={index} className="group hover-enabled p-2 rounded transition-colors">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        {item.url ? (
+                          <a
+                            href={item.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs sm:text-sm text-foreground group-hover:text-primary transition-colors block"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {item.title}
+                          </a>
+                        ) : (
+                          <span className="text-xs sm:text-sm text-foreground block">{item.title}</span>
+                        )}
+                        <div className="flex flex-wrap items-center gap-2 mt-1 text-[10px] text-muted-foreground">
+                          <span className="text-news-time tabular-nums">{item.time}</span>
+                          <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary uppercase tracking-wider font-medium">
+                            {item.category}
+                          </span>
+                          <span>{item.sourceName}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 flex-col sm:flex-row">
+                        {devShowSchemaButtons ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              showNewsItemSchema();
+                            }}
+                            className="transition-colors"
+                            title="Show news item schema"
+                          >
+                            <span className="text-[10px] text-muted-foreground hover:text-primary">schema</span>
+                          </button>
+                        ) : null}
+
+                        {item.url ? (
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (navigator.share) {
+                                try {
+                                  await navigator.share({ title: item.title, url: item.url });
+                                } catch {
+                                  // ignore
+                                }
+                              } else {
+                                await navigator.clipboard.writeText(item.url);
+                                if (typeof window !== "undefined" && window.dispatchEvent) {
+                                  window.dispatchEvent(
+                                    new CustomEvent("show-toast", { detail: { message: "Link copied to clipboard" } })
+                                  );
+                                }
+                              }
+                            }}
+                            className="transition-colors"
+                            title="Share article"
+                          >
+                            <Share2 className="h-5 w-5 text-muted-foreground hover:text-primary" />
+                          </button>
+                        ) : null}
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleSaveArticle(item.title);
+                          }}
+                          className="transition-colors"
+                          title={savedArticles.includes(item.title) ? "Remove from saved" : "Save article"}
+                        >
+                          <Bookmark
+                            className={`h-5 w-5 ${savedArticles.includes(item.title)
+                              ? "fill-primary text-primary"
+                              : "text-muted-foreground hover:text-primary"}`}
+                          />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                <div id="news-infinite-sentinel" className="h-8 w-full" />
+
+                {infinite.isFetchingNextPage ? (
+                  <div className="px-2 py-3">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="inline-block h-2 w-2 rounded-full bg-terminal-amber" />
+                      <span>Loading more…</span>
+                    </div>
+                  </div>
+                ) : null}
+
+                {!showSavedOnly && !infinite.isFetchingNextPage && allNews.length > 0 && !infinite.hasNextPage ? (
+                  <div className="px-2 py-4 text-xs text-muted-foreground">You’ve reached the end.</div>
+                ) : null}
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-3 overflow-y-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-3">
+              {(infinite.isLoading || infinite.isFetching) && allNews.length === 0 && !showSavedOnly ? (
+                <>
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="p-3 sm:p-4 bg-card border border-border">
+                      <Skeleton className="h-4 w-2/3" />
+                      <Skeleton className="mt-3 h-3 w-full" />
+                      <Skeleton className="mt-2 h-3 w-5/6" />
+                      <Skeleton className="mt-4 h-3 w-24" />
+                    </div>
+                  ))}
+                </>
+              ) : null}
+
               {allNews.map((item, index) => (
                 <NewsCard
                   key={index}
@@ -411,7 +587,21 @@ const Index = () => {
                   onShowSchema={showNewsItemSchema}
                 />
               ))}
-              <div id="news-infinite-sentinel" className="h-1 w-full" />
+
+              <div id="news-infinite-sentinel" className="h-8 w-full" />
+
+              {infinite.isFetchingNextPage ? (
+                <div className="col-span-full px-2 py-3">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="inline-block h-2 w-2 rounded-full bg-terminal-amber" />
+                    <span>Loading more…</span>
+                  </div>
+                </div>
+              ) : null}
+
+              {!showSavedOnly && !infinite.isFetchingNextPage && allNews.length > 0 && !infinite.hasNextPage ? (
+                <div className="col-span-full px-2 py-4 text-xs text-muted-foreground">You’ve reached the end.</div>
+              ) : null}
             </div>
           )}
         </main>
@@ -512,8 +702,8 @@ const Index = () => {
         onOpenChange={setSettingsOpen}
         selectedSources={selectedSources}
         onSelectedSourcesChange={setSelectedSources}
-        lineView={lineView}
-        onLineViewChange={setLineView}
+        displayMode={displayMode}
+        onDisplayModeChange={setDisplayMode}
         theme={theme}
         onThemeChange={setTheme}
       />

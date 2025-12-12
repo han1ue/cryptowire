@@ -2,7 +2,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { fetchNews } from "@/lib/apiClient";
 
 export const useInfiniteNews = (params?: { pageSize?: number; retentionDays?: number }) => {
-    const pageSize = params?.pageSize ?? 40;
+    const pageSize = params?.pageSize ?? 25;
 
     return useInfiniteQuery({
         queryKey: ["news-infinite", pageSize, params?.retentionDays ?? null],
