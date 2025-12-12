@@ -41,6 +41,18 @@ jobs:
 
             if [ "${http_code}" = "200" ]; then
               cat /tmp/refresh_body.json
+              # If refresh succeeded but returned 0 items, emit stats + diagnose output to aid debugging.
+              if python3 - <<'PY'
+import json
+with open('/tmp/refresh_body.json','r',encoding='utf-8') as f:
+  data=json.load(f)
+print(int(data.get('count') or 0))
+PY
+              then :; fi | grep -qx "0"; then
+                echo "Refresh returned count=0; fetching /api/stats and /api/news/diagnose for diagnostics..."
+                curl -sS "${base}/api/stats" | cat || true
+                curl -sS -H "x-refresh-secret: ${REFRESH_SECRET}" "${base}/api/news/diagnose" | cat || true
+              fi
               return 0
             fi
 

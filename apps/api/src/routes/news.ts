@@ -67,6 +67,94 @@ export const createNewsRouter = (
         return res.json({ ok: true, count: items.length, refreshedAt: new Date().toISOString() });
     });
 
+    // Debug helper to understand why refresh returns 0 items in production.
+    // Protected by the same refresh secret as /news/refresh.
+    router.get("/news/diagnose", async (req, res) => {
+        const expected = opts?.refreshSecret;
+        const isVercelCron = req.header("x-vercel-cron") === "1";
+        if (!isVercelCron && expected && req.header("x-refresh-secret") !== expected) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+
+        const apiKeyPresent = Boolean(process.env.COINDESK_API_KEY);
+        const baseUrl = process.env.COINDESK_BASE_URL ?? "https://data-api.coindesk.com";
+        const endpointPath = process.env.COINDESK_NEWS_ENDPOINT_PATH ?? "/news/v1/article/list";
+        const sourceIds = process.env.COINDESK_SOURCE_IDS ?? "";
+
+        const buildUrl = (includeSources: boolean) => {
+            const url = new URL(endpointPath, baseUrl);
+            url.searchParams.set("limit", "5");
+            url.searchParams.set("lang", "EN");
+            if (includeSources && sourceIds) url.searchParams.set("source_ids", sourceIds);
+            // CoinDesk Data API supports api_key as a query param.
+            if (process.env.COINDESK_API_KEY) url.searchParams.set("api_key", process.env.COINDESK_API_KEY);
+            return url;
+        };
+
+        const probeOnce = async (includeSources: boolean) => {
+            const url = buildUrl(includeSources);
+            try {
+                const resp = await fetch(url.toString(), { headers: { Accept: "application/json" } });
+                const text = await resp.text();
+
+                let json: any = null;
+                try {
+                    json = text ? JSON.parse(text) : null;
+                } catch {
+                    json = null;
+                }
+
+                const topKeys = json && typeof json === "object" ? Object.keys(json).slice(0, 30) : [];
+                const dataArr = Array.isArray(json?.Data)
+                    ? json.Data
+                    : Array.isArray(json?.data)
+                        ? json.data
+                        : Array.isArray(json?.articles)
+                            ? json.articles
+                            : null;
+                const itemKeys = Array.isArray(dataArr) && dataArr[0] && typeof dataArr[0] === "object"
+                    ? Object.keys(dataArr[0]).slice(0, 40)
+                    : [];
+
+                return {
+                    includeSources,
+                    url: url.origin + url.pathname + "?" + url.searchParams.toString().replace(process.env.COINDESK_API_KEY ?? "", "***"),
+                    status: resp.status,
+                    ok: resp.ok,
+                    bodyIsJson: json !== null,
+                    topKeys,
+                    dataCount: Array.isArray(dataArr) ? dataArr.length : 0,
+                    firstItemKeys: itemKeys,
+                    bodyPreview: text.slice(0, 800),
+                };
+            } catch (err: any) {
+                return {
+                    includeSources,
+                    url: url.toString().replace(process.env.COINDESK_API_KEY ?? "", "***"),
+                    status: null,
+                    ok: false,
+                    bodyIsJson: false,
+                    topKeys: [],
+                    dataCount: 0,
+                    firstItemKeys: [],
+                    error: String(err?.message ?? err),
+                };
+            }
+        };
+
+        const withSources = await probeOnce(true);
+        const withoutSources = await probeOnce(false);
+
+        return res.json({
+            ok: true,
+            coindeskApiKeyPresent: apiKeyPresent,
+            probes: {
+                withSources,
+                withoutSources,
+            },
+        });
+    });
+
     router.get("/news", async (req, res) => {
         const querySchema = z.object({
             // Accept a larger input range but clamp below to keep providers happy.
