@@ -81,7 +81,7 @@ interface SidebarProps {
   showSavedOnly?: boolean;
   onToggleSavedView?: () => void;
   savedArticleTitles?: string[];
-  allNews?: Array<{ title: string; time: string; sourceName: string; category?: string }>;
+  allNews?: Array<{ title: string; time: string; sourceName: string; category?: string; url?: string }>;
   selectedCategory?: string;
   onCategorySelect?: (cat: string) => void;
 }
@@ -315,20 +315,43 @@ export const Sidebar = ({
 
         {savedArticlesCount > 0 && (
           <div className="mt-3 space-y-2">
-            {savedArticlesPreviews.map((article, index) => (
-              <div
-                key={index}
-                className="text-[10px] text-muted-foreground border-l-2 border-primary/30 pl-2 py-1 hover:border-primary transition-colors cursor-pointer"
-              >
-                <div className="line-clamp-2 text-foreground mb-1">
-                  {article.title}
+            {savedArticlesPreviews.map((article, index) => {
+              // Try to find the full article object in allNews to get the URL
+              const full = allNews.find(a => a.title === article.title);
+              const url = full && full.url;
+              return url ? (
+                <a
+                  key={index}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block text-[10px] text-muted-foreground border-l-2 border-primary/30 pl-2 py-1 hover:border-primary transition-colors cursor-pointer"
+                  title={article.title}
+                >
+                  <div className="line-clamp-2 text-foreground mb-1">
+                    {article.title}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-terminal-green">{article.time}</span>
+                    <span>• {article.sourceName}</span>
+                  </div>
+                </a>
+              ) : (
+                <div
+                  key={index}
+                  className="text-[10px] text-muted-foreground border-l-2 border-primary/30 pl-2 py-1 hover:border-primary transition-colors cursor-pointer"
+                  title={article.title}
+                >
+                  <div className="line-clamp-2 text-foreground mb-1">
+                    {article.title}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-terminal-green">{article.time}</span>
+                    <span>• {article.sourceName}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-terminal-green">{article.time}</span>
-                  <span>• {article.sourceName}</span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
             {savedArticlesCount > 3 && (
               <div className="text-[10px] text-muted-foreground pl-2">
                 +{savedArticlesCount - 3} more
