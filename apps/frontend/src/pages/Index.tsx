@@ -374,7 +374,7 @@ const Index = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background flex flex-col scanlines">
+    <div className="min-h-screen bg-background flex flex-col scanlines overflow-x-hidden">
       <Seo
         title="cryptowi.re | Real-Time Crypto News Aggregator"
         description="Real-time crypto news aggregator. Live headlines from CoinDesk, Decrypt, Cointelegraph, Blockworks, and more."
