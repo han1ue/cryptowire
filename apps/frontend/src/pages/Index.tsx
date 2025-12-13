@@ -9,7 +9,7 @@ import { useNews } from "@/hooks/useNews";
 import { useInfiniteNews } from "@/hooks/useInfiniteNews";
 import { useState, useEffect } from "react";
 import { toast } from "@/components/ui/sonner";
-import { Bookmark, Share2 } from "lucide-react";
+import { Bookmark, MoreHorizontal, Share2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import {
   AlertDialog,
@@ -25,6 +25,12 @@ import { NewsItemSchema } from "@cryptowire/types";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Seo } from "@/components/Seo";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type NotificationItem = {
   id: string;
@@ -488,7 +494,67 @@ const Index = () => {
                         </div>
                       </div>
 
-                      <div className="hover-actions flex gap-3 transition-opacity flex-shrink-0 flex-col sm:flex-row">
+                      {/* Mobile: collapse actions into a single menu to keep rows compact */}
+                      <div className="sm:hidden flex-shrink-0">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              type="button"
+                              className="relative p-1 rounded text-muted-foreground hover:text-foreground transition-colors"
+                              onClick={(e) => e.stopPropagation()}
+                              title="More"
+                            >
+                              <MoreHorizontal className="h-5 w-5" />
+                              {savedArticles.includes(item.title) ? (
+                                <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-primary ring-2 ring-background" />
+                              ) : null}
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                            {devShowSchemaButtons ? (
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  showNewsItemSchema();
+                                }}
+                              >
+                                Schema
+                              </DropdownMenuItem>
+                            ) : null}
+                            {item.url ? (
+                              <DropdownMenuItem
+                                onClick={async () => {
+                                  if (navigator.share) {
+                                    try {
+                                      await navigator.share({ title: item.title, url: item.url });
+                                    } catch {
+                                      // ignore
+                                    }
+                                  } else {
+                                    await navigator.clipboard.writeText(item.url);
+                                    if (typeof window !== "undefined" && window.dispatchEvent) {
+                                      window.dispatchEvent(
+                                        new CustomEvent("show-toast", { detail: { message: "Link copied to clipboard" } })
+                                      );
+                                    }
+                                  }
+                                }}
+                              >
+                                Share
+                              </DropdownMenuItem>
+                            ) : null}
+                            <DropdownMenuItem
+                              onClick={() => {
+                                toggleSaveArticle(item.title);
+                              }}
+                            >
+                              {savedArticles.includes(item.title) ? "Unsave" : "Save"}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+
+                      {/* Desktop/tablet: keep existing hover-reveal buttons */}
+                      <div className="hover-actions hidden sm:flex gap-3 transition-opacity flex-shrink-0 flex-row">
                         {devShowSchemaButtons ? (
                           <button
                             onClick={(e) => {
@@ -617,7 +683,67 @@ const Index = () => {
                         </div>
                       </div>
 
-                      <div className="hover-actions flex gap-3 transition-opacity flex-shrink-0 flex-col sm:flex-row">
+                      {/* Mobile: collapse actions into a single menu to keep rows compact */}
+                      <div className="sm:hidden flex-shrink-0">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              type="button"
+                              className="relative p-1 rounded text-muted-foreground hover:text-foreground transition-colors"
+                              onClick={(e) => e.stopPropagation()}
+                              title="More"
+                            >
+                              <MoreHorizontal className="h-5 w-5" />
+                              {savedArticles.includes(item.title) ? (
+                                <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-primary ring-2 ring-background" />
+                              ) : null}
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                            {devShowSchemaButtons ? (
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  showNewsItemSchema();
+                                }}
+                              >
+                                Schema
+                              </DropdownMenuItem>
+                            ) : null}
+                            {item.url ? (
+                              <DropdownMenuItem
+                                onClick={async () => {
+                                  if (navigator.share) {
+                                    try {
+                                      await navigator.share({ title: item.title, url: item.url });
+                                    } catch {
+                                      // ignore
+                                    }
+                                  } else {
+                                    await navigator.clipboard.writeText(item.url);
+                                    if (typeof window !== "undefined" && window.dispatchEvent) {
+                                      window.dispatchEvent(
+                                        new CustomEvent("show-toast", { detail: { message: "Link copied to clipboard" } })
+                                      );
+                                    }
+                                  }
+                                }}
+                              >
+                                Share
+                              </DropdownMenuItem>
+                            ) : null}
+                            <DropdownMenuItem
+                              onClick={() => {
+                                toggleSaveArticle(item.title);
+                              }}
+                            >
+                              {savedArticles.includes(item.title) ? "Unsave" : "Save"}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+
+                      {/* Desktop/tablet: keep existing hover-reveal buttons */}
+                      <div className="hover-actions hidden sm:flex gap-3 transition-opacity flex-shrink-0 flex-row">
                         {devShowSchemaButtons ? (
                           <button
                             onClick={(e) => {
