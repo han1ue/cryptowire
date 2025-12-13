@@ -442,7 +442,9 @@ const Index = () => {
           </>
         )}
 
-        <main className="flex-1 p-2 sm:p-4">
+        <main
+          className={`flex-1 ${displayMode === "cards" ? "p-2 sm:p-4" : "px-0 py-2 sm:p-4"}`}
+        >
           {allNews.length === 0 && showSavedOnly ? (
             <div className="flex-1 flex items-center justify-center bg-card/30 border border-border rounded p-12 sm:p-20">
               <div className="text-center text-muted-foreground">
@@ -452,7 +454,7 @@ const Index = () => {
               </div>
             </div>
           ) : displayMode === "compact" ? (
-            <div className="bg-card/30 border border-border rounded px-0 sm:p-4">
+            <div className="bg-card/30 border border-border rounded p-1 sm:p-4">
               <div className="space-y-0.5 sm:space-y-1">
                 {(infinite.isLoading || infinite.isFetching) && allNews.length === 0 && !showSavedOnly ? (
                   <div className="space-y-2">
@@ -630,7 +632,7 @@ const Index = () => {
               </div>
             </div>
           ) : displayMode === "line" ? (
-            <div className="bg-card/30 border border-border rounded px-0 sm:p-4">
+            <div className="bg-card/30 border border-border rounded p-1 sm:p-4">
               <div className="space-y-1 sm:space-y-2">
                 {(infinite.isLoading || infinite.isFetching) && allNews.length === 0 && !showSavedOnly ? (
                   <div className="space-y-2">
