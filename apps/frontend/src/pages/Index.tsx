@@ -452,7 +452,7 @@ const Index = () => {
               </div>
             </div>
           ) : displayMode === "compact" ? (
-            <div className="bg-card/30 border border-border rounded p-1 sm:p-4">
+            <div className="bg-card/30 border border-border rounded p-0.5 sm:p-4">
               <div className="space-y-0.5 sm:space-y-1">
                 {(infinite.isLoading || infinite.isFetching) && allNews.length === 0 && !showSavedOnly ? (
                   <div className="space-y-2">
@@ -465,7 +465,7 @@ const Index = () => {
                 ) : null}
 
                 {allNews.map((item, index) => (
-                  <div key={index} className="hover-group hover-enabled px-2 py-1.5 rounded transition-colors border-b border-border/60 last:border-b-0">
+                  <div key={index} className="hover-group hover-enabled px-1.5 py-1.5 rounded transition-colors border-b border-border/60 last:border-b-0">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start gap-3">
@@ -630,7 +630,7 @@ const Index = () => {
               </div>
             </div>
           ) : displayMode === "line" ? (
-            <div className="bg-card/30 border border-border rounded p-1 sm:p-4">
+            <div className="bg-card/30 border border-border rounded p-0.5 sm:p-4">
               <div className="space-y-1 sm:space-y-2">
                 {(infinite.isLoading || infinite.isFetching) && allNews.length === 0 && !showSavedOnly ? (
                   <div className="space-y-2">
@@ -648,7 +648,7 @@ const Index = () => {
                 ) : null}
 
                 {allNews.map((item, index) => (
-                  <div key={index} className="hover-group hover-enabled p-2 rounded transition-colors border-b border-border/60 last:border-b-0">
+                  <div key={index} className="hover-group hover-enabled p-1.5 rounded transition-colors border-b border-border/60 last:border-b-0">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         {item.url ? (
