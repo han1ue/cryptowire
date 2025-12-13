@@ -168,7 +168,10 @@ export const Sidebar = ({
                 : 'text-terminal-red';
 
             const fngValue = typeof o?.fearGreed?.value === 'number' && Number.isFinite(o.fearGreed.value) ? o.fearGreed.value : null;
-            const fngClass = o?.fearGreed?.classification ?? null;
+            let fngClass = o?.fearGreed?.classification ?? null;
+            if (fngClass) {
+              fngClass = fngClass.replace(/^Extreme /i, 'Ultra ');
+            }
             const fngTone = (() => {
               if (!fngClass) return 'text-muted-foreground';
               const v = fngClass.toLowerCase();
