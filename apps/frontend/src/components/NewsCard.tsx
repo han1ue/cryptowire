@@ -31,7 +31,7 @@ export const NewsCard = ({
 }: NewsCardProps) => {
   return (
     <article
-      className="group p-3 sm:p-4 bg-card border border-border hover:border-primary/30 transition-all duration-200 cursor-pointer terminal-glow flex flex-col h-full"
+      className="hover-group hover-border p-3 sm:p-4 bg-card border border-border transition-all duration-200 cursor-pointer terminal-glow flex flex-col h-full"
       onClick={() => {
         if (url) window.open(url, '_blank', 'noopener,noreferrer');
       }}
@@ -66,12 +66,12 @@ export const NewsCard = ({
           className="block"
           onClick={e => e.stopPropagation()}
         >
-          <h3 className="text-sm font-medium text-foreground mb-2 group-hover:text-primary transition-colors line-clamp-2">
+          <h3 className="hover-title text-sm font-medium text-foreground mb-2 transition-colors line-clamp-2">
             {title}
           </h3>
         </a>
       ) : (
-        <h3 className="text-sm font-medium text-foreground mb-2 group-hover:text-primary transition-colors line-clamp-2">
+        <h3 className="hover-title text-sm font-medium text-foreground mb-2 transition-colors line-clamp-2">
           {title}
         </h3>
       )}

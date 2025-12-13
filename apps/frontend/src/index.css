@@ -134,6 +134,27 @@
     .hover-enabled:hover {
       background-color: hsl(var(--muted) / 0.3);
     }
+
+    .hover-group:hover .hover-title {
+      @apply text-primary;
+    }
+
+    .hover-group .hover-actions {
+      opacity: 0;
+    }
+
+    .hover-group:hover .hover-actions {
+      opacity: 1;
+    }
+
+    .hover-border:hover {
+      @apply border-primary/30;
+    }
+  }
+
+  /* On touch devices (no hover), keep actions visible */
+  .hover-actions {
+    opacity: 1;
   }
 
   .scanlines {

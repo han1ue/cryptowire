@@ -459,7 +459,7 @@ const Index = () => {
                 ) : null}
 
                 {allNews.map((item, index) => (
-                  <div key={index} className="group hover-enabled px-2 py-1.5 rounded transition-colors">
+                  <div key={index} className="hover-group hover-enabled px-2 py-1.5 rounded transition-colors border-b border-border/60 last:border-b-0">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start gap-3">
@@ -472,20 +472,23 @@ const Index = () => {
                                 href={item.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-[11px] sm:text-xs leading-snug text-foreground group-hover:text-primary transition-colors block"
+                                className="hover-title text-[11px] sm:text-xs leading-snug text-foreground transition-colors block line-clamp-2"
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                {item.title}
+                                <span>{item.title}</span>
+                                <span className="text-[10px] text-muted-foreground">&nbsp;·&nbsp;{item.sourceName}</span>
                               </a>
                             ) : (
-                              <span className="text-[11px] sm:text-xs leading-snug text-foreground block">{item.title}</span>
+                              <span className="text-[11px] sm:text-xs leading-snug text-foreground block line-clamp-2">
+                                <span>{item.title}</span>
+                                <span className="text-[10px] text-muted-foreground">&nbsp;·&nbsp;{item.sourceName}</span>
+                              </span>
                             )}
-                            <span className="hidden sm:inline text-[10px] text-muted-foreground whitespace-nowrap">{item.sourceName}</span>
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 flex-col sm:flex-row">
+                      <div className="hover-actions flex gap-3 transition-opacity flex-shrink-0 flex-col sm:flex-row">
                         {devShowSchemaButtons ? (
                           <button
                             onClick={(e) => {
@@ -579,7 +582,7 @@ const Index = () => {
                 ) : null}
 
                 {allNews.map((item, index) => (
-                  <div key={index} className="group hover-enabled p-2 rounded transition-colors">
+                  <div key={index} className="hover-group hover-enabled p-2 rounded transition-colors border-b border-border/60 last:border-b-0">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         {item.url ? (
@@ -587,7 +590,7 @@ const Index = () => {
                             href={item.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-xs sm:text-sm text-foreground group-hover:text-primary transition-colors block"
+                            className="hover-title text-xs sm:text-sm text-foreground transition-colors block"
                             onClick={(e) => e.stopPropagation()}
                           >
                             {item.title}
@@ -614,7 +617,7 @@ const Index = () => {
                         </div>
                       </div>
 
-                      <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 flex-col sm:flex-row">
+                      <div className="hover-actions flex gap-3 transition-opacity flex-shrink-0 flex-col sm:flex-row">
                         {devShowSchemaButtons ? (
                           <button
                             onClick={(e) => {
