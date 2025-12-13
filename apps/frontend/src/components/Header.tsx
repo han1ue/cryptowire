@@ -115,7 +115,6 @@ export const Header = ({
             <Menu className="h-5 w-5 text-muted-foreground" />
           </button>
           <a href="/" className="flex items-center gap-2 group cursor-pointer select-none">
-            <Newspaper className="h-5 w-5 text-primary text-glow group-hover:scale-110 transition-transform" />
             <span className="text-lg font-bold text-foreground tracking-tight group-hover:text-primary transition-colors">
               CRYPTO<span className="text-primary">WI</span>
               <span className="text-primary">.</span>
