@@ -4,7 +4,7 @@ import { NewsTicker } from "@/components/NewsTicker";
 import { Sidebar } from "@/components/Sidebar";
 import { SettingsDialog } from "@/components/SettingsDialog";
 import { NewsCard } from "@/components/NewsCard";
-import { sources as sourcesConfig } from "@/data/sources";
+import { sources as sourcesConfig, SourceId, SourceName } from "@/data/sources";
 import { useNews } from "@/hooks/useNews";
 import { useInfiniteNews } from "@/hooks/useInfiniteNews";
 import { useState, useEffect } from "react";
@@ -45,24 +45,26 @@ const initialNotifications: NotificationItem[] = [
 ];
 
 const Index = () => {
-  const DEFAULT_SELECTED_SOURCE_IDS = ["coindesk", "decrypt", "cointelegraph", "blockworks"] as const;
+  const DEFAULT_SELECTED_SOURCE_IDS: SourceId[] = ["coindesk", "decrypt", "cointelegraph", "blockworks"];
 
-  const normalizeSelectedSources = (raw: unknown): string[] => {
-    const byId = new Set(sourcesConfig.map((s) => s.id));
-    const nameToId = new Map(sourcesConfig.map((s) => [s.name.toLowerCase(), s.id] as const));
+  const normalizeSelectedSources = (raw: unknown): SourceId[] => {
+    const byId = new Set<SourceId>(sourcesConfig.map((s) => s.id));
+    const nameToId = new Map<string, SourceId>(
+      sourcesConfig.map((s) => [s.name.toLowerCase(), s.id])
+    );
 
     const arr = Array.isArray(raw) ? raw : [];
     const normalized = arr
       .map((v) => String(v).trim())
-      .map((v) => nameToId.get(v.toLowerCase()) ?? v)
-      .map((v) => v.toLowerCase())
-      .filter((id) => byId.has(id));
+      .map((v) => nameToId.get(v.toLowerCase()) ?? (v.toLowerCase() as SourceId));
 
-    // De-dupe preserving order
-    return Array.from(new Set(normalized));
+    const isSourceId = (s: string): s is SourceId => byId.has(s as SourceId);
+
+    // De-dupe preserving order and filter invalid ids
+    return Array.from(new Set(normalized)).filter(isSourceId);
   };
 
-  const [selectedSources, setSelectedSources] = useState<string[]>(() => {
+  const [selectedSources, setSelectedSources] = useState<SourceId[]>(() => {
     const saved = localStorage.getItem("selectedSources");
     if (!saved) return Array.from(DEFAULT_SELECTED_SOURCE_IDS);
     try {
@@ -227,8 +229,12 @@ const Index = () => {
     );
   };
 
-  const sourceNameToMeta = new Map(availableSources.map((s) => [s.name, s] as const));
-  const sourceNameToId = new Map(availableSources.map((s) => [s.name, s.id] as const));
+  const sourceNameToMeta = new Map<string, typeof availableSources[number]>(
+    availableSources.map((s) => [s.name.toLowerCase(), s])
+  );
+  const sourceNameToId = new Map<string, SourceId>(
+    availableSources.map((s) => [s.name.toLowerCase(), s.id])
+  );
 
   // Auto-load more when near the bottom of the scrollable list.
   useEffect(() => {
@@ -271,14 +277,14 @@ const Index = () => {
   // Apply source selection using the backend-provided source names.
   const filteredBySource = baseItems.filter((item) => {
     const sourceName = item?.source ?? "";
-    const id = sourceNameToId.get(sourceName);
+    const id = sourceNameToId.get(sourceName.toLowerCase());
     if (!id) return false;
     return selectedSources.includes(id);
   });
 
   const sidebarFilteredBySource = sidebarBaseItems.filter((item) => {
     const sourceName = item?.source ?? "";
-    const id = sourceNameToId.get(sourceName);
+    const id = sourceNameToId.get(sourceName.toLowerCase());
     if (!id) return false;
     return selectedSources.includes(id);
   });
@@ -289,7 +295,7 @@ const Index = () => {
 
   const allNews = filteredBySaved
     .map((n) => {
-      const meta = sourceNameToMeta.get(n.source);
+      const meta = sourceNameToMeta.get(String(n.source).toLowerCase());
       return {
         title: n.title,
         summary: n.summary || "",
@@ -310,7 +316,7 @@ const Index = () => {
 
   const sidebarNews = sidebarFilteredBySource
     .map((n) => {
-      const meta = sourceNameToMeta.get(n.source);
+      const meta = sourceNameToMeta.get(String(n.source).toLowerCase());
       return {
         title: n.title,
         summary: n.summary || "",
@@ -797,7 +803,7 @@ const Index = () => {
         onOpenChange={setSettingsOpen}
         availableSources={availableSources}
         selectedSources={selectedSources}
-        onSelectedSourcesChange={(next) => {
+        onSelectedSourcesChange={(next: SourceId[]) => {
           setSelectedSources(next);
         }}
         displayMode={displayMode}

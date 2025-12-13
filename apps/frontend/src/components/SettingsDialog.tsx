@@ -1,13 +1,14 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Newspaper, LayoutList, Sun, Moon } from "lucide-react";
+import { SourceId, SourceName } from "@/data/sources";
 import { Switch } from "@/components/ui/switch";
 
 interface SettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  availableSources: { id: string; name: string }[];
-  selectedSources: string[]; // source ids
-  onSelectedSourcesChange: (sources: string[]) => void; // source ids
+  availableSources: ReadonlyArray<{ id: SourceId; name: SourceName; icon?: string }>;
+  selectedSources: SourceId[]; // source ids
+  onSelectedSourcesChange: (sources: SourceId[]) => void; // source ids
   displayMode: "compact" | "line" | "cards";
   onDisplayModeChange: (mode: "compact" | "line" | "cards") => void;
   theme: "light" | "dark";
@@ -25,7 +26,7 @@ export const SettingsDialog = ({
   theme,
   onThemeChange,
 }: SettingsDialogProps) => {
-  const toggleSource = (sourceId: string) => {
+  const toggleSource = (sourceId: SourceId) => {
     const isSelected = selectedSources.includes(sourceId);
     if (isSelected) {
       onSelectedSourcesChange(selectedSources.filter((s) => s !== sourceId));
