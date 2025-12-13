@@ -22,6 +22,10 @@ export const Header = ({
   onNotificationsViewed = () => { },
   onMenuClick = () => { },
 }: HeaderProps) => {
+  const [isOnline, setIsOnline] = useState<boolean>(() => {
+    if (typeof navigator === "undefined") return true;
+    return navigator.onLine;
+  });
   const [currentTime, setCurrentTime] = useState(
     new Date().toLocaleTimeString("en-US", {
       hour12: false,
@@ -65,6 +69,19 @@ export const Header = ({
     }, 1000);
 
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
   }, []);
 
   const closeNotifications = () => {
@@ -122,8 +139,14 @@ export const Header = ({
             </span>
           </a>
           <div className="hidden sm:flex items-center gap-1 px-2 py-1 bg-muted/50 rounded">
-            <Activity className="h-3 w-3 text-terminal-green pulse-glow" />
-            <span className="text-[10px] text-terminal-green uppercase">Connected</span>
+            <Activity
+              className={`h-3 w-3 ${isOnline ? "text-terminal-green pulse-glow" : "text-terminal-red"}`}
+            />
+            <span
+              className={`text-[10px] uppercase ${isOnline ? "text-terminal-green" : "text-terminal-red"}`}
+            >
+              {isOnline ? "Connected" : "Disconnected"}
+            </span>
           </div>
         </div>
 

@@ -18,7 +18,7 @@ export const createNewsRouter = (
         if (v === "decrypt") return "Decrypt";
         if (v === "cointelegraph") return "Cointelegraph";
         if (v === "blockworks") return "Blockworks";
-        if (v === "bitcoinmagazine") return "Bitcoin Magazine";
+        if (v === "bitcoin.com") return "bitcoin.com";
         // Best-effort title casing for unknown ids
         return value
             .trim()
@@ -33,7 +33,7 @@ export const createNewsRouter = (
         { id: "decrypt", name: "Decrypt" },
         { id: "cointelegraph", name: "Cointelegraph" },
         { id: "blockworks", name: "Blockworks" },
-        { id: "bitcoinmagazine", name: "Bitcoin Magazine" },
+        { id: "bitcoin.com", name: "bitcoin.com" },
     ] as const;
 
     // Backend-owned defaults: these are the sources we show on first load.
