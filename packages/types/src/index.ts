@@ -23,7 +23,6 @@ export type NewsSource = z.infer<typeof NewsSourceSchema>;
 export const NewsListResponseSchema = z.object({
     items: z.array(NewsItemSchema),
     sources: z.array(NewsSourceSchema),
-    defaultSources: z.array(z.string()),
 });
 
 export type NewsListResponse = z.infer<typeof NewsListResponseSchema>;

@@ -20,8 +20,8 @@ export const sources = [
         icon: "🧵",
     },
     {
-        id: "bitcoinmagazine",
-        name: "Bitcoin Magazine",
+        id: "bitcoin.com",
+        name: "bitcoin.com",
         icon: "₿",
     },
 ] as const;

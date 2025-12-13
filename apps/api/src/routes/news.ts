@@ -36,9 +36,6 @@ export const createNewsRouter = (
         { id: "bitcoin.com", name: "bitcoin.com" },
     ] as const;
 
-    // Backend-owned defaults: these are the sources we show on first load.
-    const DEFAULT_SOURCE_IDS = ["coindesk", "decrypt", "cointelegraph", "blockworks"] as const;
-
     const sourceIdToName = (id: string) => {
         const found = SUPPORTED_SOURCES.find((s) => s.id === id);
         return found?.name ?? normalizeSourceName(id);
@@ -242,8 +239,7 @@ export const createNewsRouter = (
 
         const supportedIds = new Set<string>(SUPPORTED_SOURCES.map((s) => s.id));
         const requested = requestedSourceIds.filter((id) => supportedIds.has(id));
-        const defaultSourceNames = new Set(DEFAULT_SOURCE_IDS.map(sourceIdToName));
-        const requestedSourceNames = requested.length > 0 ? new Set(requested.map(sourceIdToName)) : defaultSourceNames;
+        const requestedSourceNames = requested.length > 0 ? new Set(requested.map(sourceIdToName)) : null;
 
         const getFilteredPageFromStore = async (): Promise<unknown[]> => {
 
@@ -264,7 +260,7 @@ export const createNewsRouter = (
 
                 for (const item of chunk as any[]) {
                     const src = typeof item?.source === "string" ? item.source : "";
-                    if (!requestedSourceNames.has(src)) continue;
+                    if (requestedSourceNames && !requestedSourceNames.has(src)) continue;
 
                     if (requestedCategoryKey) {
                         const cat = typeof item?.category === "string" ? item.category.trim().toLowerCase() : "";
@@ -300,7 +296,7 @@ export const createNewsRouter = (
             items = (await getFilteredPageFromStore()) as any[];
         }
 
-        const payload = { items, sources: SUPPORTED_SOURCES, defaultSources: Array.from(DEFAULT_SOURCE_IDS) };
+        const payload = { items, sources: SUPPORTED_SOURCES };
         const validated = NewsListResponseSchema.safeParse(payload);
         if (!validated.success) {
             return res.status(500).json({ error: "Invalid response shape" });

@@ -16,7 +16,6 @@ export const NewsSourceSchema = z.object({
 export const NewsListResponseSchema = z.object({
     items: z.array(NewsItemSchema),
     sources: z.array(NewsSourceSchema),
-    defaultSources: z.array(z.string()),
 });
 export const PriceQuoteSchema = z.object({
     symbol: z.string(),

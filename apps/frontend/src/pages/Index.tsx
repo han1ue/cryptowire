@@ -45,33 +45,32 @@ const initialNotifications: NotificationItem[] = [
 ];
 
 const Index = () => {
-  const hasNonEmptySavedSourceSelection = useState(() => {
-    const saved = localStorage.getItem("selectedSources");
-    if (!saved) return false;
-    try {
-      const parsed = JSON.parse(saved);
-      return Array.isArray(parsed) && parsed.length > 0;
-    } catch {
-      return false;
-    }
-  })[0];
+  const DEFAULT_SELECTED_SOURCE_IDS = ["coindesk", "decrypt", "cointelegraph", "blockworks"] as const;
+
+  const normalizeSelectedSources = (raw: unknown): string[] => {
+    const byId = new Set(sourcesConfig.map((s) => s.id));
+    const nameToId = new Map(sourcesConfig.map((s) => [s.name.toLowerCase(), s.id] as const));
+
+    const arr = Array.isArray(raw) ? raw : [];
+    const normalized = arr
+      .map((v) => String(v).trim())
+      .map((v) => nameToId.get(v.toLowerCase()) ?? v)
+      .map((v) => v.toLowerCase())
+      .filter((id) => byId.has(id));
+
+    // De-dupe preserving order
+    return Array.from(new Set(normalized));
+  };
+
   const [selectedSources, setSelectedSources] = useState<string[]>(() => {
     const saved = localStorage.getItem("selectedSources");
-    try {
-      const parsed = saved ? JSON.parse(saved) : [];
-      return Array.isArray(parsed) ? parsed.map(String) : [];
-    } catch {
-      return [];
-    }
-  });
-  const [appliedSources, setAppliedSources] = useState<string[] | null>(() => {
-    const saved = localStorage.getItem("selectedSources");
-    if (!saved) return null;
+    if (!saved) return Array.from(DEFAULT_SELECTED_SOURCE_IDS);
     try {
       const parsed = JSON.parse(saved);
-      return Array.isArray(parsed) ? parsed.map(String) : null;
+      const normalized = normalizeSelectedSources(parsed);
+      return normalized.length > 0 ? normalized : Array.from(DEFAULT_SELECTED_SOURCE_IDS);
     } catch {
-      return null;
+      return Array.from(DEFAULT_SELECTED_SOURCE_IDS);
     }
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -114,74 +113,39 @@ const Index = () => {
   // Used by ticker/header components that want a small, frequently-updated set.
   const { data: newsData, isLoading: newsLoading, error: newsError } = useNews({
     limit: 25,
-    sources: appliedSources && appliedSources.length > 0 ? appliedSources : undefined,
+    sources: selectedSources,
   });
 
   // When a category is selected, fetch the first 20 items in that category from the backend.
   // This avoids only filtering whatever happened to be loaded in the infinite list.
   const { data: categoryNewsData } = useNews({
     limit: 20,
-    sources: appliedSources && appliedSources.length > 0 ? appliedSources : undefined,
+    sources: selectedSources,
     category: selectedCategoryKey ?? undefined,
   });
 
-  const availableSources = (() => {
-    const fromApi = newsData?.sources ?? [];
-    const fallback = sourcesConfig.map((s) => ({ id: s.id, name: s.name }));
-    const list = fromApi.length > 0 ? fromApi : fallback;
-
-    return list.map((s) => {
-      const known = sourcesConfig.find((k) => k.id === s.id) ?? sourcesConfig.find((k) => k.name === s.name);
-      return {
-        id: s.id,
-        name: s.name,
-        icon: known?.icon ?? "📰",
-      };
-    });
-  })();
+  const availableSources = sourcesConfig;
 
   useEffect(() => {
-    const availableIds = availableSources.map((s) => s.id);
-    if (availableIds.length === 0) return;
-
-    const nameToId = new Map(availableSources.map((s) => [s.name, s.id] as const));
-    const idSet = new Set(availableIds);
-
+    // Keep selection valid if the local list changes.
     setSelectedSources((prev) => {
-      const normalized = prev
-        .map((v) => nameToId.get(v) ?? v)
-        .filter((id) => idSet.has(id));
-
-      // Returning user: keep saved selection if it survives normalization.
-      if (hasNonEmptySavedSourceSelection && normalized.length > 0) {
-        return normalized;
-      }
-
-      // First load (or invalid/empty saved selection): use backend defaults.
-      const defaultIds = (newsData?.defaultSources ?? []).filter((id) => idSet.has(id));
-      const fallbackDefault = availableIds.filter((id) => id !== "bitcoinmagazine");
-      return normalized.length > 0 ? normalized : (defaultIds.length > 0 ? defaultIds : fallbackDefault);
+      const normalized = normalizeSelectedSources(prev);
+      return normalized.length > 0 ? normalized : Array.from(DEFAULT_SELECTED_SOURCE_IDS);
     });
-
-    // Important: don't force a second fetch on first load.
-    // We rely on the backend's default filtering when `appliedSources` is null.
-    if (!hasNonEmptySavedSourceSelection) {
-      setAppliedSources(null);
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasNonEmptySavedSourceSelection, availableSources.map((s) => s.id).join("|"), newsData?.defaultSources?.join("|")]);
+  }, [sourcesConfig.map((s) => s.id).join("|")]);
 
   // Used by the main list/cards view: loads 40 at a time as you scroll.
   const infinite = useInfiniteNews({
     pageSize: 25,
-    sources: appliedSources && appliedSources.length > 0 ? appliedSources : undefined,
+    sources: selectedSources,
   });
   const infiniteItems = infinite.data?.pages.flatMap((p) => p.items ?? []) ?? [];
 
   // Category view: fetches the first 20, then can infinitely scroll.
   const categoryInfinite = useInfiniteNews({
     pageSize: 20,
-    sources: appliedSources && appliedSources.length > 0 ? appliedSources : undefined,
+    sources: selectedSources,
     category: selectedCategoryKey ?? undefined,
   });
   const categoryInfiniteItems = categoryInfinite.data?.pages.flatMap((p) => p.items ?? []) ?? [];
@@ -835,7 +799,6 @@ const Index = () => {
         selectedSources={selectedSources}
         onSelectedSourcesChange={(next) => {
           setSelectedSources(next);
-          setAppliedSources(next);
         }}
         displayMode={displayMode}
         onDisplayModeChange={setDisplayMode}

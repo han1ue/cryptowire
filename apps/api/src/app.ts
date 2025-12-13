@@ -23,6 +23,7 @@ app.get("/", (_req, res) => {
             stats: "/api/stats",
             health: "/api/health",
             news: "/api/news?limit=40&offset=0",
+            sources: "/api/news/sources",
             prices: "/api/prices?symbols=BTC,ETH,SOL",
         },
     });
@@ -77,6 +78,7 @@ app.get("/api/stats", async (_req, res) => {
         endpoints: {
             health: "/api/health",
             news: "/api/news?limit=40&offset=0",
+            sources: "/api/news/sources",
             refresh: "/api/news/refresh?limit=30",
             prices: "/api/prices?symbols=BTC,ETH,SOL",
             market: "/api/market",
@@ -93,6 +95,7 @@ app.get("/api", async (_req, res) => {
             stats: "/api/stats",
             health: "/api/health",
             news: "/api/news?limit=40&offset=0",
+            sources: "/api/news/sources",
             refresh: "/api/news/refresh?limit=30",
             prices: "/api/prices?symbols=BTC,ETH,SOL",
             market: "/api/market",
