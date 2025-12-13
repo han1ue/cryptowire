@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const DEFAULT_COINDESK_SOURCE_IDS = "coindesk,decrypt,cointelegraph,blockworks,bitcoin.com" as const;
+export const DEFAULT_COINDESK_SOURCE_IDS = "coindesk,decrypt,cointelegraph,blockworks" as const;
 
 const EnvSchema = z.object({
     PORT: z.coerce.number().int().positive().default(3001),
