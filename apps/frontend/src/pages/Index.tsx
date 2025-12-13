@@ -348,7 +348,7 @@ const Index = () => {
         onMenuClick={() => setSidebarOpen(true)}
       />
       <PriceBar />
-      <NewsTicker />
+      <NewsTicker sources={selectedSources} />
 
       <div className="flex flex-1">
         {/* Desktop Sidebar */}

@@ -2,6 +2,10 @@
 import { Zap } from "lucide-react";
 import { useNews } from "@/hooks/useNews";
 
+type NewsTickerProps = {
+  sources: string[];
+};
+
 type Headline = {
   title: string;
   url?: string;
@@ -18,8 +22,8 @@ const fallbackHeadlines: Headline[] = [
   { title: "DeFi protocol suffers $50M exploit, investigation ongoing" },
 ];
 
-export const NewsTicker = () => {
-  const { data } = useNews({ limit: 30 });
+export const NewsTicker = ({ sources }: NewsTickerProps) => {
+  const { data } = useNews({ limit: 30, sources });
 
   const headlines: Headline[] =
     data?.items?.slice(0, 8).map((n) => ({ title: n.title, url: n.url })) ?? fallbackHeadlines;
