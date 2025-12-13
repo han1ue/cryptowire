@@ -1,6 +1,10 @@
 {
     "rewrites": [
         {
+            "source": "/rss.xml",
+            "destination": "https://cryptowire-api.vercel.app/api/rss.xml"
+        },
+        {
             "source": "/api/(.*)",
             "destination": "https://cryptowire-api.vercel.app/api/$1"
         },

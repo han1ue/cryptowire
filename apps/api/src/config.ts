@@ -3,6 +3,9 @@ import { z } from "zod";
 const EnvSchema = z.object({
     PORT: z.coerce.number().int().positive().default(3001),
 
+    // Public site URL (e.g. https://cryptowi.re). Used for canonical links in feeds.
+    SITE_URL: z.string().url().optional(),
+
     NEWS_RETENTION_DAYS: z.coerce.number().int().positive().default(7),
     NEWS_CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(180),
     NEWS_REFRESH_SECRET: z.string().optional(),

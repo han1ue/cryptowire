@@ -102,7 +102,10 @@ app.get("/api", async (_req, res) => {
     });
 });
 
-app.use("/api", createNewsRouter(newsService, newsStore, { refreshSecret: config.NEWS_REFRESH_SECRET }));
+app.use(
+    "/api",
+    createNewsRouter(newsService, newsStore, { refreshSecret: config.NEWS_REFRESH_SECRET, siteUrl: config.SITE_URL }),
+);
 app.use("/api", createPricesRouter(priceService));
 app.use("/api", createMarketRouter(marketService));
 

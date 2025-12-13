@@ -24,6 +24,7 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 import { NewsItemSchema } from "@cryptowire/types";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Seo } from "@/components/Seo";
 
 type NotificationItem = {
   id: string;
@@ -339,8 +340,43 @@ const Index = () => {
   const totalSourceCount = availableSources.length;
   const loadedArticlesCount = allNews.length;
 
+  const siteUrl = (import.meta.env.VITE_SITE_URL as string | undefined) ?? "https://cryptowi.re";
+  const normalizedSiteUrl = siteUrl.replace(/\/+$/, "");
+
+  const jsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: "cryptowi.re",
+      url: normalizedSiteUrl,
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: "cryptowi.re",
+      url: normalizedSiteUrl,
+      description:
+        "Real-time crypto news aggregator. Live headlines from CoinDesk, Decrypt, Cointelegraph, Blockworks, and more.",
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      name: "Crypto News Aggregator",
+      url: normalizedSiteUrl + "/",
+      isPartOf: { "@type": "WebSite", url: normalizedSiteUrl },
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-background flex flex-col scanlines">
+      <Seo
+        title="cryptowi.re | Real-Time Crypto News Aggregator"
+        description="Real-time crypto news aggregator. Live headlines from CoinDesk, Decrypt, Cointelegraph, Blockworks, and more."
+        canonicalPath="/"
+        jsonLd={jsonLd}
+      />
+
+      <h1 className="sr-only">cryptowi.re — Crypto news aggregator</h1>
       <Header
         onSettingsClick={() => setSettingsOpen(true)}
         notifications={notifications}
@@ -729,6 +765,13 @@ const Index = () => {
           </span>
         </div>
         <div className="flex items-center gap-3">
+          <a
+            href="/rss.xml"
+            className="text-[10px] text-muted-foreground hover:text-primary transition-colors"
+            title="RSS feed"
+          >
+            RSS
+          </a>
           <a
             href="/install/ios"
             className="text-[10px] text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"

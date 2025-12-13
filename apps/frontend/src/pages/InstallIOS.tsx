@@ -1,9 +1,15 @@
 import { ArrowLeft, Share, Plus, Home } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Seo } from "@/components/Seo";
 
 const InstallIOS = () => {
     return (
         <div className="min-h-screen bg-background flex flex-col">
+            <Seo
+                title="Install CryptoWire on iOS | cryptowi.re"
+                description="Add cryptowi.re to your iPhone or iPad Home Screen for fast access to real-time crypto news."
+                canonicalPath="/install/ios"
+            />
             <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
                 <div className="flex items-center gap-3 px-4 py-3">
                     <Link to="/" className="p-2 hover:bg-muted rounded transition-colors">

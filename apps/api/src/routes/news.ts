@@ -7,9 +7,83 @@ import type { NewsStore } from "../stores/newsStore.js";
 export const createNewsRouter = (
     newsService: NewsService,
     newsStore: NewsStore,
-    opts?: { refreshSecret?: string },
+    opts?: { refreshSecret?: string; siteUrl?: string },
 ) => {
     const router = Router();
+
+    const escapeXml = (value: string) =>
+        value
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&apos;");
+
+    const normalizeSiteUrl = (raw: string) => raw.replace(/\/+$/, "");
+
+    const getPublicSiteUrl = (req: any) => {
+        const configured = typeof opts?.siteUrl === "string" ? opts.siteUrl : null;
+        if (configured && configured.startsWith("http")) return normalizeSiteUrl(configured);
+
+        const proto = (req.header?.("x-forwarded-proto") as string | undefined) ?? "https";
+        const host =
+            (req.header?.("x-forwarded-host") as string | undefined) ??
+            (req.header?.("host") as string | undefined) ??
+            null;
+        if (host) return normalizeSiteUrl(`${proto}://${host}`);
+
+        return "https://cryptowi.re";
+    };
+
+    // RSS feed for discovery/syndication (served at /api/rss.xml; frontend rewrites /rss.xml -> /api/rss.xml).
+    router.get("/rss.xml", async (req, res) => {
+        const siteUrl = getPublicSiteUrl(req);
+        const items = await newsStore.getPage({ limit: 50, offset: 0 });
+        const lastBuildDate = new Date(items[0]?.publishedAt ?? Date.now()).toUTCString();
+
+        const channelTitle = "cryptowi.re | Crypto News Aggregator";
+        const channelLink = siteUrl + "/";
+        const channelDescription =
+            "Real-time crypto news aggregator. Live headlines from CoinDesk, Decrypt, Cointelegraph, Blockworks, and more.";
+
+        const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>${escapeXml(channelTitle)}</title>
+    <link>${escapeXml(channelLink)}</link>
+    <atom:link href="${escapeXml(siteUrl + "/rss.xml")}" rel="self" type="application/rss+xml" />
+    <description>${escapeXml(channelDescription)}</description>
+    <language>en</language>
+    <lastBuildDate>${escapeXml(lastBuildDate)}</lastBuildDate>
+    ${items
+        .map((item) => {
+            const link = item.url ? item.url : channelLink;
+            const pubDate = new Date(item.publishedAt).toUTCString();
+            const guid = item.id;
+            const description = item.summary?.trim() ? item.summary.trim() : item.title;
+            const category = item.category?.trim() ? item.category.trim() : "News";
+            const source = item.source?.trim() ? item.source.trim() : "cryptowi.re";
+
+            return `
+    <item>
+      <title>${escapeXml(item.title)}</title>
+      <link>${escapeXml(link)}</link>
+      <guid isPermaLink="false">${escapeXml(guid)}</guid>
+      <pubDate>${escapeXml(pubDate)}</pubDate>
+      <description>${escapeXml(description)}</description>
+      <category>${escapeXml(category)}</category>
+      <source>${escapeXml(source)}</source>
+    </item>`;
+        })
+        .join("")}
+  </channel>
+</rss>
+`;
+
+        res.setHeader("Content-Type", "application/rss+xml; charset=utf-8");
+        res.setHeader("Cache-Control", "public, max-age=300, s-maxage=300, stale-while-revalidate=86400");
+        return res.status(200).send(xml);
+    });
 
     const normalizeSourceName = (value: string) => {
         const v = value.trim().toLowerCase();
