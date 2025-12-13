@@ -56,15 +56,15 @@ export const createNewsRouter = (
     <language>en</language>
     <lastBuildDate>${escapeXml(lastBuildDate)}</lastBuildDate>
     ${items
-        .map((item) => {
-            const link = item.url ? item.url : channelLink;
-            const pubDate = new Date(item.publishedAt).toUTCString();
-            const guid = item.id;
-            const description = item.summary?.trim() ? item.summary.trim() : item.title;
-            const category = item.category?.trim() ? item.category.trim() : "News";
-            const source = item.source?.trim() ? item.source.trim() : "cryptowi.re";
+                .map((item) => {
+                    const link = item.url ? item.url : channelLink;
+                    const pubDate = new Date(item.publishedAt).toUTCString();
+                    const guid = item.id;
+                    const description = item.summary?.trim() ? item.summary.trim() : item.title;
+                    const category = item.category?.trim() ? item.category.trim() : "News";
+                    const source = item.source?.trim() ? item.source.trim() : "cryptowi.re";
 
-            return `
+                    return `
     <item>
       <title>${escapeXml(item.title)}</title>
       <link>${escapeXml(link)}</link>
@@ -74,8 +74,8 @@ export const createNewsRouter = (
       <category>${escapeXml(category)}</category>
       <source>${escapeXml(source)}</source>
     </item>`;
-        })
-        .join("")}
+                })
+                .join("")}
   </channel>
 </rss>
 `;
