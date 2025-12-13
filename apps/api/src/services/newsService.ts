@@ -6,29 +6,37 @@ import type { AppConfig } from "../config.js";
 
 export class NewsService {
     private readonly cache = new SimpleTtlCache();
-    private readonly providers: NewsProvider[];
     private readonly inflight = new Map<string, Promise<NewsItem[]>>();
 
     constructor(private readonly config: AppConfig) {
-        this.providers = [
+    }
+
+    private createProviders(params?: { sourceIds?: string }): NewsProvider[] {
+        return [
             new CoindeskNewsProvider({
-                apiKey: config.COINDESK_API_KEY,
-                baseUrl: config.COINDESK_BASE_URL,
-                endpointPath: config.COINDESK_NEWS_ENDPOINT_PATH,
-                sourceIds: config.COINDESK_SOURCE_IDS,
+                apiKey: this.config.COINDESK_API_KEY,
+                baseUrl: this.config.COINDESK_BASE_URL,
+                endpointPath: this.config.COINDESK_NEWS_ENDPOINT_PATH,
+                sourceIds: params?.sourceIds,
             }),
         ];
     }
 
-    private async fetchAndCache(params: { cacheKey: string; limit: number; retentionDays: number }): Promise<NewsItem[]> {
+    private async fetchAndCache(params: {
+        cacheKey: string;
+        limit: number;
+        retentionDays: number;
+        sourceIds?: string;
+    }): Promise<NewsItem[]> {
         const existing = this.inflight.get(params.cacheKey);
         if (existing) return existing;
 
         const task = (async () => {
-            const perProviderLimit = Math.max(1, Math.ceil(params.limit / Math.max(1, this.providers.length)));
+            const providers = this.createProviders({ sourceIds: params.sourceIds });
+            const perProviderLimit = Math.max(1, Math.ceil(params.limit / Math.max(1, providers.length)));
 
             const lists = await Promise.all(
-                this.providers.map((p) =>
+                providers.map((p) =>
                     p.fetchHeadlines({
                         limit: perProviderLimit,
                         retentionDays: params.retentionDays,
@@ -53,34 +61,36 @@ export class NewsService {
         }
     }
 
-    async listHeadlines(params: { limit: number; retentionDays?: number }): Promise<NewsItem[]> {
+    async listHeadlines(params: { limit: number; retentionDays?: number; sourceIds?: string }): Promise<NewsItem[]> {
         const retentionDays = params.retentionDays ?? this.config.NEWS_RETENTION_DAYS;
 
-        const cacheKey = `news:${params.limit}:${retentionDays}`;
+        const sourceKey = (params.sourceIds ?? "").trim() || "__all__";
+        const cacheKey = `news:${params.limit}:${retentionDays}:${sourceKey}`;
         const cached = this.cache.getWithStale<NewsItem[]>(cacheKey);
         if (cached && !cached.isStale) return cached.value;
 
         // Serve stale data immediately, and refresh in the background.
         if (cached && cached.isStale) {
-            void this.fetchAndCache({ cacheKey, limit: params.limit, retentionDays }).catch(() => {
+            void this.fetchAndCache({ cacheKey, limit: params.limit, retentionDays, sourceIds: params.sourceIds }).catch(() => {
                 // Best-effort background refresh; keep serving stale until next success.
             });
             return cached.value;
         }
 
         // Cold start: no cache yet.
-        return await this.fetchAndCache({ cacheKey, limit: params.limit, retentionDays });
+        return await this.fetchAndCache({ cacheKey, limit: params.limit, retentionDays, sourceIds: params.sourceIds });
     }
 
-    async refreshHeadlines(params: { limit: number; retentionDays?: number; force?: boolean }): Promise<NewsItem[]> {
+    async refreshHeadlines(params: { limit: number; retentionDays?: number; force?: boolean; sourceIds?: string }): Promise<NewsItem[]> {
         const retentionDays = params.retentionDays ?? this.config.NEWS_RETENTION_DAYS;
-        const cacheKey = `news:${params.limit}:${retentionDays}`;
+        const sourceKey = (params.sourceIds ?? "").trim() || "__all__";
+        const cacheKey = `news:${params.limit}:${retentionDays}:${sourceKey}`;
 
         if (!params.force) {
             // Warm using normal behavior (may be cached).
-            return await this.listHeadlines({ limit: params.limit, retentionDays });
+            return await this.listHeadlines({ limit: params.limit, retentionDays, sourceIds: params.sourceIds });
         }
 
-        return await this.fetchAndCache({ cacheKey, limit: params.limit, retentionDays });
+        return await this.fetchAndCache({ cacheKey, limit: params.limit, retentionDays, sourceIds: params.sourceIds });
     }
 }

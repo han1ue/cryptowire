@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-export const DEFAULT_COINDESK_SOURCE_IDS = "coindesk,decrypt,cointelegraph,blockworks" as const;
-
 const EnvSchema = z.object({
     PORT: z.coerce.number().int().positive().default(3001),
 
@@ -14,10 +12,7 @@ const EnvSchema = z.object({
     COINDESK_NEWS_ENDPOINT_PATH: z.string().optional(),
 });
 
-export type AppConfig = z.infer<typeof EnvSchema> & {
-    // Intentionally not configurable via env; hardcoded to ensure consistent behavior across deploys.
-    COINDESK_SOURCE_IDS: string;
-};
+export type AppConfig = z.infer<typeof EnvSchema>;
 
 export const getConfig = (): AppConfig => {
     const parsed = EnvSchema.safeParse(process.env);
@@ -25,8 +20,5 @@ export const getConfig = (): AppConfig => {
         throw new Error(`Invalid environment configuration: ${parsed.error.message}`);
     }
 
-    return {
-        ...parsed.data,
-        COINDESK_SOURCE_IDS: DEFAULT_COINDESK_SOURCE_IDS,
-    };
+    return parsed.data;
 };

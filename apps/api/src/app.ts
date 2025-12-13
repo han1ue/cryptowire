@@ -68,7 +68,6 @@ app.get("/api/stats", async (_req, res) => {
         coindeskApiKeyPresent: Boolean(process.env.COINDESK_API_KEY),
         coindeskBaseUrl: process.env.COINDESK_BASE_URL ?? null,
         coindeskNewsEndpointPath: process.env.COINDESK_NEWS_ENDPOINT_PATH ?? null,
-        coindeskSourceIds: config.COINDESK_SOURCE_IDS ?? null,
         retentionDays: config.NEWS_RETENTION_DAYS,
         cacheTtlSeconds: config.NEWS_CACHE_TTL_SECONDS,
         newsCount,

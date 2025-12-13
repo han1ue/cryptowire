@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
 import { NewsListResponseSchema } from "@cryptowire/types";
-import { DEFAULT_COINDESK_SOURCE_IDS } from "../config.js";
 import type { NewsService } from "../services/newsService.js";
 import type { NewsStore } from "../stores/newsStore.js";
 
@@ -62,6 +61,7 @@ export const createNewsRouter = (
         const querySchema = z.object({
             limit: z.coerce.number().int().positive().max(500).default(30),
             retentionDays: z.coerce.number().int().positive().max(30).optional(),
+            sources: z.string().optional(),
             force: z
                 .union([z.literal("1"), z.literal("true"), z.literal("0"), z.literal("false")])
                 .optional()
@@ -85,10 +85,21 @@ export const createNewsRouter = (
         // CoinDesk commonly rejects very large limits; keep this conservative.
         const limit = Math.min(parsed.data.limit, 100);
         const retentionDays = Math.min(parsed.data.retentionDays ?? 7, 7);
+
+        const requestedSourceIds = (parsed.data.sources ?? "")
+            .split(",")
+            .map((x) => x.trim().toLowerCase())
+            .filter(Boolean);
+
+        const supportedIds = new Set<string>(SUPPORTED_SOURCES.map((s) => s.id));
+        const requested = requestedSourceIds.filter((id) => supportedIds.has(id));
+        const sourceIdsForFetch = requested.length > 0 ? requested.join(",") : undefined;
+
         const items = await newsService.refreshHeadlines({
             limit,
             retentionDays,
             force: parsed.data.force,
+            sourceIds: sourceIdsForFetch,
         });
 
         await newsStore.putMany(items);
@@ -118,6 +129,7 @@ export const createNewsRouter = (
     router.get("/news/diagnose", async (req, res) => {
         const querySchema = z.object({
             limit: z.coerce.number().int().positive().max(200).default(5),
+            sources: z.string().optional(),
         });
 
         const parsedQuery = querySchema.safeParse(req.query);
@@ -134,7 +146,7 @@ export const createNewsRouter = (
         const apiKeyPresent = Boolean(process.env.COINDESK_API_KEY);
         const baseUrl = process.env.COINDESK_BASE_URL ?? "https://data-api.coindesk.com";
         const endpointPath = process.env.COINDESK_NEWS_ENDPOINT_PATH ?? "/news/v1/article/list";
-        const sourceIds = DEFAULT_COINDESK_SOURCE_IDS;
+        const sourceIds = (parsedQuery.data.sources ?? "").trim();
 
         const buildUrl = (includeSources: boolean) => {
             const url = new URL(endpointPath, baseUrl);
@@ -197,7 +209,7 @@ export const createNewsRouter = (
             }
         };
 
-        const withSources = await probeOnce(true);
+        const withSources = sourceIds ? await probeOnce(true) : { skipped: true, reason: "No sources provided" };
         const withoutSources = await probeOnce(false);
 
         return res.json({
@@ -233,6 +245,16 @@ export const createNewsRouter = (
             .split(",")
             .map((x) => x.trim().toLowerCase())
             .filter(Boolean);
+
+        // API has no concept of default sources: clients must specify sources.
+        if (requestedSourceIds.length === 0) {
+            const payload = { items: [], sources: SUPPORTED_SOURCES };
+            const validated = NewsListResponseSchema.safeParse(payload);
+            if (!validated.success) {
+                return res.status(500).json({ error: "Invalid response shape" });
+            }
+            return res.json(payload);
+        }
 
         const requestedCategory = (parsed.data.category ?? "").trim();
         const requestedCategoryKey = requestedCategory.length > 0 ? requestedCategory.toLowerCase() : null;
@@ -280,21 +302,43 @@ export const createNewsRouter = (
             return out;
         };
 
-        // Serve from store (KV/in-memory). This avoids hitting upstream on every user request.
-        let items = (await getFilteredPageFromStore()) as any[];
-        if (items.length === 0 && offset === 0) {
-            // Cold start: warm the store once.
-            const warmed = await newsService.refreshHeadlines({
+        const maybeWarmForRequestedSources = async () => {
+            if (offset !== 0) return;
+            if (!requestedSourceNames || requestedSourceNames.size === 0) return;
+
+            // If the store doesn't have any recent items for one of the requested
+            // sources, warm it using the selected source ids. This is important
+            // when the defaults exclude an optional source like bitcoin.com.
+            const sample = await newsStore.getPage({ limit: 200, offset: 0 });
+            const present = new Set<string>();
+            for (const item of sample as any[]) {
+                const src = typeof item?.source === "string" ? item.source : "";
+                if (src) present.add(src);
+            }
+
+            const requestedNames = requested.map(sourceIdToName);
+            const missing = requestedNames.filter((name) => !present.has(name));
+            const isCold = sample.length === 0;
+            if (!isCold && missing.length === 0) return;
+
+            const sourceIdsForWarm = requested.join(",");
+            const warmed = await newsService.listHeadlines({
                 limit: 100,
                 retentionDays,
-                force: true,
+                sourceIds: sourceIdsForWarm,
             });
+
+            if (warmed.length === 0) return;
+
             await newsStore.putMany(warmed);
             const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000).toISOString();
             await newsStore.pruneOlderThan(cutoff);
             await setLastRefreshAt(new Date().toISOString());
-            items = (await getFilteredPageFromStore()) as any[];
-        }
+        };
+
+        // Serve from store (KV/in-memory). This avoids hitting upstream on every user request.
+        await maybeWarmForRequestedSources();
+        const items = (await getFilteredPageFromStore()) as any[];
 
         const payload = { items, sources: SUPPORTED_SOURCES };
         const validated = NewsListResponseSchema.safeParse(payload);
