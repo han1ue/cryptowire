@@ -36,7 +36,7 @@ type NotificationItem = {
 const initialNotifications: NotificationItem[] = [
   {
     id: "welcome",
-    title: "Welcome to CryptoWire",
+    title: "Welcome to cryptowi.re",
     message:
       "Thanks for joining us. We'll drop feature updates and platform alerts here so you never miss a release.",
     time: "Just now",
@@ -45,9 +45,34 @@ const initialNotifications: NotificationItem[] = [
 ];
 
 const Index = () => {
+  const hasNonEmptySavedSourceSelection = useState(() => {
+    const saved = localStorage.getItem("selectedSources");
+    if (!saved) return false;
+    try {
+      const parsed = JSON.parse(saved);
+      return Array.isArray(parsed) && parsed.length > 0;
+    } catch {
+      return false;
+    }
+  })[0];
   const [selectedSources, setSelectedSources] = useState<string[]>(() => {
     const saved = localStorage.getItem("selectedSources");
-    return saved ? JSON.parse(saved) : sourcesConfig.map(s => s.name);
+    try {
+      const parsed = saved ? JSON.parse(saved) : [];
+      return Array.isArray(parsed) ? parsed.map(String) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [appliedSources, setAppliedSources] = useState<string[] | null>(() => {
+    const saved = localStorage.getItem("selectedSources");
+    if (!saved) return null;
+    try {
+      const parsed = JSON.parse(saved);
+      return Array.isArray(parsed) ? parsed.map(String) : null;
+    } catch {
+      return null;
+    }
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">(() => {
@@ -84,12 +109,82 @@ const Index = () => {
   });
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const selectedCategoryKey = selectedCategory && selectedCategory !== "All News" ? selectedCategory : null;
+
   // Used by ticker/header components that want a small, frequently-updated set.
-  const { data: newsData, isLoading: newsLoading, error: newsError } = useNews({ limit: 25 });
+  const { data: newsData, isLoading: newsLoading, error: newsError } = useNews({
+    limit: 25,
+    sources: appliedSources && appliedSources.length > 0 ? appliedSources : undefined,
+  });
+
+  // When a category is selected, fetch the first 20 items in that category from the backend.
+  // This avoids only filtering whatever happened to be loaded in the infinite list.
+  const { data: categoryNewsData } = useNews({
+    limit: 20,
+    sources: appliedSources && appliedSources.length > 0 ? appliedSources : undefined,
+    category: selectedCategoryKey ?? undefined,
+  });
+
+  const availableSources = (() => {
+    const fromApi = newsData?.sources ?? [];
+    const fallback = sourcesConfig.map((s) => ({ id: s.id, name: s.name }));
+    const list = fromApi.length > 0 ? fromApi : fallback;
+
+    return list.map((s) => {
+      const known = sourcesConfig.find((k) => k.id === s.id) ?? sourcesConfig.find((k) => k.name === s.name);
+      return {
+        id: s.id,
+        name: s.name,
+        icon: known?.icon ?? "📰",
+      };
+    });
+  })();
+
+  useEffect(() => {
+    const availableIds = availableSources.map((s) => s.id);
+    if (availableIds.length === 0) return;
+
+    const nameToId = new Map(availableSources.map((s) => [s.name, s.id] as const));
+    const idSet = new Set(availableIds);
+
+    setSelectedSources((prev) => {
+      const normalized = prev
+        .map((v) => nameToId.get(v) ?? v)
+        .filter((id) => idSet.has(id));
+
+      // Returning user: keep saved selection if it survives normalization.
+      if (hasNonEmptySavedSourceSelection && normalized.length > 0) {
+        return normalized;
+      }
+
+      // First load (or invalid/empty saved selection): use backend defaults.
+      const defaultIds = (newsData?.defaultSources ?? []).filter((id) => idSet.has(id));
+      const fallbackDefault = availableIds.filter((id) => id !== "bitcoinmagazine");
+      return normalized.length > 0 ? normalized : (defaultIds.length > 0 ? defaultIds : fallbackDefault);
+    });
+
+    // Important: don't force a second fetch on first load.
+    // We rely on the backend's default filtering when `appliedSources` is null.
+    if (!hasNonEmptySavedSourceSelection) {
+      setAppliedSources(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasNonEmptySavedSourceSelection, availableSources.map((s) => s.id).join("|"), newsData?.defaultSources?.join("|")]);
 
   // Used by the main list/cards view: loads 40 at a time as you scroll.
-  const infinite = useInfiniteNews({ pageSize: 25 });
+  const infinite = useInfiniteNews({
+    pageSize: 25,
+    sources: appliedSources && appliedSources.length > 0 ? appliedSources : undefined,
+  });
   const infiniteItems = infinite.data?.pages.flatMap((p) => p.items ?? []) ?? [];
+
+  // Category view: fetches the first 20, then can infinitely scroll.
+  const categoryInfinite = useInfiniteNews({
+    pageSize: 20,
+    sources: appliedSources && appliedSources.length > 0 ? appliedSources : undefined,
+    category: selectedCategoryKey ?? undefined,
+  });
+  const categoryInfiniteItems = categoryInfinite.data?.pages.flatMap((p) => p.items ?? []) ?? [];
 
   const [devToolsOpen, setDevToolsOpen] = useState(false);
   const [devShowSchemaButtons, setDevShowSchemaButtons] = useState(() => {
@@ -168,82 +263,111 @@ const Index = () => {
     );
   };
 
-  const sourcesWithNews = (() => {
-    // If we have API data, use it
-    if (infiniteItems.length > 0) {
-      const bySource = new Map<string, typeof infiniteItems>();
-      for (const item of infiniteItems) {
-        const list = bySource.get(item.source) ?? [];
-        list.push(item);
-        bySource.set(item.source, list);
-      }
-
-      return sourcesConfig.map((s) => {
-        const items = (bySource.get(s.name) ?? [])
-          .slice(0, 50)
-          .map((n) => ({
-            title: n.title,
-            summary: n.summary || "",
-            time: formatDistanceToNow(new Date(n.publishedAt), { addSuffix: true }).replace(/^about /, ''),
-            category: n.category || "News",
-            url: n.url,
-            isBreaking: false,
-            publishedAt: n.publishedAt,
-          }));
-
-        return {
-          name: s.name,
-          icon: s.icon,
-          news: items,
-        };
-      });
-    }
-
-    // No API data (yet) – don't mask it with mock content.
-    return sourcesConfig.map((s) => ({
-      name: s.name,
-      icon: s.icon,
-      news: [],
-    }));
-  })();
+  const sourceNameToMeta = new Map(availableSources.map((s) => [s.name, s] as const));
+  const sourceNameToId = new Map(availableSources.map((s) => [s.name, s.id] as const));
 
   // Auto-load more when near the bottom of the scrollable list.
   useEffect(() => {
+    if (showSavedOnly) return;
     const el = document.getElementById("news-infinite-sentinel");
     if (!el) return;
+
+    const activeInfinite = selectedCategory === 'All News' ? infinite : categoryInfinite;
 
     const observer = new IntersectionObserver(
       (entries) => {
         const [entry] = entries;
         if (!entry?.isIntersecting) return;
-        if (!infinite.hasNextPage) return;
-        if (infinite.isFetchingNextPage) return;
-        void infinite.fetchNextPage();
+        if (!activeInfinite.hasNextPage) return;
+        if (activeInfinite.isFetchingNextPage) return;
+        void activeInfinite.fetchNextPage();
       },
       { root: null, rootMargin: "400px", threshold: 0 },
     );
 
     observer.observe(el);
     return () => observer.disconnect();
-  }, [infinite.hasNextPage, infinite.isFetchingNextPage, infinite.fetchNextPage]);
+  }, [
+    showSavedOnly,
+    selectedCategory,
+    infinite.hasNextPage,
+    infinite.isFetchingNextPage,
+    infinite.fetchNextPage,
+    categoryInfinite.hasNextPage,
+    categoryInfinite.isFetchingNextPage,
+    categoryInfinite.fetchNextPage,
+  ]);
 
-  const activeSources = sourcesWithNews.filter(source => selectedSources.includes(source.name));
+  const baseItems = selectedCategoryKey ? categoryInfiniteItems : infiniteItems;
 
-  let allNews = activeSources
-    .flatMap(source =>
-      source.news.map((item: any) => ({ ...item, sourceName: source.name, sourceIcon: source.icon }))
-    )
-    .sort((a: any, b: any) => {
+  // Sidebar needs a broader set to derive available categories, even when the main
+  // list is showing a backend category view.
+  const sidebarBaseItems = infiniteItems;
+
+  // Apply source selection using the backend-provided source names.
+  const filteredBySource = baseItems.filter((item) => {
+    const sourceName = item?.source ?? "";
+    const id = sourceNameToId.get(sourceName);
+    if (!id) return false;
+    return selectedSources.includes(id);
+  });
+
+  const sidebarFilteredBySource = sidebarBaseItems.filter((item) => {
+    const sourceName = item?.source ?? "";
+    const id = sourceNameToId.get(sourceName);
+    if (!id) return false;
+    return selectedSources.includes(id);
+  });
+
+  const filteredBySaved = showSavedOnly
+    ? filteredBySource.filter((item) => savedArticles.includes(item.title))
+    : filteredBySource;
+
+  const allNews = filteredBySaved
+    .map((n) => {
+      const meta = sourceNameToMeta.get(n.source);
+      return {
+        title: n.title,
+        summary: n.summary || "",
+        time: formatDistanceToNow(new Date(n.publishedAt), { addSuffix: true }).replace(/^about /, ""),
+        category: n.category || "News",
+        url: n.url,
+        isBreaking: false,
+        publishedAt: n.publishedAt,
+        sourceName: n.source,
+        sourceIcon: meta?.icon ?? "📰",
+      };
+    })
+    .sort((a, b) => {
       const aTime = new Date(a.publishedAt ?? 0).getTime();
       const bTime = new Date(b.publishedAt ?? 0).getTime();
       return bTime - aTime;
     });
-  if (showSavedOnly) {
-    allNews = allNews.filter(item => savedArticles.includes(item.title));
-  }
-  if (selectedCategory && selectedCategory !== 'All News') {
-    allNews = allNews.filter(item => item.category === selectedCategory);
-  }
+
+  const sidebarNews = sidebarFilteredBySource
+    .map((n) => {
+      const meta = sourceNameToMeta.get(n.source);
+      return {
+        title: n.title,
+        summary: n.summary || "",
+        time: formatDistanceToNow(new Date(n.publishedAt), { addSuffix: true }).replace(/^about /, ""),
+        category: n.category || "News",
+        url: n.url,
+        isBreaking: false,
+        publishedAt: n.publishedAt,
+        sourceName: n.source,
+        sourceIcon: meta?.icon ?? "📰",
+      };
+    })
+    .sort((a, b) => {
+      const aTime = new Date(a.publishedAt ?? 0).getTime();
+      const bTime = new Date(b.publishedAt ?? 0).getTime();
+      return bTime - aTime;
+    });
+
+  const activeSourceCount = selectedSources.length;
+  const totalSourceCount = availableSources.length;
+  const loadedArticlesCount = allNews.length;
 
   return (
     <div className="min-h-screen bg-background flex flex-col scanlines">
@@ -267,14 +391,10 @@ const Index = () => {
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             savedArticleTitles={savedArticles}
-            allNews={activeSources
-              .flatMap(source =>
-                source.news.map(item => ({ ...item, sourceName: source.name, sourceIcon: source.icon, category: item.category }))
-              )
-            }
+            allNews={sidebarNews}
             selectedCategory={selectedCategory}
             onCategorySelect={cat => {
-              setSelectedCategory(cat);
+              setSelectedCategory((prev) => (prev === cat ? 'All News' : cat));
               setShowSavedOnly(false);
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
@@ -298,14 +418,10 @@ const Index = () => {
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 savedArticleTitles={savedArticles}
-                allNews={activeSources
-                  .flatMap(source =>
-                    source.news.map(item => ({ ...item, sourceName: source.name, sourceIcon: source.icon, category: item.category }))
-                  )
-                }
+                allNews={sidebarNews}
                 selectedCategory={selectedCategory}
                 onCategorySelect={cat => {
-                  setSelectedCategory(cat);
+                  setSelectedCategory((prev) => (prev === cat ? 'All News' : cat));
                   setShowSavedOnly(false);
                   setSidebarOpen(false);
                 }}
@@ -422,9 +538,9 @@ const Index = () => {
                   </div>
                 ))}
 
-                <div id="news-infinite-sentinel" className="h-8 w-full" />
+                {!showSavedOnly ? <div id="news-infinite-sentinel" className="h-8 w-full" /> : null}
 
-                {infinite.isFetchingNextPage ? (
+                {!showSavedOnly && (selectedCategory === 'All News' ? infinite.isFetchingNextPage : categoryInfinite.isFetchingNextPage) ? (
                   <div className="px-2 py-3">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span className="inline-block h-2 w-2 rounded-full bg-terminal-amber" />
@@ -433,7 +549,7 @@ const Index = () => {
                   </div>
                 ) : null}
 
-                {!showSavedOnly && !infinite.isFetchingNextPage && allNews.length > 0 && !infinite.hasNextPage ? (
+                {!showSavedOnly && !(selectedCategory === 'All News' ? infinite.isFetchingNextPage : categoryInfinite.isFetchingNextPage) && allNews.length > 0 && !(selectedCategory === 'All News' ? infinite.hasNextPage : categoryInfinite.hasNextPage) ? (
                   <div className="px-2 py-4 text-xs text-muted-foreground">You’ve reached the end.</div>
                 ) : null}
               </div>
@@ -475,9 +591,19 @@ const Index = () => {
                         )}
                         <div className="flex flex-wrap items-center gap-2 mt-1 text-[10px] text-muted-foreground">
                           <span className="text-news-time tabular-nums">{item.time}</span>
-                          <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary uppercase tracking-wider font-medium">
+                          <button
+                            type="button"
+                            className="px-1.5 py-0.5 rounded bg-primary/10 text-primary uppercase tracking-wider font-medium"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedCategory((prev) => (prev === item.category ? 'All News' : item.category));
+                              setShowSavedOnly(false);
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            title={`Filter by ${item.category}`}
+                          >
                             {item.category}
-                          </span>
+                          </button>
                           <span>{item.sourceName}</span>
                         </div>
                       </div>
@@ -541,9 +667,9 @@ const Index = () => {
                   </div>
                 ))}
 
-                <div id="news-infinite-sentinel" className="h-8 w-full" />
+                {!showSavedOnly ? <div id="news-infinite-sentinel" className="h-8 w-full" /> : null}
 
-                {infinite.isFetchingNextPage ? (
+                {!showSavedOnly && (selectedCategory === 'All News' ? infinite.isFetchingNextPage : categoryInfinite.isFetchingNextPage) ? (
                   <div className="px-2 py-3">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span className="inline-block h-2 w-2 rounded-full bg-terminal-amber" />
@@ -552,7 +678,7 @@ const Index = () => {
                   </div>
                 ) : null}
 
-                {!showSavedOnly && !infinite.isFetchingNextPage && allNews.length > 0 && !infinite.hasNextPage ? (
+                {!showSavedOnly && !(selectedCategory === 'All News' ? infinite.isFetchingNextPage : categoryInfinite.isFetchingNextPage) && allNews.length > 0 && !(selectedCategory === 'All News' ? infinite.hasNextPage : categoryInfinite.hasNextPage) ? (
                   <div className="px-2 py-4 text-xs text-muted-foreground">You’ve reached the end.</div>
                 ) : null}
               </div>
@@ -582,15 +708,20 @@ const Index = () => {
                   category={item.category}
                   url={item.url}
                   isSaved={savedArticles.includes(item.title)}
+                  onCategoryClick={(cat) => {
+                    setSelectedCategory((prev) => (prev === cat ? 'All News' : cat));
+                    setShowSavedOnly(false);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
                   onToggleSave={() => toggleSaveArticle(item.title)}
                   showSchemaButton={devShowSchemaButtons}
                   onShowSchema={showNewsItemSchema}
                 />
               ))}
 
-              <div id="news-infinite-sentinel" className="h-8 w-full" />
+              {!showSavedOnly ? <div id="news-infinite-sentinel" className="h-8 w-full" /> : null}
 
-              {infinite.isFetchingNextPage ? (
+              {!showSavedOnly && (selectedCategory === 'All News' ? infinite.isFetchingNextPage : categoryInfinite.isFetchingNextPage) ? (
                 <div className="col-span-full px-2 py-3">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <span className="inline-block h-2 w-2 rounded-full bg-terminal-amber" />
@@ -599,7 +730,7 @@ const Index = () => {
                 </div>
               ) : null}
 
-              {!showSavedOnly && !infinite.isFetchingNextPage && allNews.length > 0 && !infinite.hasNextPage ? (
+              {!showSavedOnly && !(selectedCategory === 'All News' ? infinite.isFetchingNextPage : categoryInfinite.isFetchingNextPage) && allNews.length > 0 && !(selectedCategory === 'All News' ? infinite.hasNextPage : categoryInfinite.hasNextPage) ? (
                 <div className="col-span-full px-2 py-4 text-xs text-muted-foreground">You’ve reached the end.</div>
               ) : null}
             </div>
@@ -613,18 +744,18 @@ const Index = () => {
           <span className="text-[10px] text-muted-foreground flex items-center gap-2">
             <span
               className={
-                activeSources.length === sourcesConfig.length ? "text-terminal-green" : "text-terminal-amber"
+                activeSourceCount === totalSourceCount ? "text-terminal-green" : "text-terminal-amber"
               }
             >
               {/* Slight upward shift keeps the dot optically centered with the text */}
               <span className="inline-block -translate-y-[1px]">●</span>
             </span>
-            <span className={activeSources.length === sourcesConfig.length ? "text-terminal-green" : "text-muted-foreground"}>
-              {activeSources.length}/{sourcesConfig.length} Sources Active
+            <span className={activeSourceCount === totalSourceCount ? "text-terminal-green" : "text-muted-foreground"}>
+              {activeSourceCount}/{totalSourceCount} Sources Active
             </span>
           </span>
           <span className="text-[10px] text-muted-foreground">
-            {activeSources.reduce((sum, s) => sum + s.news.length, 0)} Articles Loaded
+            {loadedArticlesCount} Articles Loaded
           </span>
         </div>
         <div className="flex items-center gap-3">
@@ -700,8 +831,12 @@ const Index = () => {
       <SettingsDialog
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
+        availableSources={availableSources}
         selectedSources={selectedSources}
-        onSelectedSourcesChange={setSelectedSources}
+        onSelectedSourcesChange={(next) => {
+          setSelectedSources(next);
+          setAppliedSources(next);
+        }}
         displayMode={displayMode}
         onDisplayModeChange={setDisplayMode}
         theme={theme}

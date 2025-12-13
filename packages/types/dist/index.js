@@ -9,8 +9,14 @@ export const NewsItemSchema = z.object({
     publishedAt: z.string(),
     imageUrl: z.string().url().optional(),
 });
+export const NewsSourceSchema = z.object({
+    id: z.string(),
+    name: z.string(),
+});
 export const NewsListResponseSchema = z.object({
     items: z.array(NewsItemSchema),
+    sources: z.array(NewsSourceSchema),
+    defaultSources: z.array(z.string()),
 });
 export const PriceQuoteSchema = z.object({
     symbol: z.string(),

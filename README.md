@@ -30,6 +30,7 @@ Environment:
 
 - Set `COINDESK_API_KEY` to enable live news
 - News retention defaults to 7 days via `NEWS_RETENTION_DAYS`
+- CoinDesk sources are currently configured in code (not via env)
 
 ## Features
 - Real-time crypto news

@@ -168,6 +168,8 @@ export class CoindeskNewsProvider implements NewsProvider {
             if (v === "coindesk") return "CoinDesk";
             if (v === "decrypt") return "Decrypt";
             if (v === "cointelegraph") return "Cointelegraph";
+            if (v === "blockworks") return "Blockworks";
+            if (v === "bitcoinmagazine") return "Bitcoin Magazine";
             return value;
         };
 
@@ -185,14 +187,30 @@ export class CoindeskNewsProvider implements NewsProvider {
                 "News";
 
             const sourceFromFields = (() => {
-                if (a.SOURCE_DATA?.NAME) return normalizeSourceName(a.SOURCE_DATA.NAME);
                 if (a.SOURCE_DATA?.SOURCE_KEY) return normalizeSourceName(a.SOURCE_DATA.SOURCE_KEY);
+                if (a.SOURCE_DATA?.NAME) return normalizeSourceName(a.SOURCE_DATA.NAME);
+
+                // Some responses include numeric SOURCE_IDs (not stable names). Only use
+                // source id fields if they look like a non-numeric key.
+                const sourceId = a.source_id ?? a.sourceId ?? a.SOURCE_ID;
+                if (sourceId !== undefined && sourceId !== null) {
+                    const s = String(sourceId).trim();
+                    if (s.length > 0 && !/^\d+$/.test(s)) return normalizeSourceName(s);
+                }
+
                 if (typeof a.source === "string" && a.source) return normalizeSourceName(a.source);
                 if (a.source && typeof a.source === "object" && a.source.name) return normalizeSourceName(a.source.name);
-                const id = a.source_id ?? a.sourceId;
-                if (id) return normalizeSourceName(id);
                 const name = a.source_name ?? a.sourceName;
                 if (name) return normalizeSourceName(name);
+
+                // If upstream doesn't provide any source fields, but we queried a single
+                // source_id, use that as the source label.
+                const configured = (this.options.sourceIds ?? "")
+                    .split(",")
+                    .map((x) => x.trim())
+                    .filter(Boolean);
+                if (configured.length === 1) return normalizeSourceName(configured[0]!);
+
                 return this.name;
             })();
 

@@ -1,13 +1,13 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Newspaper, LayoutList, Sun, Moon } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { sources } from "@/data/sources";
 
 interface SettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  selectedSources: string[];
-  onSelectedSourcesChange: (sources: string[]) => void;
+  availableSources: { id: string; name: string }[];
+  selectedSources: string[]; // source ids
+  onSelectedSourcesChange: (sources: string[]) => void; // source ids
   displayMode: "compact" | "line" | "cards";
   onDisplayModeChange: (mode: "compact" | "line" | "cards") => void;
   theme: "light" | "dark";
@@ -17,6 +17,7 @@ interface SettingsDialogProps {
 export const SettingsDialog = ({
   open,
   onOpenChange,
+  availableSources,
   selectedSources,
   onSelectedSourcesChange,
   displayMode,
@@ -24,11 +25,12 @@ export const SettingsDialog = ({
   theme,
   onThemeChange,
 }: SettingsDialogProps) => {
-  const handleSourceToggle = (sourceName: string, checked: boolean) => {
-    if (checked) {
-      onSelectedSourcesChange([...selectedSources, sourceName]);
+  const toggleSource = (sourceId: string) => {
+    const isSelected = selectedSources.includes(sourceId);
+    if (isSelected) {
+      onSelectedSourcesChange(selectedSources.filter((s) => s !== sourceId));
     } else {
-      onSelectedSourcesChange(selectedSources.filter(s => s !== sourceName));
+      onSelectedSourcesChange([...selectedSources, sourceId]);
     }
   };
 
@@ -111,27 +113,22 @@ export const SettingsDialog = ({
                 Sources
               </span>
             </div>
-            <div className="space-y-4">
-              {sources.map((source) => {
-                const isChecked = selectedSources.includes(source.name);
+            <div className="grid grid-cols-2 gap-2">
+              {availableSources.map((source) => {
+                const isSelected = selectedSources.includes(source.id);
                 return (
-                  <label
-                    key={source.name}
-                    className="flex items-center justify-between cursor-pointer"
-                    onClick={(event) => {
-                      if ((event.target as HTMLElement).closest('[role="switch"]')) return;
-                      handleSourceToggle(source.name, !isChecked);
-                    }}
+                  <button
+                    key={source.id}
+                    type="button"
+                    aria-pressed={isSelected}
+                    onClick={() => toggleSource(source.id)}
+                    className={`px-3 py-2 text-xs font-medium uppercase tracking-wider transition-colors ${isSelected
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:text-foreground"
+                      }`}
                   >
-                    <span className="text-xs text-foreground">
-                      {source.name}
-                    </span>
-                    <Switch
-                      checked={isChecked}
-                      onCheckedChange={(checked) => handleSourceToggle(source.name, checked)}
-                      aria-label={`Toggle ${source.name}`}
-                    />
-                  </label>
+                    {source.name}
+                  </button>
                 );
               })}
             </div>

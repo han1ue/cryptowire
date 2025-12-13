@@ -10,6 +10,7 @@ interface NewsCardProps {
   isBreaking?: boolean;
   isSaved?: boolean;
   onToggleSave?: () => void;
+  onCategoryClick?: (category: string) => void;
   showSchemaButton?: boolean;
   onShowSchema?: () => void;
 }
@@ -24,6 +25,7 @@ export const NewsCard = ({
   isBreaking,
   isSaved,
   onToggleSave,
+  onCategoryClick,
   showSchemaButton,
   onShowSchema,
 }: NewsCardProps) => {
@@ -40,9 +42,17 @@ export const NewsCard = ({
             Breaking
           </span>
         )}
-        <span className="px-1.5 py-0.5 text-[10px] font-medium bg-primary/10 text-primary uppercase tracking-wider">
+        <button
+          type="button"
+          className="px-1.5 py-0.5 text-[10px] font-medium bg-primary/10 text-primary uppercase tracking-wider"
+          onClick={(e) => {
+            e.stopPropagation();
+            onCategoryClick?.(category);
+          }}
+          title={`Filter by ${category}`}
+        >
           {category}
-        </span>
+        </button>
         <span className="text-[10px] text-muted-foreground uppercase">
           {source}
         </span>

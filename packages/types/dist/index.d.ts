@@ -28,6 +28,17 @@ export declare const NewsItemSchema: z.ZodObject<{
     imageUrl?: string | undefined;
 }>;
 export type NewsItem = z.infer<typeof NewsItemSchema>;
+export declare const NewsSourceSchema: z.ZodObject<{
+    id: z.ZodString;
+    name: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    id: string;
+    name: string;
+}, {
+    id: string;
+    name: string;
+}>;
+export type NewsSource = z.infer<typeof NewsSourceSchema>;
 export declare const NewsListResponseSchema: z.ZodObject<{
     items: z.ZodArray<z.ZodObject<{
         id: z.ZodString;
@@ -57,6 +68,17 @@ export declare const NewsListResponseSchema: z.ZodObject<{
         category?: string | undefined;
         imageUrl?: string | undefined;
     }>, "many">;
+    sources: z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        name: z.ZodString;
+    }, "strip", z.ZodTypeAny, {
+        id: string;
+        name: string;
+    }, {
+        id: string;
+        name: string;
+    }>, "many">;
+    defaultSources: z.ZodArray<z.ZodString, "many">;
 }, "strip", z.ZodTypeAny, {
     items: {
         id: string;
@@ -68,6 +90,11 @@ export declare const NewsListResponseSchema: z.ZodObject<{
         url?: string | undefined;
         imageUrl?: string | undefined;
     }[];
+    sources: {
+        id: string;
+        name: string;
+    }[];
+    defaultSources: string[];
 }, {
     items: {
         id: string;
@@ -79,6 +106,11 @@ export declare const NewsListResponseSchema: z.ZodObject<{
         category?: string | undefined;
         imageUrl?: string | undefined;
     }[];
+    sources: {
+        id: string;
+        name: string;
+    }[];
+    defaultSources: string[];
 }>;
 export type NewsListResponse = z.infer<typeof NewsListResponseSchema>;
 export declare const PriceQuoteSchema: z.ZodObject<{

@@ -2,25 +2,35 @@ import { TrendingUp, TrendingDown } from "lucide-react";
 import { usePrices } from "@/hooks/usePrices";
 
 export const PriceBar = () => {
-  const symbols = ["BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "DOGE", "AVAX"];
+  // Static market-cap order (checked once; not dynamic).
+  const symbols = ["BTC", "ETH", "XRP", "BNB", "SOL", "DOGE", "ADA", "AVAX"];
   const { data } = usePrices(symbols);
 
-  const prices =
-    data?.quotes?.map((q) => ({
-      symbol: q.symbol,
-      price: q.usd.toLocaleString(undefined, { maximumFractionDigits: q.usd >= 1 ? 2 : 6 }),
-      change: q.usd24hChange ?? 0,
-    })) ??
+  const fallback = new Map(
     [
       { symbol: "BTC", price: "97,432.18", change: 2.34 },
       { symbol: "ETH", price: "3,891.45", change: -1.23 },
-      { symbol: "SOL", price: "234.67", change: 5.67 },
-      { symbol: "BNB", price: "712.89", change: 0.45 },
       { symbol: "XRP", price: "2.34", change: -0.89 },
-      { symbol: "ADA", price: "1.12", change: 3.21 },
+      { symbol: "BNB", price: "712.89", change: 0.45 },
+      { symbol: "SOL", price: "234.67", change: 5.67 },
       { symbol: "DOGE", price: "0.42", change: -2.45 },
+      { symbol: "ADA", price: "1.12", change: 3.21 },
       { symbol: "AVAX", price: "45.67", change: 1.89 },
-    ];
+    ].map((x) => [x.symbol, x] as const)
+  );
+
+  const bySymbol = new Map(
+    (data?.quotes ?? []).map((q) => [
+      q.symbol,
+      {
+        symbol: q.symbol,
+        price: q.usd.toLocaleString(undefined, { maximumFractionDigits: q.usd >= 1 ? 2 : 6 }),
+        change: q.usd24hChange ?? 0,
+      },
+    ])
+  );
+
+  const prices = symbols.map((sym) => bySymbol.get(sym) ?? fallback.get(sym)!).filter(Boolean);
 
   return (
     <div className="border-b border-border bg-card/50 overflow-hidden">

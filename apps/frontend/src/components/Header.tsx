@@ -1,4 +1,4 @@
-import { Terminal, Activity, Settings, Bell, Menu } from "lucide-react";
+import { Newspaper, Activity, Settings, Bell, Menu } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
 type NotificationItem = {
@@ -115,9 +115,11 @@ export const Header = ({
             <Menu className="h-5 w-5 text-muted-foreground" />
           </button>
           <a href="/" className="flex items-center gap-2 group cursor-pointer select-none">
-            <Terminal className="h-5 w-5 text-primary text-glow group-hover:scale-110 transition-transform" />
+            <Newspaper className="h-5 w-5 text-primary text-glow group-hover:scale-110 transition-transform" />
             <span className="text-lg font-bold text-foreground tracking-tight group-hover:text-primary transition-colors">
-              CRYPTO<span className="text-primary">WIRE</span>
+              CRYPTO<span className="text-primary">WI</span>
+              <span className="text-primary">.</span>
+              <span className="text-primary">RE</span>
             </span>
           </a>
           <div className="hidden sm:flex items-center gap-1 px-2 py-1 bg-muted/50 rounded">

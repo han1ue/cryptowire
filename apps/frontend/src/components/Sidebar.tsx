@@ -18,13 +18,11 @@ function CategoryScrollWithDynamicGradient({
   categorySearch,
   selectedCategory,
   onCategorySelect,
-  categoryCounts,
 }: {
   categories: string[];
   categorySearch: string;
   selectedCategory: string;
   onCategorySelect: (cat: string) => void;
-  categoryCounts: Record<string, number>;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showGradient, setShowGradient] = useState(false);
@@ -68,9 +66,6 @@ function CategoryScrollWithDynamicGradient({
               onClick={() => onCategorySelect(cat)}
             >
               <span>{cat}</span>
-              <span className="text-[10px] opacity-60">
-                {categoryCounts[cat] || 0}
-              </span>
             </button>
           ))}
       </div>
@@ -108,14 +103,6 @@ export const Sidebar = ({
     .filter(article => savedArticleTitles.includes(article.title))
     .slice(0, 3);
 
-  // Count articles per category
-  const categoryCounts: Record<string, number> = { 'All News': allNews.length };
-  allNews.forEach(article => {
-    if (article.category) {
-      categoryCounts[article.category] = (categoryCounts[article.category] || 0) + 1;
-    }
-  });
-
   const categories = [
     "All News",
     ...Array.from(
@@ -124,8 +111,6 @@ export const Sidebar = ({
   ].sort((a, b) => {
     if (a === "All News") return -1;
     if (b === "All News") return 1;
-    const diff = (categoryCounts[b] || 0) - (categoryCounts[a] || 0);
-    if (diff !== 0) return diff;
     return a.localeCompare(b);
   });
 
@@ -299,7 +284,6 @@ export const Sidebar = ({
               categorySearch={categorySearch}
               selectedCategory={selectedCategory}
               onCategorySelect={onCategorySelect}
-              categoryCounts={categoryCounts}
             />
           </>
         )}

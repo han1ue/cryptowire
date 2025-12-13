@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { NewsListResponseSchema } from "@cryptowire/types";
+import { DEFAULT_COINDESK_SOURCE_IDS } from "../config.js";
 import type { NewsService } from "../services/newsService.js";
 import type { NewsStore } from "../stores/newsStore.js";
 
@@ -10,6 +11,42 @@ export const createNewsRouter = (
     opts?: { refreshSecret?: string },
 ) => {
     const router = Router();
+
+    const normalizeSourceName = (value: string) => {
+        const v = value.trim().toLowerCase();
+        if (v === "coindesk") return "CoinDesk";
+        if (v === "decrypt") return "Decrypt";
+        if (v === "cointelegraph") return "Cointelegraph";
+        if (v === "blockworks") return "Blockworks";
+        if (v === "bitcoinmagazine") return "Bitcoin Magazine";
+        // Best-effort title casing for unknown ids
+        return value
+            .trim()
+            .split(/\s+|_/)
+            .filter(Boolean)
+            .map((w) => w.slice(0, 1).toUpperCase() + w.slice(1))
+            .join(" ");
+    };
+
+    const SUPPORTED_SOURCES = [
+        { id: "coindesk", name: "CoinDesk" },
+        { id: "decrypt", name: "Decrypt" },
+        { id: "cointelegraph", name: "Cointelegraph" },
+        { id: "blockworks", name: "Blockworks" },
+        { id: "bitcoinmagazine", name: "Bitcoin Magazine" },
+    ] as const;
+
+    // Backend-owned defaults: these are the sources we show on first load.
+    const DEFAULT_SOURCE_IDS = ["coindesk", "decrypt", "cointelegraph", "blockworks"] as const;
+
+    const sourceIdToName = (id: string) => {
+        const found = SUPPORTED_SOURCES.find((s) => s.id === id);
+        return found?.name ?? normalizeSourceName(id);
+    };
+
+    router.get("/news/sources", async (_req, res) => {
+        return res.json({ sources: SUPPORTED_SOURCES });
+    });
 
     const kvEnabled = Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
     const KV_LAST_REFRESH_KEY = "news:lastRefreshAt";
@@ -100,7 +137,7 @@ export const createNewsRouter = (
         const apiKeyPresent = Boolean(process.env.COINDESK_API_KEY);
         const baseUrl = process.env.COINDESK_BASE_URL ?? "https://data-api.coindesk.com";
         const endpointPath = process.env.COINDESK_NEWS_ENDPOINT_PATH ?? "/news/v1/article/list";
-        const sourceIds = process.env.COINDESK_SOURCE_IDS ?? "";
+        const sourceIds = DEFAULT_COINDESK_SOURCE_IDS;
 
         const buildUrl = (includeSources: boolean) => {
             const url = new URL(endpointPath, baseUrl);
@@ -182,6 +219,8 @@ export const createNewsRouter = (
             limit: z.coerce.number().int().positive().max(500).default(30),
             offset: z.coerce.number().int().min(0).max(10_000).default(0),
             retentionDays: z.coerce.number().int().positive().max(30).optional(),
+            sources: z.string().optional(),
+            category: z.string().optional(),
         });
 
         const parsed = querySchema.safeParse(req.query);
@@ -193,8 +232,60 @@ export const createNewsRouter = (
         const offset = parsed.data.offset;
         const retentionDays = Math.min(parsed.data.retentionDays ?? 7, 7);
 
+        const requestedSourceIds = (parsed.data.sources ?? "")
+            .split(",")
+            .map((x) => x.trim().toLowerCase())
+            .filter(Boolean);
+
+        const requestedCategory = (parsed.data.category ?? "").trim();
+        const requestedCategoryKey = requestedCategory.length > 0 ? requestedCategory.toLowerCase() : null;
+
+        const supportedIds = new Set<string>(SUPPORTED_SOURCES.map((s) => s.id));
+        const requested = requestedSourceIds.filter((id) => supportedIds.has(id));
+        const defaultSourceNames = new Set(DEFAULT_SOURCE_IDS.map(sourceIdToName));
+        const requestedSourceNames = requested.length > 0 ? new Set(requested.map(sourceIdToName)) : defaultSourceNames;
+
+        const getFilteredPageFromStore = async (): Promise<unknown[]> => {
+
+            // Implement offset/limit on the *filtered* sequence by scanning the
+            // underlying store in chunks.
+            const chunkSize = Math.max(50, Math.min(400, limit * 4));
+            const maxChunks = 30; // hard cap to avoid unbounded scans
+
+            let rawOffset = 0;
+            let filteredSeen = 0;
+            const out: unknown[] = [];
+
+            for (let i = 0; i < maxChunks; i++) {
+                const chunk = await newsStore.getPage({ limit: chunkSize, offset: rawOffset });
+                if (chunk.length === 0) break;
+
+                rawOffset += chunk.length;
+
+                for (const item of chunk as any[]) {
+                    const src = typeof item?.source === "string" ? item.source : "";
+                    if (!requestedSourceNames.has(src)) continue;
+
+                    if (requestedCategoryKey) {
+                        const cat = typeof item?.category === "string" ? item.category.trim().toLowerCase() : "";
+                        if (cat !== requestedCategoryKey) continue;
+                    }
+
+                    if (filteredSeen < offset) {
+                        filteredSeen++;
+                        continue;
+                    }
+
+                    out.push(item);
+                    if (out.length >= limit) return out;
+                }
+            }
+
+            return out;
+        };
+
         // Serve from store (KV/in-memory). This avoids hitting upstream on every user request.
-        let items = await newsStore.getPage({ limit, offset });
+        let items = (await getFilteredPageFromStore()) as any[];
         if (items.length === 0 && offset === 0) {
             // Cold start: warm the store once.
             const warmed = await newsService.refreshHeadlines({
@@ -206,10 +297,10 @@ export const createNewsRouter = (
             const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000).toISOString();
             await newsStore.pruneOlderThan(cutoff);
             await setLastRefreshAt(new Date().toISOString());
-            items = await newsStore.getPage({ limit, offset });
+            items = (await getFilteredPageFromStore()) as any[];
         }
 
-        const payload = { items };
+        const payload = { items, sources: SUPPORTED_SOURCES, defaultSources: Array.from(DEFAULT_SOURCE_IDS) };
         const validated = NewsListResponseSchema.safeParse(payload);
         if (!validated.success) {
             return res.status(500).json({ error: "Invalid response shape" });
