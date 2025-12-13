@@ -82,12 +82,47 @@ export class CoindeskNewsProvider {
         this.options = options;
     }
     async fetchHeadlines(params) {
-        // eslint-disable-next-line no-console
-        console.error('[CoinDesk adapter] fetchHeadlines called. apiKey present:', Boolean(this.options.apiKey));
         if (!this.options.apiKey)
             return [];
         const baseUrl = this.options.baseUrl ?? "https://data-api.coindesk.com";
         const endpointPath = this.options.endpointPath ?? "/news/v1/article/list";
+        const configuredSourceIds = (this.options.sourceIds ?? "")
+            .split(",")
+            .map((x) => x.trim())
+            .filter(Boolean);
+        const normalizeSourceName = (value) => {
+            const v = value.trim().toLowerCase();
+            if (v === "coindesk")
+                return "CoinDesk";
+            if (v === "decrypt")
+                return "Decrypt";
+            if (v === "cointelegraph")
+                return "Cointelegraph";
+            if (v === "blockworks")
+                return "Blockworks";
+            if (v === "bitcoinmagazine")
+                return "Bitcoin Magazine";
+            return value;
+        };
+        const inferSourceFromUrl = (urlValue) => {
+            try {
+                const host = new URL(urlValue).hostname.replace(/^www\./, "").toLowerCase();
+                if (host.endsWith("blockworks.co"))
+                    return "Blockworks";
+                if (host.endsWith("bitcoinmagazine.com"))
+                    return "Bitcoin Magazine";
+                if (host.endsWith("decrypt.co"))
+                    return "Decrypt";
+                if (host.endsWith("cointelegraph.com"))
+                    return "Cointelegraph";
+                if (host.endsWith("coindesk.com"))
+                    return "CoinDesk";
+                return null;
+            }
+            catch {
+                return null;
+            }
+        };
         const url = new URL(endpointPath, baseUrl);
         url.searchParams.set("limit", String(params.limit));
         url.searchParams.set("lang", "EN");
@@ -104,58 +139,26 @@ export class CoindeskNewsProvider {
                 },
             });
         }
-        catch (err) {
-            // eslint-disable-next-line no-console
-            console.error("[CoinDesk adapter] Fetch error:", err);
+        catch {
             return [];
         }
         if (!res.ok) {
-            let errorText = await res.text();
-            // eslint-disable-next-line no-console
-            console.error("[CoinDesk adapter] Bad response:", res.status, errorText);
             return [];
         }
         let raw;
         try {
             raw = await res.json();
-            const count = Array.isArray(raw?.Data)
-                ? raw.Data.length
-                : Array.isArray(raw?.data)
-                    ? raw.data.length
-                    : Array.isArray(raw?.articles)
-                        ? raw.articles.length
-                        : 0;
-            // eslint-disable-next-line no-console
-            console.error("[CoinDesk adapter] Raw API response count:", count);
         }
-        catch (err) {
-            // eslint-disable-next-line no-console
-            console.error("[CoinDesk adapter] Invalid JSON:", err);
+        catch {
             return [];
         }
         const parsed = CoindeskResponseSchema.safeParse(raw);
         if (!parsed.success) {
-            // eslint-disable-next-line no-console
-            console.error("[CoinDesk adapter] Schema parse error:", parsed.error.toString());
             return [];
         }
         const rows = parsed.data.Data ?? parsed.data.data ?? parsed.data.articles ?? [];
         const cutoff = nowMinusDaysIso(params.retentionDays);
         const items = [];
-        const normalizeSourceName = (value) => {
-            const v = value.trim().toLowerCase();
-            if (v === "coindesk")
-                return "CoinDesk";
-            if (v === "decrypt")
-                return "Decrypt";
-            if (v === "cointelegraph")
-                return "Cointelegraph";
-            if (v === "blockworks")
-                return "Blockworks";
-            if (v === "bitcoinmagazine")
-                return "Bitcoin Magazine";
-            return value;
-        };
         rows.forEach((a, idx) => {
             const title = (a.TITLE ?? a.title ?? "").trim();
             const summary = (a.SUBTITLE ?? a.description ?? a.BODY ?? "").trim();
@@ -167,6 +170,7 @@ export class CoindeskNewsProvider {
                 a.CATEGORY_DATA?.[0]?.CATEGORY ??
                 a.CATEGORY_DATA?.[0]?.NAME ??
                 "News";
+            const urlValue = (a.URL ?? a.url ?? "").trim();
             const sourceFromFields = (() => {
                 if (a.SOURCE_DATA?.SOURCE_KEY)
                     return normalizeSourceName(a.SOURCE_DATA.SOURCE_KEY);
@@ -174,9 +178,9 @@ export class CoindeskNewsProvider {
                     return normalizeSourceName(a.SOURCE_DATA.NAME);
                 // Some responses include numeric SOURCE_IDs (not stable names). Only use
                 // source id fields if they look like a non-numeric key.
-                const sourceId = a.source_id ?? a.sourceId ?? a.SOURCE_ID;
-                if (sourceId !== undefined && sourceId !== null) {
-                    const s = String(sourceId).trim();
+                const sourceIdValue = a.source_id ?? a.sourceId ?? a.SOURCE_ID;
+                if (sourceIdValue !== undefined && sourceIdValue !== null) {
+                    const s = String(sourceIdValue).trim();
                     if (s.length > 0 && !/^\d+$/.test(s))
                         return normalizeSourceName(s);
                 }
@@ -187,14 +191,16 @@ export class CoindeskNewsProvider {
                 const name = a.source_name ?? a.sourceName;
                 if (name)
                     return normalizeSourceName(name);
+                // Fallback: infer from URL host (works well for Blockworks).
+                if (urlValue) {
+                    const inferred = inferSourceFromUrl(urlValue);
+                    if (inferred)
+                        return inferred;
+                }
                 // If upstream doesn't provide any source fields, but we queried a single
                 // source_id, use that as the source label.
-                const configured = (this.options.sourceIds ?? "")
-                    .split(",")
-                    .map((x) => x.trim())
-                    .filter(Boolean);
-                if (configured.length === 1)
-                    return normalizeSourceName(configured[0]);
+                if (configuredSourceIds.length === 1)
+                    return normalizeSourceName(configuredSourceIds[0]);
                 return this.name;
             })();
             const base = {
@@ -205,7 +211,6 @@ export class CoindeskNewsProvider {
                 category,
                 publishedAt,
             };
-            const urlValue = a.URL ?? a.url;
             if (urlValue)
                 base.url = urlValue;
             const imageUrl = a.IMAGE_URL ?? a.imageUrl ?? a.imageurl;

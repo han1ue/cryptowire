@@ -94,74 +94,15 @@ export class CoindeskNewsProvider implements NewsProvider {
     ) { }
 
     async fetchHeadlines(params: FetchHeadlinesParams): Promise<NewsItem[]> {
-        // eslint-disable-next-line no-console
-        console.error('[CoinDesk adapter] fetchHeadlines called. apiKey present:', Boolean(this.options.apiKey));
         if (!this.options.apiKey) return [];
 
         const baseUrl = this.options.baseUrl ?? "https://data-api.coindesk.com";
         const endpointPath = this.options.endpointPath ?? "/news/v1/article/list";
 
-        const url = new URL(endpointPath, baseUrl);
-        url.searchParams.set("limit", String(params.limit));
-        url.searchParams.set("lang", "EN");
-        if (this.options.sourceIds) {
-            url.searchParams.set("source_ids", this.options.sourceIds);
-        }
-
-        // CoinDesk Data API supports api_key as a query param.
-        url.searchParams.set("api_key", this.options.apiKey);
-
-
-        let res: Response;
-        try {
-            res = await fetch(url.toString(), {
-                headers: {
-                    Accept: "application/json",
-                },
-            });
-        } catch (err) {
-            // eslint-disable-next-line no-console
-            console.error("[CoinDesk adapter] Fetch error:", err);
-            return [];
-        }
-
-        if (!res.ok) {
-            let errorText = await res.text();
-            // eslint-disable-next-line no-console
-            console.error("[CoinDesk adapter] Bad response:", res.status, errorText);
-            return [];
-        }
-
-        let raw: unknown;
-        try {
-            raw = await res.json();
-            const count = Array.isArray((raw as any)?.Data)
-                ? (raw as any).Data.length
-                : Array.isArray((raw as any)?.data)
-                    ? (raw as any).data.length
-                    : Array.isArray((raw as any)?.articles)
-                        ? (raw as any).articles.length
-                        : 0;
-            // eslint-disable-next-line no-console
-            console.error("[CoinDesk adapter] Raw API response count:", count);
-        } catch (err) {
-            // eslint-disable-next-line no-console
-            console.error("[CoinDesk adapter] Invalid JSON:", err);
-            return [];
-        }
-
-        const parsed = CoindeskResponseSchema.safeParse(raw);
-        if (!parsed.success) {
-            // eslint-disable-next-line no-console
-            console.error("[CoinDesk adapter] Schema parse error:", parsed.error.toString());
-            return [];
-        }
-
-        const rows = parsed.data.Data ?? parsed.data.data ?? parsed.data.articles ?? [];
-
-        const cutoff = nowMinusDaysIso(params.retentionDays);
-
-        const items: NewsItem[] = [];
+        const configuredSourceIds = (this.options.sourceIds ?? "")
+            .split(",")
+            .map((x) => x.trim())
+            .filter(Boolean);
 
         const normalizeSourceName = (value: string) => {
             const v = value.trim().toLowerCase();
@@ -173,6 +114,61 @@ export class CoindeskNewsProvider implements NewsProvider {
             return value;
         };
 
+        const inferSourceFromUrl = (urlValue: string): string | null => {
+            try {
+                const host = new URL(urlValue).hostname.replace(/^www\./, "").toLowerCase();
+                if (host.endsWith("blockworks.co")) return "Blockworks";
+                if (host.endsWith("bitcoinmagazine.com")) return "Bitcoin Magazine";
+                if (host.endsWith("decrypt.co")) return "Decrypt";
+                if (host.endsWith("cointelegraph.com")) return "Cointelegraph";
+                if (host.endsWith("coindesk.com")) return "CoinDesk";
+                return null;
+            } catch {
+                return null;
+            }
+        };
+
+        const url = new URL(endpointPath, baseUrl);
+        url.searchParams.set("limit", String(params.limit));
+        url.searchParams.set("lang", "EN");
+        if (this.options.sourceIds) {
+            url.searchParams.set("source_ids", this.options.sourceIds);
+        }
+
+        // CoinDesk Data API supports api_key as a query param.
+        url.searchParams.set("api_key", this.options.apiKey);
+
+        let res: Response;
+        try {
+            res = await fetch(url.toString(), {
+                headers: {
+                    Accept: "application/json",
+                },
+            });
+        } catch {
+            return [];
+        }
+
+        if (!res.ok) {
+            return [];
+        }
+
+        let raw: unknown;
+        try {
+            raw = await res.json();
+        } catch {
+            return [];
+        }
+
+        const parsed = CoindeskResponseSchema.safeParse(raw);
+        if (!parsed.success) {
+            return [];
+        }
+
+        const rows = parsed.data.Data ?? parsed.data.data ?? parsed.data.articles ?? [];
+        const cutoff = nowMinusDaysIso(params.retentionDays);
+
+        const items: NewsItem[] = [];
         rows.forEach((a, idx) => {
             const title = (a.TITLE ?? a.title ?? "").trim();
             const summary = (a.SUBTITLE ?? a.description ?? a.BODY ?? "").trim();
@@ -186,15 +182,17 @@ export class CoindeskNewsProvider implements NewsProvider {
                 a.CATEGORY_DATA?.[0]?.NAME ??
                 "News";
 
+            const urlValue = (a.URL ?? a.url ?? "").trim();
+
             const sourceFromFields = (() => {
                 if (a.SOURCE_DATA?.SOURCE_KEY) return normalizeSourceName(a.SOURCE_DATA.SOURCE_KEY);
                 if (a.SOURCE_DATA?.NAME) return normalizeSourceName(a.SOURCE_DATA.NAME);
 
                 // Some responses include numeric SOURCE_IDs (not stable names). Only use
                 // source id fields if they look like a non-numeric key.
-                const sourceId = a.source_id ?? a.sourceId ?? a.SOURCE_ID;
-                if (sourceId !== undefined && sourceId !== null) {
-                    const s = String(sourceId).trim();
+                const sourceIdValue = a.source_id ?? a.sourceId ?? a.SOURCE_ID;
+                if (sourceIdValue !== undefined && sourceIdValue !== null) {
+                    const s = String(sourceIdValue).trim();
                     if (s.length > 0 && !/^\d+$/.test(s)) return normalizeSourceName(s);
                 }
 
@@ -203,13 +201,15 @@ export class CoindeskNewsProvider implements NewsProvider {
                 const name = a.source_name ?? a.sourceName;
                 if (name) return normalizeSourceName(name);
 
+                // Fallback: infer from URL host (works well for Blockworks).
+                if (urlValue) {
+                    const inferred = inferSourceFromUrl(urlValue);
+                    if (inferred) return inferred;
+                }
+
                 // If upstream doesn't provide any source fields, but we queried a single
                 // source_id, use that as the source label.
-                const configured = (this.options.sourceIds ?? "")
-                    .split(",")
-                    .map((x) => x.trim())
-                    .filter(Boolean);
-                if (configured.length === 1) return normalizeSourceName(configured[0]!);
+                if (configuredSourceIds.length === 1) return normalizeSourceName(configuredSourceIds[0]!);
 
                 return this.name;
             })();
@@ -223,7 +223,6 @@ export class CoindeskNewsProvider implements NewsProvider {
                 publishedAt,
             };
 
-            const urlValue = a.URL ?? a.url;
             if (urlValue) base.url = urlValue;
 
             const imageUrl = a.IMAGE_URL ?? a.imageUrl ?? a.imageurl;
