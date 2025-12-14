@@ -7,6 +7,5 @@ const [{ app }, { getConfig }] = await Promise.all([import("./app.js"), import("
 const config = getConfig();
 
 app.listen(config.PORT, () => {
-    // eslint-disable-next-line no-console
     console.log(`API listening on http://localhost:${config.PORT}`);
 });

@@ -108,7 +108,9 @@ export const NewsCard = ({
                 if (navigator.share) {
                   try {
                     await navigator.share({ title, url });
-                  } catch { }
+                  } catch {
+                    void 0;
+                  }
                 } else {
                   await navigator.clipboard.writeText(url);
                   if (typeof window !== 'undefined' && window.dispatchEvent) {

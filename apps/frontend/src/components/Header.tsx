@@ -1,5 +1,6 @@
 import { Activity, Settings, Bell, Menu } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 type NotificationItem = {
   id: string;
@@ -14,6 +15,7 @@ interface HeaderProps {
   notifications?: NotificationItem[];
   onNotificationsViewed?: () => void;
   onMenuClick?: () => void;
+  lastRefreshAt?: string | null;
 }
 
 export const Header = ({
@@ -21,6 +23,7 @@ export const Header = ({
   notifications = [],
   onNotificationsViewed = () => { },
   onMenuClick = () => { },
+  lastRefreshAt = null,
 }: HeaderProps) => {
   const [isOnline, setIsOnline] = useState<boolean>(() => {
     if (typeof navigator === "undefined") return true;
@@ -46,6 +49,21 @@ export const Header = ({
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
   const hasUnread = notifications.some(notification => !notification.read);
+  const [statusOpen, setStatusOpen] = useState(false);
+
+  const formatAgeShort = (iso: string): string => {
+    const t = new Date(iso).getTime();
+    if (!Number.isFinite(t)) return "";
+    const diffMs = Date.now() - t;
+    if (diffMs < 0) return "0m";
+    const diffMin = Math.floor(diffMs / 60_000);
+    if (diffMin < 1) return "<1m";
+    if (diffMin < 60) return `${diffMin}m`;
+    const diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24) return `${diffHr}h`;
+    const diffDay = Math.floor(diffHr / 24);
+    return `${diffDay}d`;
+  };
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -84,14 +102,14 @@ export const Header = ({
     };
   }, []);
 
-  const closeNotifications = () => {
+  const closeNotifications = useCallback(() => {
     setNotificationsOpen(open => {
       if (open && hasUnread) {
         onNotificationsViewed();
       }
       return false;
     });
-  };
+  }, [hasUnread, onNotificationsViewed]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -105,7 +123,7 @@ export const Header = ({
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [notificationsOpen, hasUnread]);
+  }, [notificationsOpen, closeNotifications]);
 
   const handleToggleNotifications = () => {
     setNotificationsOpen(open => {
@@ -144,16 +162,45 @@ export const Header = ({
               <span className="text-primary">RE</span>
             </span>
           </a>
-          <div className="hidden sm:flex items-center gap-1 px-2 py-1 bg-muted/50 rounded">
-            <Activity
-              className={`h-3 w-3 ${isOnline ? "text-terminal-green pulse-glow" : "text-terminal-red"}`}
-            />
-            <span
-              className={`text-[10px] uppercase ${isOnline ? "text-terminal-green" : "text-terminal-red"}`}
+          <Popover open={statusOpen} onOpenChange={setStatusOpen}>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className="flex items-center gap-1 px-2 py-1 bg-muted/50 rounded"
+                aria-label="Connection status"
+                onMouseEnter={() => setStatusOpen(true)}
+                onMouseLeave={() => setStatusOpen(false)}
+                onClick={() => setStatusOpen((v) => !v)}
+              >
+                <Activity
+                  className={`h-3 w-3 ${isOnline ? "text-terminal-green pulse-glow" : "text-terminal-red"}`}
+                />
+                <span
+                  className={`hidden sm:inline text-[10px] uppercase ${isOnline ? "text-terminal-green" : "text-terminal-red"}`}
+                >
+                  {isOnline ? "Connected" : "Disconnected"}
+                </span>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              align="start"
+              className="w-56"
+              onMouseEnter={() => setStatusOpen(true)}
+              onMouseLeave={() => setStatusOpen(false)}
             >
-              {isOnline ? "Connected" : "Disconnected"}
-            </span>
-          </div>
+              <div className="space-y-1">
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Status</div>
+                <div className="text-xs text-foreground">
+                  {isOnline ? "Connected" : "Disconnected"}
+                </div>
+                {isOnline && lastRefreshAt ? (
+                  <div className="text-[11px] text-muted-foreground">
+                    Updated {formatAgeShort(lastRefreshAt)} ago
+                  </div>
+                ) : null}
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
 
         {/* Center - Navigation */}

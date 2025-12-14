@@ -8,6 +8,7 @@ import { sources as sourcesConfig, SourceId, SourceName } from "@/data/sources";
 import { useNews } from "@/hooks/useNews";
 import { useInfiniteNews } from "@/hooks/useInfiniteNews";
 import { useSavedArticles } from "@/hooks/useSavedArticles";
+import { useNewsStatus } from "@/hooks/useNewsStatus";
 import { useState, useEffect } from "react";
 import { toast } from "@/components/ui/sonner";
 import { Bookmark, MoreVertical, Share2 } from "lucide-react";
@@ -90,6 +91,8 @@ const Index = () => {
       return Array.from(DEFAULT_SELECTED_SOURCE_IDS);
     }
   });
+
+  const newsStatus = useNewsStatus();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const getSavedTheme = (): "light" | "dark" | null => {
     try {
@@ -221,13 +224,10 @@ const Index = () => {
 
     updateFromSystem();
     media.addEventListener?.("change", updateFromSystem);
-    // Safari < 14
-    // eslint-disable-next-line deprecation/deprecation
     media.addListener?.(updateFromSystem);
 
     return () => {
       media.removeEventListener?.("change", updateFromSystem);
-      // eslint-disable-next-line deprecation/deprecation
       media.removeListener?.(updateFromSystem);
     };
   }, [themeIsUserSelected]);
@@ -298,6 +298,8 @@ const Index = () => {
   }, [
     showSavedOnly,
     selectedCategory,
+    infinite,
+    categoryInfinite,
     infinite.hasNextPage,
     infinite.isFetchingNextPage,
     infinite.fetchNextPage,
@@ -351,7 +353,7 @@ const Index = () => {
     });
 
   const allNews = (showSavedOnly ? savedOnlyNews : filteredBySource)
-    .map((n: any) => {
+    .map((n) => {
       if (showSavedOnly) return n;
       return {
         id: n.id,
@@ -437,6 +439,7 @@ const Index = () => {
         notifications={notifications}
         onNotificationsViewed={markAllNotificationsRead}
         onMenuClick={() => setSidebarOpen(true)}
+        lastRefreshAt={newsStatus.data?.lastRefreshAt ?? null}
       />
       <PriceBar />
       <NewsTicker sources={selectedSources} />

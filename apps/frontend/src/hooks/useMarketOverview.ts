@@ -17,7 +17,7 @@ type MarketOverviewResponse = {
 };
 
 const getApiBaseUrl = (): string => {
-    const configured = (import.meta as any).env?.VITE_API_BASE_URL as string | undefined;
+    const configured = import.meta.env.VITE_API_BASE_URL as string | undefined;
     if (configured && typeof configured === "string" && configured.trim().length > 0) {
         return configured.replace(/\/+$/, "");
     }

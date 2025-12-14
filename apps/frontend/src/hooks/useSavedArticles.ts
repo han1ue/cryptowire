@@ -55,24 +55,30 @@ const readSaved = (): SavedArticle[] => {
         if (!Array.isArray(parsed)) return [];
 
         const out: SavedArticle[] = [];
-        for (const row of parsed as any[]) {
+        for (const row of parsed as unknown[]) {
             if (!row || typeof row !== "object") continue;
-            const title = typeof row.title === "string" ? row.title : "";
+            const r = row as Record<string, unknown>;
+            const title = typeof r.title === "string" ? r.title : "";
             if (!title.trim()) continue;
-            const savedAt = typeof row.savedAt === "string" && row.savedAt ? row.savedAt : new Date().toISOString();
+            const savedAt = typeof r.savedAt === "string" && r.savedAt ? r.savedAt : new Date().toISOString();
             const key =
-                typeof row.key === "string" && row.key
-                    ? row.key
-                    : toKey({ id: row.id, url: row.url, title, publishedAt: row.publishedAt });
+                typeof r.key === "string" && r.key
+                    ? r.key
+                    : toKey({
+                        id: typeof r.id === "string" ? r.id : undefined,
+                        url: typeof r.url === "string" ? r.url : undefined,
+                        title,
+                        publishedAt: typeof r.publishedAt === "string" ? r.publishedAt : undefined,
+                    });
 
             out.push({
                 key,
                 title,
-                url: typeof row.url === "string" ? row.url : undefined,
-                publishedAt: typeof row.publishedAt === "string" ? row.publishedAt : undefined,
-                source: typeof row.source === "string" ? row.source : undefined,
-                summary: typeof row.summary === "string" ? row.summary : undefined,
-                category: typeof row.category === "string" ? row.category : undefined,
+                url: typeof r.url === "string" ? r.url : undefined,
+                publishedAt: typeof r.publishedAt === "string" ? r.publishedAt : undefined,
+                source: typeof r.source === "string" ? r.source : undefined,
+                summary: typeof r.summary === "string" ? r.summary : undefined,
+                category: typeof r.category === "string" ? r.category : undefined,
                 savedAt,
             });
         }

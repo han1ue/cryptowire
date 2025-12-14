@@ -8,10 +8,10 @@ export const createMarketRouter = (marketService: MarketService) => {
         try {
             const overview = await marketService.getMarketOverview();
             return res.json({ ok: true, overview });
-        } catch (err: any) {
+        } catch (err: unknown) {
             return res.status(502).json({
                 ok: false,
-                error: String(err?.message ?? err),
+                error: err instanceof Error ? err.message : String(err),
             });
         }
     });

@@ -1,7 +1,7 @@
 import type { NewsListResponse, PriceResponse } from "@cryptowire/types";
 
 const getApiBaseUrl = (): string => {
-    const configured = (import.meta as any).env?.VITE_API_BASE_URL as string | undefined;
+    const configured = import.meta.env.VITE_API_BASE_URL as string | undefined;
     if (configured && typeof configured === "string" && configured.trim().length > 0) {
         return configured.replace(/\/+$/, "");
     }
@@ -25,6 +25,18 @@ export const fetchNews = async (params?: {
     const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });
     if (!res.ok) throw new Error("Failed to fetch news");
     return (await res.json()) as NewsListResponse;
+};
+
+export const fetchNewsStatus = async (): Promise<{ lastRefreshAt: string | null; now: string }> => {
+    const url = new URL("/api/news/status", getApiBaseUrl());
+    const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });
+    if (!res.ok) throw new Error("Failed to fetch news status");
+    const json: unknown = await res.json();
+    const record = json && typeof json === "object" ? (json as Record<string, unknown>) : null;
+    return {
+        lastRefreshAt: typeof record?.lastRefreshAt === "string" ? (record.lastRefreshAt as string) : null,
+        now: typeof record?.now === "string" ? (record.now as string) : new Date().toISOString(),
+    };
 };
 
 export const fetchPrices = async (symbols?: string[]): Promise<PriceResponse> => {
