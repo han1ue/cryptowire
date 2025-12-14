@@ -1,4 +1,4 @@
-import type { NewsListResponse, PriceResponse } from "@cryptowire/types";
+import type { ArticleResponse, NewsListResponse, PriceResponse } from "@cryptowire/types";
 
 const getApiBaseUrl = (): string => {
     const configured = (import.meta as any).env?.VITE_API_BASE_URL as string | undefined;
@@ -34,4 +34,11 @@ export const fetchPrices = async (symbols?: string[]): Promise<PriceResponse> =>
     const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });
     if (!res.ok) throw new Error("Failed to fetch prices");
     return (await res.json()) as PriceResponse;
+};
+
+export const fetchArticle = async (id: string): Promise<ArticleResponse> => {
+    const url = new URL(`/api/news/item/${encodeURIComponent(id)}/article`, getApiBaseUrl());
+    const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });
+    if (!res.ok) throw new Error("Failed to fetch article");
+    return (await res.json()) as ArticleResponse;
 };

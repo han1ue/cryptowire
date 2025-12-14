@@ -12,14 +12,18 @@
         "@cryptowire/adapters": "file:../../packages/adapters",
         "@cryptowire/types": "file:../../packages/types",
         "@vercel/kv": "^3.0.0",
+        "@mozilla/readability": "^0.6.0",
         "cors": "^2.8.5",
         "dotenv": "^16.6.1",
         "express": "^4.21.2",
+        "jsdom": "^26.1.0",
         "zod": "^3.25.76"
     },
     "devDependencies": {
         "@types/cors": "^2.8.18",
         "@types/express": "^4.17.23",
+        "@types/jsdom": "^21.1.7",
+        "@types/mozilla__readability": "^0.4.2",
         "@vercel/node": "^5.3.15",
         "tsx": "^4.20.3",
         "typescript": "^5.8.3"

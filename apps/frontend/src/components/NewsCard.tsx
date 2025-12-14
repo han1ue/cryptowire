@@ -1,4 +1,5 @@
 import { Clock, Bookmark, Share2 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface NewsCardProps {
   title: string;
@@ -10,6 +11,7 @@ interface NewsCardProps {
   isBreaking?: boolean;
   isSaved?: boolean;
   onToggleSave?: () => void;
+  onOpen?: () => void;
   onCategoryClick?: (category: string) => void;
   showSchemaButton?: boolean;
   onShowSchema?: () => void;
@@ -25,6 +27,7 @@ export const NewsCard = ({
   isBreaking,
   isSaved,
   onToggleSave,
+  onOpen,
   onCategoryClick,
   showSchemaButton,
   onShowSchema,
@@ -33,6 +36,7 @@ export const NewsCard = ({
     <article
       className="hover-group hover-border p-3 sm:p-4 bg-card border border-border transition-all duration-200 cursor-pointer terminal-glow flex flex-col h-full"
       onClick={() => {
+        if (onOpen) return onOpen();
         if (url) window.open(url, '_blank', 'noopener,noreferrer');
       }}
     >
@@ -59,17 +63,15 @@ export const NewsCard = ({
       </div>
 
       {url ? (
-        <a
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
+        <Link
+          to={typeof window !== 'undefined' && url.startsWith('/article/') ? url : `/article/${encodeURIComponent(title)}`}
           className="block"
           onClick={e => e.stopPropagation()}
         >
           <h3 className="hover-title text-sm font-medium text-foreground mb-2 transition-colors line-clamp-2">
             {title}
           </h3>
-        </a>
+        </Link>
       ) : (
         <h3 className="hover-title text-sm font-medium text-foreground mb-2 transition-colors line-clamp-2">
           {title}

@@ -7,9 +7,10 @@ import { NewsCard } from "@/components/NewsCard";
 import { sources as sourcesConfig, SourceId, SourceName } from "@/data/sources";
 import { useNews } from "@/hooks/useNews";
 import { useInfiniteNews } from "@/hooks/useInfiniteNews";
+import { useSavedArticles } from "@/hooks/useSavedArticles";
 import { useState, useEffect } from "react";
 import { toast } from "@/components/ui/sonner";
-import { Bookmark, MoreHorizontal, Share2 } from "lucide-react";
+import { Bookmark } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import {
   AlertDialog,
@@ -25,12 +26,7 @@ import { NewsItemSchema } from "@cryptowire/types";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Seo } from "@/components/Seo";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { useNavigate } from "react-router-dom";
 
 type NotificationItem = {
   id: string;
@@ -52,6 +48,7 @@ const initialNotifications: NotificationItem[] = [
 ];
 
 const Index = () => {
+  const navigate = useNavigate();
   const DEFAULT_SELECTED_SOURCE_IDS: SourceId[] = ["coindesk", "decrypt", "cointelegraph", "blockworks"];
 
   const normalizeSelectedSources = (raw: unknown): SourceId[] => {
@@ -105,10 +102,7 @@ const Index = () => {
     // Default stays as the previous default (line).
     return "line";
   });
-  const [savedArticles, setSavedArticles] = useState<string[]>(() => {
-    const saved = localStorage.getItem("savedArticles");
-    return saved ? JSON.parse(saved) : [];
-  });
+  const { savedTitles: savedArticles, toggleSaved: toggleSaveArticle } = useSavedArticles();
   const [showSavedOnly, setShowSavedOnly] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All News');
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
@@ -201,24 +195,8 @@ const Index = () => {
     localStorage.setItem("lineView", JSON.stringify(displayMode !== "cards"));
   }, [displayMode]);
   useEffect(() => {
-    localStorage.setItem("savedArticles", JSON.stringify(savedArticles));
-  }, [savedArticles]);
-  useEffect(() => {
     localStorage.setItem("notifications", JSON.stringify(notifications));
   }, [notifications]);
-
-  const toggleSaveArticle = (title: string) => {
-    setSavedArticles(prev => {
-      const isSaved = prev.includes(title);
-      if (isSaved) {
-        toast("Removed from saved articles");
-        return prev.filter(t => t !== title);
-      } else {
-        toast("Added to saved articles");
-        return [...prev, title];
-      }
-    });
-  };
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -304,6 +282,7 @@ const Index = () => {
     .map((n) => {
       const meta = sourceNameToMeta.get(String(n.source).toLowerCase());
       return {
+        id: n.id,
         title: n.title,
         summary: n.summary || "",
         time: formatDistanceToNow(new Date(n.publishedAt), { addSuffix: true }).replace(/^about /, ""),
@@ -325,6 +304,7 @@ const Index = () => {
     .map((n) => {
       const meta = sourceNameToMeta.get(String(n.source).toLowerCase());
       return {
+        id: n.id,
         title: n.title,
         summary: n.summary || "",
         time: formatDistanceToNow(new Date(n.publishedAt), { addSuffix: true }).replace(/^about /, ""),
@@ -466,8 +446,17 @@ const Index = () => {
                   </div>
                 ) : null}
 
-                {allNews.map((item, index) => (
-                  <div key={index} className="hover-group hover-enabled px-2 py-1.5 rounded transition-colors border-b border-border/60 last:border-b-0">
+                {allNews.map((item) => (
+                  <div
+                    key={item.id}
+                    className="hover-group hover-enabled px-2 py-1.5 rounded transition-colors border-b border-border/60 last:border-b-0 cursor-pointer"
+                    onClick={() => navigate(`/article/${item.id}`)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") navigate(`/article/${item.id}`);
+                    }}
+                  >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start gap-3">
@@ -475,141 +464,12 @@ const Index = () => {
                             <div className="text-news-time tabular-nums text-[10px] whitespace-nowrap">{item.time}</div>
                           </div>
                           <div className="min-w-0 flex-1 flex items-baseline gap-2">
-                            {item.url ? (
-                              <a
-                                href={item.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="hover-title text-[11px] sm:text-xs leading-snug text-foreground transition-colors block line-clamp-2"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <span>{item.title}</span>
-                                <span className="text-[10px] text-muted-foreground">&nbsp;·&nbsp;{item.sourceName}</span>
-                              </a>
-                            ) : (
-                              <span className="text-[11px] sm:text-xs leading-snug text-foreground block line-clamp-2">
-                                <span>{item.title}</span>
-                                <span className="text-[10px] text-muted-foreground">&nbsp;·&nbsp;{item.sourceName}</span>
-                              </span>
-                            )}
+                            <span className="hover-title text-[11px] sm:text-xs leading-snug text-foreground transition-colors block line-clamp-2">
+                              <span>{item.title}</span>
+                              <span className="text-[10px] text-muted-foreground">&nbsp;·&nbsp;{item.sourceName}</span>
+                            </span>
                           </div>
                         </div>
-                      </div>
-
-                      {/* Mobile: collapse actions into a single menu to keep rows compact */}
-                      <div className="sm:hidden flex-shrink-0">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button
-                              type="button"
-                              className="relative p-1 rounded text-muted-foreground hover:text-foreground transition-colors"
-                              onClick={(e) => e.stopPropagation()}
-                              title="More"
-                            >
-                              <MoreHorizontal className="h-5 w-5" />
-                              {savedArticles.includes(item.title) ? (
-                                <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-primary ring-2 ring-background" />
-                              ) : null}
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                            {devShowSchemaButtons ? (
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  showNewsItemSchema();
-                                }}
-                              >
-                                Schema
-                              </DropdownMenuItem>
-                            ) : null}
-                            {item.url ? (
-                              <DropdownMenuItem
-                                onClick={async () => {
-                                  if (navigator.share) {
-                                    try {
-                                      await navigator.share({ title: item.title, url: item.url });
-                                    } catch {
-                                      // ignore
-                                    }
-                                  } else {
-                                    await navigator.clipboard.writeText(item.url);
-                                    if (typeof window !== "undefined" && window.dispatchEvent) {
-                                      window.dispatchEvent(
-                                        new CustomEvent("show-toast", { detail: { message: "Link copied to clipboard" } })
-                                      );
-                                    }
-                                  }
-                                }}
-                              >
-                                Share
-                              </DropdownMenuItem>
-                            ) : null}
-                            <DropdownMenuItem
-                              onClick={() => {
-                                toggleSaveArticle(item.title);
-                              }}
-                            >
-                              {savedArticles.includes(item.title) ? "Unsave" : "Save"}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-
-                      {/* Desktop/tablet: keep existing hover-reveal buttons */}
-                      <div className="hover-actions hidden sm:flex gap-3 transition-opacity flex-shrink-0 flex-row">
-                        {devShowSchemaButtons ? (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              showNewsItemSchema();
-                            }}
-                            className="transition-colors"
-                            title="Show news item schema"
-                          >
-                            <span className="text-[10px] text-muted-foreground hover:text-primary">schema</span>
-                          </button>
-                        ) : null}
-
-                        {item.url ? (
-                          <button
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              if (navigator.share) {
-                                try {
-                                  await navigator.share({ title: item.title, url: item.url });
-                                } catch {
-                                  // ignore
-                                }
-                              } else {
-                                await navigator.clipboard.writeText(item.url);
-                                if (typeof window !== "undefined" && window.dispatchEvent) {
-                                  window.dispatchEvent(
-                                    new CustomEvent("show-toast", { detail: { message: "Link copied to clipboard" } })
-                                  );
-                                }
-                              }
-                            }}
-                            className="transition-colors"
-                            title="Share article"
-                          >
-                            <Share2 className="h-5 w-5 text-muted-foreground hover:text-primary" />
-                          </button>
-                        ) : null}
-
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleSaveArticle(item.title);
-                          }}
-                          className="transition-colors"
-                          title={savedArticles.includes(item.title) ? "Remove from saved" : "Save article"}
-                        >
-                          <Bookmark
-                            className={`h-5 w-5 ${savedArticles.includes(item.title)
-                              ? "fill-primary text-primary"
-                              : "text-muted-foreground hover:text-primary"}`}
-                          />
-                        </button>
                       </div>
                     </div>
                   </div>
@@ -649,23 +509,20 @@ const Index = () => {
                   </div>
                 ) : null}
 
-                {allNews.map((item, index) => (
-                  <div key={index} className="hover-group hover-enabled p-2 rounded transition-colors border-b border-border/60 last:border-b-0">
+                {allNews.map((item) => (
+                  <div
+                    key={item.id}
+                    className="hover-group hover-enabled p-2 rounded transition-colors border-b border-border/60 last:border-b-0 cursor-pointer"
+                    onClick={() => navigate(`/article/${item.id}`)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") navigate(`/article/${item.id}`);
+                    }}
+                  >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        {item.url ? (
-                          <a
-                            href={item.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="hover-title text-xs sm:text-sm text-foreground transition-colors block"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {item.title}
-                          </a>
-                        ) : (
-                          <span className="text-xs sm:text-sm text-foreground block">{item.title}</span>
-                        )}
+                        <span className="hover-title text-xs sm:text-sm text-foreground transition-colors block">{item.title}</span>
                         <div className="flex flex-wrap items-center gap-2 mt-1 text-[10px] text-muted-foreground">
                           <span className="text-news-time tabular-nums">{item.time}</span>
                           <button
@@ -683,122 +540,6 @@ const Index = () => {
                           </button>
                           <span>{item.sourceName}</span>
                         </div>
-                      </div>
-
-                      {/* Mobile: collapse actions into a single menu to keep rows compact */}
-                      <div className="sm:hidden flex-shrink-0">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button
-                              type="button"
-                              className="relative p-1 rounded text-muted-foreground hover:text-foreground transition-colors"
-                              onClick={(e) => e.stopPropagation()}
-                              title="More"
-                            >
-                              <MoreHorizontal className="h-5 w-5" />
-                              {savedArticles.includes(item.title) ? (
-                                <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-primary ring-2 ring-background" />
-                              ) : null}
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                            {devShowSchemaButtons ? (
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  showNewsItemSchema();
-                                }}
-                              >
-                                Schema
-                              </DropdownMenuItem>
-                            ) : null}
-                            {item.url ? (
-                              <DropdownMenuItem
-                                onClick={async () => {
-                                  if (navigator.share) {
-                                    try {
-                                      await navigator.share({ title: item.title, url: item.url });
-                                    } catch {
-                                      // ignore
-                                    }
-                                  } else {
-                                    await navigator.clipboard.writeText(item.url);
-                                    if (typeof window !== "undefined" && window.dispatchEvent) {
-                                      window.dispatchEvent(
-                                        new CustomEvent("show-toast", { detail: { message: "Link copied to clipboard" } })
-                                      );
-                                    }
-                                  }
-                                }}
-                              >
-                                Share
-                              </DropdownMenuItem>
-                            ) : null}
-                            <DropdownMenuItem
-                              onClick={() => {
-                                toggleSaveArticle(item.title);
-                              }}
-                            >
-                              {savedArticles.includes(item.title) ? "Unsave" : "Save"}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-
-                      {/* Desktop/tablet: keep existing hover-reveal buttons */}
-                      <div className="hover-actions hidden sm:flex gap-3 transition-opacity flex-shrink-0 flex-row">
-                        {devShowSchemaButtons ? (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              showNewsItemSchema();
-                            }}
-                            className="transition-colors"
-                            title="Show news item schema"
-                          >
-                            <span className="text-[10px] text-muted-foreground hover:text-primary">schema</span>
-                          </button>
-                        ) : null}
-
-                        {item.url ? (
-                          <button
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              if (navigator.share) {
-                                try {
-                                  await navigator.share({ title: item.title, url: item.url });
-                                } catch {
-                                  // ignore
-                                }
-                              } else {
-                                await navigator.clipboard.writeText(item.url);
-                                if (typeof window !== "undefined" && window.dispatchEvent) {
-                                  window.dispatchEvent(
-                                    new CustomEvent("show-toast", { detail: { message: "Link copied to clipboard" } })
-                                  );
-                                }
-                              }
-                            }}
-                            className="transition-colors"
-                            title="Share article"
-                          >
-                            <Share2 className="h-5 w-5 text-muted-foreground hover:text-primary" />
-                          </button>
-                        ) : null}
-
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleSaveArticle(item.title);
-                          }}
-                          className="transition-colors"
-                          title={savedArticles.includes(item.title) ? "Remove from saved" : "Save article"}
-                        >
-                          <Bookmark
-                            className={`h-5 w-5 ${savedArticles.includes(item.title)
-                              ? "fill-primary text-primary"
-                              : "text-muted-foreground hover:text-primary"}`}
-                          />
-                        </button>
                       </div>
                     </div>
                   </div>
@@ -835,9 +576,9 @@ const Index = () => {
                 </>
               ) : null}
 
-              {allNews.map((item, index) => (
+              {allNews.map((item) => (
                 <NewsCard
-                  key={index}
+                  key={item.id}
                   title={item.title}
                   summary={item.summary}
                   source={item.sourceName}
@@ -851,6 +592,7 @@ const Index = () => {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   onToggleSave={() => toggleSaveArticle(item.title)}
+                  onOpen={() => navigate(`/article/${item.id}`)}
                   showSchemaButton={devShowSchemaButtons}
                   onShowSchema={showNewsItemSchema}
                 />

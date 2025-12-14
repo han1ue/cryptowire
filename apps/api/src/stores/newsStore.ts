@@ -9,6 +9,7 @@ export type NewsPageParams = {
 export interface NewsStore {
     putMany(items: NewsItem[]): Promise<void>;
     getPage(params: NewsPageParams): Promise<NewsItem[]>;
+    getById(id: string): Promise<NewsItem | null>;
     count(): Promise<number>;
     pruneOlderThan(isoCutoff: string): Promise<void>;
 }
@@ -24,6 +25,11 @@ class InMemoryNewsStore implements NewsStore {
 
     async getPage(params: NewsPageParams): Promise<NewsItem[]> {
         return this.items.slice(params.offset, params.offset + params.limit);
+    }
+
+    async getById(id: string): Promise<NewsItem | null> {
+        const found = this.items.find((x) => x.id === id);
+        return found ?? null;
     }
 
     async count(): Promise<number> {
@@ -84,6 +90,13 @@ export const createNewsStore = (): NewsStore => {
             // Keep consistent ordering (most recent first)
             parsed.sort((a, b) => (a.publishedAt > b.publishedAt ? -1 : 1));
             return parsed;
+        },
+
+        async getById(id: string): Promise<NewsItem | null> {
+            const { kv } = await import("@vercel/kv");
+            const row = await kv.get(`${KV_ITEM_KEY_PREFIX}${id}`);
+            const validated = NewsItemSchema.safeParse(row);
+            return validated.success ? validated.data : null;
         },
 
         async count(): Promise<number> {

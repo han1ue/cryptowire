@@ -35,9 +35,6 @@ export const PriceBar = () => {
   return (
     <div className="border-b border-border bg-card/50 overflow-hidden">
       <div className="flex items-center gap-6 px-4 py-2">
-        <span className="text-xs text-muted-foreground uppercase tracking-wider shrink-0">
-          Live Prices
-        </span>
         <div className="flex items-center gap-6 overflow-x-auto scrollbar-hide">
           {prices.map((item) => (
             <div key={item.symbol} className="flex items-center gap-2 shrink-0">
