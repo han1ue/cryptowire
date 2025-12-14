@@ -114,24 +114,26 @@ export const SettingsDialog = ({
                 Sources
               </span>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              {availableSources.map((source) => {
-                const isSelected = selectedSources.includes(source.id);
-                return (
-                  <button
-                    key={source.id}
-                    type="button"
-                    aria-pressed={isSelected}
-                    onClick={() => toggleSource(source.id)}
-                    className={`px-3 py-2 text-xs font-medium uppercase tracking-wider transition-colors ${isSelected
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground hover:text-foreground"
-                      }`}
-                  >
-                    {source.name}
-                  </button>
-                );
-              })}
+            <div className="max-h-56 overflow-y-auto pr-2">
+              <div className="grid grid-cols-2 gap-2">
+                {availableSources.map((source) => {
+                  const isSelected = selectedSources.includes(source.id);
+                  return (
+                    <button
+                      key={source.id}
+                      type="button"
+                      aria-pressed={isSelected}
+                      onClick={() => toggleSource(source.id)}
+                      className={`px-2 py-1 text-[10px] font-medium uppercase tracking-wider transition-colors ${isSelected
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground hover:text-foreground"
+                        }`}
+                    >
+                      {source.name}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>

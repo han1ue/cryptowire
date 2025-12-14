@@ -55,7 +55,12 @@ const initialNotifications: NotificationItem[] = [
 
 const Index = () => {
   const navigate = useNavigate();
-  const DEFAULT_SELECTED_SOURCE_IDS: SourceId[] = ["coindesk", "decrypt", "cointelegraph", "blockworks"];
+  const DEFAULT_SELECTED_SOURCE_IDS: SourceId[] = [
+    "coindesk",
+    "decrypt",
+    "cointelegraph",
+    "blockworks",
+  ];
 
   const normalizeSelectedSources = (raw: unknown): SourceId[] => {
     const byId = new Set<SourceId>(sourcesConfig.map((s) => s.id));
@@ -265,9 +270,6 @@ const Index = () => {
     );
   };
 
-  const sourceNameToMeta = new Map<string, typeof availableSources[number]>(
-    availableSources.map((s) => [s.name.toLowerCase(), s])
-  );
   const sourceNameToId = new Map<string, SourceId>(
     availableSources.map((s) => [s.name.toLowerCase(), s.id])
   );
@@ -335,7 +337,6 @@ const Index = () => {
     })
     .map((a) => {
       const publishedAt = a.publishedAt ?? a.savedAt;
-      const meta = sourceNameToMeta.get(String(a.source ?? "").toLowerCase());
       return {
         id: a.key,
         title: a.title,
@@ -346,14 +347,12 @@ const Index = () => {
         isBreaking: false,
         publishedAt,
         sourceName: a.source ?? "Saved",
-        sourceIcon: meta?.icon ?? "📰",
       };
     });
 
   const allNews = (showSavedOnly ? savedOnlyNews : filteredBySource)
     .map((n: any) => {
       if (showSavedOnly) return n;
-      const meta = sourceNameToMeta.get(String(n.source).toLowerCase());
       return {
         id: n.id,
         title: n.title,
@@ -364,7 +363,6 @@ const Index = () => {
         isBreaking: false,
         publishedAt: n.publishedAt,
         sourceName: n.source,
-        sourceIcon: meta?.icon ?? "📰",
       };
     })
     .sort((a, b) => {
@@ -375,7 +373,6 @@ const Index = () => {
 
   const sidebarNews = sidebarFilteredBySource
     .map((n) => {
-      const meta = sourceNameToMeta.get(String(n.source).toLowerCase());
       return {
         id: n.id,
         title: n.title,
@@ -386,7 +383,6 @@ const Index = () => {
         isBreaking: false,
         publishedAt: n.publishedAt,
         sourceName: n.source,
-        sourceIcon: meta?.icon ?? "📰",
       };
     })
     .sort((a, b) => {
@@ -498,7 +494,20 @@ const Index = () => {
         <main
           className={`flex-1 ${displayMode === "cards" ? "p-2 sm:p-4" : "px-0 py-2 sm:p-4"}`}
         >
-          {allNews.length === 0 && showSavedOnly ? (
+          {!showSavedOnly && selectedSources.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center bg-card/30 border border-border rounded p-12 sm:p-20">
+              <div className="text-center text-muted-foreground">
+                <p className="text-sm">Please select some sources to get news</p>
+                <button
+                  type="button"
+                  onClick={() => setSettingsOpen(true)}
+                  className="mt-4 px-3 py-2 text-xs font-medium uppercase tracking-wider transition-colors bg-primary text-primary-foreground"
+                >
+                  Select sources
+                </button>
+              </div>
+            </div>
+          ) : allNews.length === 0 && showSavedOnly ? (
             <div className="flex-1 flex items-center justify-center bg-card/30 border border-border rounded p-12 sm:p-20">
               <div className="text-center text-muted-foreground">
                 <Bookmark className="h-12 w-12 mx-auto mb-4 opacity-50" />
