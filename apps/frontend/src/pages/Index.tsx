@@ -125,7 +125,7 @@ const Index = () => {
     // Default stays as the previous default (line).
     return "line";
   });
-  const { savedTitles: savedArticles, toggleSaved: toggleSaveArticle } = useSavedArticles();
+  const { savedArticles, savedTitles: savedArticleTitles, toggleSaved: toggleSaveArticle } = useSavedArticles();
   const [showSavedOnly, setShowSavedOnly] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All News');
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
@@ -325,12 +325,34 @@ const Index = () => {
     return selectedSources.includes(id);
   });
 
-  const filteredBySaved = showSavedOnly
-    ? filteredBySource.filter((item) => savedArticles.includes(item.title))
-    : filteredBySource;
+  const savedOnlyNews = savedArticles
+    .filter((a) => {
+      const sourceName = a.source ?? "";
+      if (!sourceName) return true;
+      const id = sourceNameToId.get(sourceName.toLowerCase());
+      if (!id) return true;
+      return selectedSources.includes(id);
+    })
+    .map((a) => {
+      const publishedAt = a.publishedAt ?? a.savedAt;
+      const meta = sourceNameToMeta.get(String(a.source ?? "").toLowerCase());
+      return {
+        id: a.key,
+        title: a.title,
+        summary: a.summary || "",
+        time: formatDistanceToNow(new Date(publishedAt), { addSuffix: true }).replace(/^about /, ""),
+        category: a.category || "News",
+        url: a.url,
+        isBreaking: false,
+        publishedAt,
+        sourceName: a.source ?? "Saved",
+        sourceIcon: meta?.icon ?? "📰",
+      };
+    });
 
-  const allNews = filteredBySaved
-    .map((n) => {
+  const allNews = (showSavedOnly ? savedOnlyNews : filteredBySource)
+    .map((n: any) => {
+      if (showSavedOnly) return n;
       const meta = sourceNameToMeta.get(String(n.source).toLowerCase());
       return {
         id: n.id,
@@ -433,7 +455,7 @@ const Index = () => {
               setShowSavedOnly(!showSavedOnly);
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
-            savedArticleTitles={savedArticles}
+            savedArticles={savedArticles}
             allNews={sidebarNews}
             selectedCategory={selectedCategory}
             onCategorySelect={cat => {
@@ -460,7 +482,7 @@ const Index = () => {
                   setSidebarOpen(false);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                savedArticleTitles={savedArticles}
+                savedArticles={savedArticles}
                 allNews={sidebarNews}
                 selectedCategory={selectedCategory}
                 onCategorySelect={cat => {
@@ -560,13 +582,21 @@ const Index = () => {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              toggleSaveArticle(item.title);
+                              toggleSaveArticle({
+                                id: item.id,
+                                title: item.title,
+                                url: item.url,
+                                publishedAt: item.publishedAt,
+                                source: item.sourceName,
+                                summary: item.summary,
+                                category: item.category,
+                              });
                             }}
                             className="transition-colors"
-                            title={savedArticles.includes(item.title) ? "Remove from saved" : "Save article"}
+                            title={savedArticleTitles.includes(item.title) ? "Remove from saved" : "Save article"}
                           >
                             <Bookmark
-                              className={`h-4 w-4 ${savedArticles.includes(item.title)
+                              className={`h-4 w-4 ${savedArticleTitles.includes(item.title)
                                 ? "fill-primary text-primary"
                                 : "text-muted-foreground hover:text-primary"
                                 }`}
@@ -609,8 +639,20 @@ const Index = () => {
                                   Share
                                 </DropdownMenuItem>
                               ) : null}
-                              <DropdownMenuItem onSelect={() => toggleSaveArticle(item.title)}>
-                                {savedArticles.includes(item.title) ? "Remove saved" : "Save"}
+                              <DropdownMenuItem
+                                onSelect={() =>
+                                  toggleSaveArticle({
+                                    id: item.id,
+                                    title: item.title,
+                                    url: item.url,
+                                    publishedAt: item.publishedAt,
+                                    source: item.sourceName,
+                                    summary: item.summary,
+                                    category: item.category,
+                                  })
+                                }
+                              >
+                                {savedArticleTitles.includes(item.title) ? "Remove saved" : "Save"}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -724,13 +766,21 @@ const Index = () => {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              toggleSaveArticle(item.title);
+                              toggleSaveArticle({
+                                id: item.id,
+                                title: item.title,
+                                url: item.url,
+                                publishedAt: item.publishedAt,
+                                source: item.sourceName,
+                                summary: item.summary,
+                                category: item.category,
+                              });
                             }}
                             className="transition-colors"
-                            title={savedArticles.includes(item.title) ? "Remove from saved" : "Save article"}
+                            title={savedArticleTitles.includes(item.title) ? "Remove from saved" : "Save article"}
                           >
                             <Bookmark
-                              className={`h-4 w-4 ${savedArticles.includes(item.title)
+                              className={`h-4 w-4 ${savedArticleTitles.includes(item.title)
                                 ? "fill-primary text-primary"
                                 : "text-muted-foreground hover:text-primary"
                                 }`}
@@ -773,8 +823,20 @@ const Index = () => {
                                   Share
                                 </DropdownMenuItem>
                               ) : null}
-                              <DropdownMenuItem onSelect={() => toggleSaveArticle(item.title)}>
-                                {savedArticles.includes(item.title) ? "Remove saved" : "Save"}
+                              <DropdownMenuItem
+                                onSelect={() =>
+                                  toggleSaveArticle({
+                                    id: item.id,
+                                    title: item.title,
+                                    url: item.url,
+                                    publishedAt: item.publishedAt,
+                                    source: item.sourceName,
+                                    summary: item.summary,
+                                    category: item.category,
+                                  })
+                                }
+                              >
+                                {savedArticleTitles.includes(item.title) ? "Remove saved" : "Save"}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -824,13 +886,23 @@ const Index = () => {
                   time={item.time}
                   category={item.category}
                   url={item.url}
-                  isSaved={savedArticles.includes(item.title)}
+                  isSaved={savedArticleTitles.includes(item.title)}
                   onCategoryClick={(cat) => {
                     setSelectedCategory((prev) => (prev === cat ? 'All News' : cat));
                     setShowSavedOnly(false);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  onToggleSave={() => toggleSaveArticle(item.title)}
+                  onToggleSave={() =>
+                    toggleSaveArticle({
+                      id: item.id,
+                      title: item.title,
+                      url: item.url,
+                      publishedAt: item.publishedAt,
+                      source: item.sourceName,
+                      summary: item.summary,
+                      category: item.category,
+                    })
+                  }
                   showSchemaButton={devShowSchemaButtons}
                   onShowSchema={showNewsItemSchema}
                 />
@@ -876,33 +948,6 @@ const Index = () => {
           </span>
         </div>
         <div className="flex items-center gap-3">
-          <a
-            href="/rss.xml"
-            className="text-[10px] text-muted-foreground hover:text-primary transition-colors"
-            title="RSS feed"
-          >
-            RSS
-          </a>
-          <a
-            href="/install/ios"
-            className="text-[10px] text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
-            title="Add to iOS home screen"
-          >
-            <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
-            </svg>
-            <span>iOS</span>
-          </a>
-          <a
-            href="/install/android"
-            className="text-[10px] text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
-            title="Add to Android home screen"
-          >
-            <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M17.6 9.48l1.84-3.18c.16-.31.04-.69-.26-.85-.29-.15-.65-.06-.83.22l-1.88 3.24a11.43 11.43 0 0 0-8.94 0L5.65 5.67c-.19-.28-.54-.37-.83-.22-.3.16-.42.54-.26.85l1.84 3.18C4.8 10.92 3.5 12.93 3.34 15.34h17.32c-.16-2.41-1.46-4.42-3.06-5.86zM10.34 12.4c-.43 0-.78-.35-.78-.78s.35-.78.78-.78.78.35.78.78-.35.78-.78.78zm3.32 0c-.43 0-.78-.35-.78-.78s.35-.78.78-.78.78.35.78.78-.35.78-.78.78zM19 16.34c0 .55-.45 1-1 1H6c-.55 0-1-.45-1-1V21c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-4.66z" />
-            </svg>
-            <span>Android</span>
-          </a>
           <Popover open={devToolsOpen} onOpenChange={setDevToolsOpen}>
             <PopoverTrigger asChild>
               <button
