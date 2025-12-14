@@ -49,6 +49,7 @@ export const Header = ({
   const notificationsRef = useRef<HTMLDivElement>(null);
   const hasUnread = notifications.some(notification => !notification.read);
   const [statusOpen, setStatusOpen] = useState(false);
+  const statusRef = useRef<HTMLDivElement>(null);
   const [hoverCapable, setHoverCapable] = useState(() => {
     if (typeof window === "undefined") return false;
     return window.matchMedia?.("(hover: hover) and (pointer: fine)")?.matches ?? false;
@@ -91,6 +92,50 @@ export const Header = ({
 
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const close = () => setStatusOpen(false);
+    const onVisibility = () => {
+      if (document.hidden) close();
+    };
+
+    window.addEventListener("blur", close);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("blur", close);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!statusOpen) return;
+    if (typeof window === "undefined") return;
+
+    // Mobile / touch behavior: tap outside or scroll closes.
+    if (hoverCapable) return;
+
+    const onPointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (statusRef.current && statusRef.current.contains(target)) return;
+      setStatusOpen(false);
+    };
+
+    const onScroll = () => setStatusOpen(false);
+
+    document.addEventListener("mousedown", onPointerDown, true);
+    document.addEventListener("touchstart", onPointerDown, true);
+    window.addEventListener("scroll", onScroll, { capture: true, passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown, true);
+      document.removeEventListener("touchstart", onPointerDown, true);
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, [statusOpen, hoverCapable]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -178,6 +223,7 @@ export const Header = ({
           </a>
 
           <div
+            ref={statusRef}
             className="relative"
             onMouseEnter={() => {
               if (hoverCapable) setStatusOpen(true);
@@ -194,10 +240,11 @@ export const Header = ({
               onClick={() => {
                 if (!hoverCapable) setStatusOpen((v) => !v);
               }}
-              onFocus={() => setStatusOpen(true)}
-              onBlur={() => {
-                if (hoverCapable) setStatusOpen(false);
+              onFocus={() => {
+                // Desktop should open only on hover, not focus.
+                if (!hoverCapable) setStatusOpen(true);
               }}
+              onBlur={() => setStatusOpen(false)}
             >
               <Activity className={`h-3 w-3 ${isOnline ? "text-terminal-green pulse-glow" : "text-terminal-red"}`} />
               <span
@@ -208,7 +255,7 @@ export const Header = ({
             </button>
 
             {statusOpen ? (
-              <div className="absolute left-0 top-full mt-2 w-56 rounded-md border border-border bg-popover p-3 text-popover-foreground shadow-md z-50">
+              <div className="absolute top-full mt-2 w-56 max-w-[calc(100vw-1rem)] rounded-md border border-border bg-popover p-3 text-popover-foreground shadow-md z-50 right-0 sm:left-0 sm:right-auto">
                 <div className="space-y-1">
                   <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Status</div>
                   <div className="text-xs text-foreground">{isOnline ? "Connected" : "Disconnected"}</div>
