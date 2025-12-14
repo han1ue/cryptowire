@@ -86,10 +86,27 @@ const Index = () => {
     }
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [theme, setTheme] = useState<"light" | "dark">(() => {
-    const saved = localStorage.getItem("theme");
-    return saved === "light" ? "light" : "dark";
-  });
+  const getSavedTheme = (): "light" | "dark" | null => {
+    try {
+      const saved = localStorage.getItem("theme");
+      return saved === "light" || saved === "dark" ? saved : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const getSystemTheme = (): "light" | "dark" => {
+    const systemPrefersDark = window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ?? false;
+    return systemPrefersDark ? "dark" : "light";
+  };
+
+  const [themeIsUserSelected, setThemeIsUserSelected] = useState(() => getSavedTheme() !== null);
+  const [theme, setTheme] = useState<"light" | "dark">(() => getSavedTheme() ?? getSystemTheme());
+
+  const handleThemeChange = (next: "light" | "dark") => {
+    setThemeIsUserSelected(true);
+    setTheme(next);
+  };
   const [displayMode, setDisplayMode] = useState<"compact" | "line" | "cards">(() => {
     const saved = localStorage.getItem("displayMode");
     if (saved === "compact" || saved === "line" || saved === "cards") return saved;
@@ -186,6 +203,30 @@ const Index = () => {
   useEffect(() => {
     localStorage.setItem("selectedSources", JSON.stringify(selectedSources));
   }, [selectedSources]);
+
+  useEffect(() => {
+    if (themeIsUserSelected) return;
+
+    const media = window.matchMedia?.("(prefers-color-scheme: dark)");
+    if (!media) return;
+
+    const updateFromSystem = () => {
+      setTheme(media.matches ? "dark" : "light");
+    };
+
+    updateFromSystem();
+    media.addEventListener?.("change", updateFromSystem);
+    // Safari < 14
+    // eslint-disable-next-line deprecation/deprecation
+    media.addListener?.(updateFromSystem);
+
+    return () => {
+      media.removeEventListener?.("change", updateFromSystem);
+      // eslint-disable-next-line deprecation/deprecation
+      media.removeListener?.(updateFromSystem);
+    };
+  }, [themeIsUserSelected]);
+
   useEffect(() => {
     const root = document.documentElement;
     if (theme === "dark") {
@@ -193,8 +234,12 @@ const Index = () => {
     } else {
       root.classList.remove("dark");
     }
-    localStorage.setItem("theme", theme);
   }, [theme]);
+
+  useEffect(() => {
+    if (!themeIsUserSelected) return;
+    localStorage.setItem("theme", theme);
+  }, [theme, themeIsUserSelected]);
   useEffect(() => {
     localStorage.setItem("displayMode", displayMode);
     // Keep legacy key in sync for older deployments that might still read it.
@@ -918,7 +963,7 @@ const Index = () => {
         displayMode={displayMode}
         onDisplayModeChange={setDisplayMode}
         theme={theme}
-        onThemeChange={setTheme}
+        onThemeChange={handleThemeChange}
       />
     </div>
   );
