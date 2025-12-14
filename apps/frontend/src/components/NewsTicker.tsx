@@ -80,11 +80,6 @@ export const NewsTicker = ({ sources }: NewsTickerProps) => {
                   href={headline.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={(e) => {
-                    // If the link retains focus, our :focus-within pause can keep
-                    // the ticker stopped when the user returns to the tab.
-                    requestAnimationFrame(() => e.currentTarget.blur());
-                  }}
                   className="text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer"
                   tabIndex={0}
                 >

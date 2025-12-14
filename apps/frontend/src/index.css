@@ -172,8 +172,7 @@
     will-change: transform;
   }
 
-  .ticker-scroll:hover,
-  .ticker-scroll:focus-within {
+  .ticker-scroll:hover {
     animation-play-state: paused;
   }
 
