@@ -17,24 +17,6 @@ export const NewsListResponseSchema = z.object({
     items: z.array(NewsItemSchema),
     sources: z.array(NewsSourceSchema),
 });
-export const ArticleSchema = z.object({
-    id: z.string(),
-    url: z.string().url().nullable(),
-    title: z.string(),
-    source: z.string(),
-    category: z.string(),
-    publishedAt: z.string(),
-    imageUrl: z.string().url().optional(),
-    excerpt: z.string().nullable().optional(),
-    byline: z.string().nullable().optional(),
-    siteName: z.string().nullable().optional(),
-    contentHtml: z.string().nullable(),
-    textContent: z.string().nullable(),
-});
-export const ArticleResponseSchema = z.object({
-    ok: z.literal(true),
-    article: ArticleSchema,
-});
 export const PriceQuoteSchema = z.object({
     symbol: z.string(),
     usd: z.number(),

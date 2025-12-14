@@ -1,5 +1,4 @@
 import { Clock, Bookmark, Share2 } from "lucide-react";
-import { Link } from "react-router-dom";
 
 interface NewsCardProps {
   title: string;
@@ -8,7 +7,6 @@ interface NewsCardProps {
   time: string;
   category: string;
   url?: string;
-  id: string;
   isBreaking?: boolean;
   isSaved?: boolean;
   onToggleSave?: () => void;
@@ -25,7 +23,6 @@ export const NewsCard = ({
   time,
   category,
   url,
-  id,
   isBreaking,
   isSaved,
   onToggleSave,
@@ -64,15 +61,23 @@ export const NewsCard = ({
         </span>
       </div>
 
-      <Link
-        to={`/article/${id}`}
-        className="block"
-        onClick={e => e.stopPropagation()}
-      >
+      {url ? (
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <h3 className="hover-title text-sm font-medium text-foreground mb-2 transition-colors line-clamp-2">
+            {title}
+          </h3>
+        </a>
+      ) : (
         <h3 className="hover-title text-sm font-medium text-foreground mb-2 transition-colors line-clamp-2">
           {title}
         </h3>
-      </Link>
+      )}
 
       <p className="text-xs text-muted-foreground mb-3 line-clamp-2 flex-grow">
         {summary}

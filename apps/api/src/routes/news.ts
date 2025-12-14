@@ -1,9 +1,8 @@
 import { Router } from "express";
 import { z } from "zod";
-import { ArticleResponseSchema, NewsListResponseSchema } from "@cryptowire/types";
+import { NewsListResponseSchema } from "@cryptowire/types";
 import type { NewsService } from "../services/newsService.js";
 import type { NewsStore } from "../stores/newsStore.js";
-import { parseArticleFromUrl } from "../services/articleService.js";
 
 export const createNewsRouter = (
     newsService: NewsService,
@@ -127,78 +126,6 @@ export const createNewsRouter = (
         const item = await newsStore.getById(parsed.data.id);
         if (!item) return res.status(404).json({ error: "Not found" });
         return res.json({ item });
-    });
-
-    router.get("/news/item/:id/article", async (req, res) => {
-        const paramsSchema = z.object({ id: z.string().min(1) });
-        const parsed = paramsSchema.safeParse(req.params);
-        if (!parsed.success) return res.status(400).json({ error: parsed.error.message });
-
-        const kvEnabled = Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
-        const cacheKey = `article:${parsed.data.id}`;
-
-        if (kvEnabled) {
-            try {
-                const { kv } = await import("@vercel/kv");
-                const cached = await kv.get(cacheKey);
-                const validated = ArticleResponseSchema.safeParse(cached);
-                if (validated.success) {
-                    res.setHeader("Cache-Control", "public, max-age=300, s-maxage=300, stale-while-revalidate=86400");
-                    return res.json(validated.data);
-                }
-            } catch {
-                // ignore cache failures
-            }
-        }
-
-        const item = await newsStore.getById(parsed.data.id);
-        if (!item) return res.status(404).json({ error: "Not found" });
-
-        const url = item.url ?? null;
-        if (!url) return res.status(400).json({ error: "Item has no url" });
-
-        let parsedArticle;
-        try {
-            parsedArticle = await parseArticleFromUrl(url);
-        } catch (err: any) {
-            return res.status(502).json({ error: String(err?.message ?? err) });
-        }
-
-        const payload = {
-            ok: true as const,
-            article: {
-                id: item.id,
-                url,
-                title: parsedArticle.title ?? item.title,
-                source: item.source,
-                category: item.category ?? "News",
-                publishedAt: item.publishedAt,
-                imageUrl: item.imageUrl,
-                excerpt: parsedArticle.excerpt ?? null,
-                byline: parsedArticle.byline ?? null,
-                siteName: parsedArticle.siteName ?? null,
-                contentHtml: parsedArticle.contentHtml ?? null,
-                textContent: parsedArticle.textContent ?? null,
-            },
-        };
-
-        const validatedOut = ArticleResponseSchema.safeParse(payload);
-        if (!validatedOut.success) {
-            return res.status(500).json({ error: "Invalid response shape" });
-        }
-
-        if (kvEnabled) {
-            try {
-                const { kv } = await import("@vercel/kv");
-                // Parsed article changes rarely; cache for 24h.
-                await kv.set(cacheKey, validatedOut.data, { ex: 24 * 60 * 60 });
-            } catch {
-                // ignore
-            }
-        }
-
-        res.setHeader("Cache-Control", "public, max-age=60, s-maxage=300, stale-while-revalidate=86400");
-        return res.json(validatedOut.data);
     });
 
     const kvEnabled = Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);

@@ -27,30 +27,6 @@ export const NewsListResponseSchema = z.object({
 
 export type NewsListResponse = z.infer<typeof NewsListResponseSchema>;
 
-export const ArticleSchema = z.object({
-    id: z.string(),
-    url: z.string().url().nullable(),
-    title: z.string(),
-    source: z.string(),
-    category: z.string(),
-    publishedAt: z.string(),
-    imageUrl: z.string().url().optional(),
-    excerpt: z.string().nullable().optional(),
-    byline: z.string().nullable().optional(),
-    siteName: z.string().nullable().optional(),
-    contentHtml: z.string().nullable(),
-    textContent: z.string().nullable(),
-});
-
-export type Article = z.infer<typeof ArticleSchema>;
-
-export const ArticleResponseSchema = z.object({
-    ok: z.literal(true),
-    article: ArticleSchema,
-});
-
-export type ArticleResponse = z.infer<typeof ArticleResponseSchema>;
-
 export const PriceQuoteSchema = z.object({
     symbol: z.string(),
     usd: z.number(),

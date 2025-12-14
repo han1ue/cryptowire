@@ -10,7 +10,7 @@ import { useInfiniteNews } from "@/hooks/useInfiniteNews";
 import { useSavedArticles } from "@/hooks/useSavedArticles";
 import { useState, useEffect } from "react";
 import { toast } from "@/components/ui/sonner";
-import { Bookmark } from "lucide-react";
+import { Bookmark, Share2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import {
   AlertDialog,
@@ -450,11 +450,15 @@ const Index = () => {
                   <div
                     key={item.id}
                     className="hover-group hover-enabled px-2 py-1.5 rounded transition-colors border-b border-border/60 last:border-b-0 cursor-pointer"
-                    onClick={() => navigate(`/article/${item.id}`)}
+                    onClick={() => {
+                      if (item.url) window.open(item.url, "_blank", "noopener,noreferrer");
+                    }}
                     role="button"
                     tabIndex={0}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") navigate(`/article/${item.id}`);
+                      if ((e.key === "Enter" || e.key === " ") && item.url) {
+                        window.open(item.url, "_blank", "noopener,noreferrer");
+                      }
                     }}
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -470,6 +474,53 @@ const Index = () => {
                             </span>
                           </div>
                         </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        {item.url ? (
+                          <button
+                            type="button"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              try {
+                                if (navigator.share) {
+                                  await navigator.share({ title: item.title, url: item.url });
+                                } else {
+                                  await navigator.clipboard.writeText(item.url);
+                                  window.dispatchEvent(
+                                    new CustomEvent("show-toast", {
+                                      detail: { message: "Link copied to clipboard" },
+                                    }),
+                                  );
+                                }
+                              } catch {
+                                // ignore
+                              }
+                            }}
+                            className="transition-colors"
+                            title="Share article"
+                          >
+                            <Share2 className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                          </button>
+                        ) : null}
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleSaveArticle(item.title);
+                          }}
+                          className="transition-colors"
+                          title={savedArticles.includes(item.title) ? "Remove from saved" : "Save article"}
+                        >
+                          <Bookmark
+                            className={`h-4 w-4 ${
+                              savedArticles.includes(item.title)
+                                ? "fill-primary text-primary"
+                                : "text-muted-foreground hover:text-primary"
+                            }`}
+                          />
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -513,11 +564,15 @@ const Index = () => {
                   <div
                     key={item.id}
                     className="hover-group hover-enabled p-2 rounded transition-colors border-b border-border/60 last:border-b-0 cursor-pointer"
-                    onClick={() => navigate(`/article/${item.id}`)}
+                    onClick={() => {
+                      if (item.url) window.open(item.url, "_blank", "noopener,noreferrer");
+                    }}
                     role="button"
                     tabIndex={0}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") navigate(`/article/${item.id}`);
+                      if ((e.key === "Enter" || e.key === " ") && item.url) {
+                        window.open(item.url, "_blank", "noopener,noreferrer");
+                      }
                     }}
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -540,6 +595,53 @@ const Index = () => {
                           </button>
                           <span>{item.sourceName}</span>
                         </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        {item.url ? (
+                          <button
+                            type="button"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              try {
+                                if (navigator.share) {
+                                  await navigator.share({ title: item.title, url: item.url });
+                                } else {
+                                  await navigator.clipboard.writeText(item.url);
+                                  window.dispatchEvent(
+                                    new CustomEvent("show-toast", {
+                                      detail: { message: "Link copied to clipboard" },
+                                    }),
+                                  );
+                                }
+                              } catch {
+                                // ignore
+                              }
+                            }}
+                            className="transition-colors"
+                            title="Share article"
+                          >
+                            <Share2 className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                          </button>
+                        ) : null}
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleSaveArticle(item.title);
+                          }}
+                          className="transition-colors"
+                          title={savedArticles.includes(item.title) ? "Remove from saved" : "Save article"}
+                        >
+                          <Bookmark
+                            className={`h-4 w-4 ${
+                              savedArticles.includes(item.title)
+                                ? "fill-primary text-primary"
+                                : "text-muted-foreground hover:text-primary"
+                            }`}
+                          />
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -585,7 +687,6 @@ const Index = () => {
                   time={item.time}
                   category={item.category}
                   url={item.url}
-                  id={item.id}
                   isSaved={savedArticles.includes(item.title)}
                   onCategoryClick={(cat) => {
                     setSelectedCategory((prev) => (prev === cat ? 'All News' : cat));
@@ -593,7 +694,6 @@ const Index = () => {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   onToggleSave={() => toggleSaveArticle(item.title)}
-                  onOpen={() => navigate(`/article/${item.id}`)}
                   showSchemaButton={devShowSchemaButtons}
                   onShowSchema={showNewsItemSchema}
                 />
