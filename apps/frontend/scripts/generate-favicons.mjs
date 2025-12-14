@@ -169,7 +169,9 @@ function makeIco(entries) {
 
 fs.mkdirSync(publicDir, { recursive: true });
 
-const sizes = [16, 32, 48];
+const icoSizes = [16, 32, 48];
+const extraSizes = [180, 192, 512];
+const sizes = [...icoSizes, ...extraSizes];
 const pngs = sizes.map((size) => ({ size, png: renderFavicon(size) }));
 
 for (const { size, png } of pngs) {
@@ -179,11 +181,51 @@ for (const { size, png } of pngs) {
 // Primary PNG used by Google-recommended 48x48+ surfaces
 fs.writeFileSync(path.join(publicDir, "favicon.png"), pngs.find((p) => p.size === 48).png);
 
-const ico = makeIco(pngs);
+// iOS / Android / PWA icon conventions
+fs.writeFileSync(
+    path.join(publicDir, "apple-touch-icon.png"),
+    pngs.find((p) => p.size === 180).png,
+);
+fs.writeFileSync(
+    path.join(publicDir, "android-chrome-192x192.png"),
+    pngs.find((p) => p.size === 192).png,
+);
+fs.writeFileSync(
+    path.join(publicDir, "android-chrome-512x512.png"),
+    pngs.find((p) => p.size === 512).png,
+);
+
+const ico = makeIco(icoSizes.map((size) => pngs.find((p) => p.size === size)));
 fs.writeFileSync(path.join(publicDir, "favicon.ico"), ico);
+
+const manifest = {
+    name: "cryptowi.re",
+    short_name: "cryptowi.re",
+    start_url: "/",
+    display: "standalone",
+    background_color: "#000000",
+    theme_color: "#000000",
+    icons: [
+        {
+            src: "/android-chrome-192x192.png",
+            sizes: "192x192",
+            type: "image/png",
+        },
+        {
+            src: "/android-chrome-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+        },
+    ],
+};
+fs.writeFileSync(path.join(publicDir, "site.webmanifest"), JSON.stringify(manifest, null, 2) + "\n");
 
 console.log("Generated:", [
     ...sizes.map((s) => `public/favicon-${s}.png`),
     "public/favicon.png",
+    "public/apple-touch-icon.png",
+    "public/android-chrome-192x192.png",
+    "public/android-chrome-512x512.png",
     "public/favicon.ico",
+    "public/site.webmanifest",
 ].join(", "));

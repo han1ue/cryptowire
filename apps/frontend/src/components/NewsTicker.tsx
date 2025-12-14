@@ -1,6 +1,7 @@
 
 import { Zap } from "lucide-react";
 import { useNews } from "@/hooks/useNews";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type NewsTickerProps = {
   sources: string[];
@@ -25,8 +26,25 @@ const fallbackHeadlines: Headline[] = [
 export const NewsTicker = ({ sources }: NewsTickerProps) => {
   const { data } = useNews({ limit: 30, sources });
 
-  const headlines: Headline[] =
-    data?.items?.slice(0, 8).map((n) => ({ title: n.title, url: n.url })) ?? fallbackHeadlines;
+  const nextHeadlines = useMemo<Headline[]>(
+    () => data?.items?.slice(0, 8).map((n) => ({ title: n.title, url: n.url })) ?? fallbackHeadlines,
+    [data?.items],
+  );
+
+  const [headlines, setHeadlines] = useState<Headline[]>(nextHeadlines);
+  const pendingRef = useRef<Headline[] | null>(null);
+
+  useEffect(() => {
+    pendingRef.current = nextHeadlines;
+    if (headlines.length === 0) setHeadlines(nextHeadlines);
+  }, [nextHeadlines, headlines.length]);
+
+  const applyPendingAtLoopBoundary = () => {
+    const pending = pendingRef.current;
+    if (!pending) return;
+    pendingRef.current = null;
+    setHeadlines(pending);
+  };
 
   return (
     <div className="bg-muted/30 border-b border-border overflow-hidden">
@@ -38,7 +56,10 @@ export const NewsTicker = ({ sources }: NewsTickerProps) => {
           </span>
         </div>
         <div className="overflow-hidden flex-1">
-          <div className="ticker-scroll flex items-center py-2 whitespace-nowrap">
+          <div
+            className="ticker-scroll items-center py-2 whitespace-nowrap"
+            onAnimationIteration={applyPendingAtLoopBoundary}
+          >
             {[...headlines, ...headlines].map((headline, i) => (
               headline.url ? (
                 <a
