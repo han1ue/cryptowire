@@ -585,6 +585,7 @@ const Index = () => {
                   time={item.time}
                   category={item.category}
                   url={item.url}
+                  id={item.id}
                   isSaved={savedArticles.includes(item.title)}
                   onCategoryClick={(cat) => {
                     setSelectedCategory((prev) => (prev === cat ? 'All News' : cat));

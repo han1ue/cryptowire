@@ -5,6 +5,7 @@ interface NewsPanelProps {
   source: string;
   sourceIcon: string;
   news: Array<{
+    id: string;
     title: string;
     summary: string;
     time: string;
@@ -47,6 +48,7 @@ export const NewsPanel = ({ source, sourceIcon, news }: NewsPanelProps) => {
             source={source}
             time={item.time}
             category={item.category}
+            id={item.id}
             isBreaking={item.isBreaking}
           />
         ))}

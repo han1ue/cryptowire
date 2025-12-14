@@ -8,6 +8,7 @@ interface NewsCardProps {
   time: string;
   category: string;
   url?: string;
+  id: string;
   isBreaking?: boolean;
   isSaved?: boolean;
   onToggleSave?: () => void;
@@ -24,6 +25,7 @@ export const NewsCard = ({
   time,
   category,
   url,
+  id,
   isBreaking,
   isSaved,
   onToggleSave,
@@ -62,21 +64,15 @@ export const NewsCard = ({
         </span>
       </div>
 
-      {url ? (
-        <Link
-          to={typeof window !== 'undefined' && url.startsWith('/article/') ? url : `/article/${encodeURIComponent(title)}`}
-          className="block"
-          onClick={e => e.stopPropagation()}
-        >
-          <h3 className="hover-title text-sm font-medium text-foreground mb-2 transition-colors line-clamp-2">
-            {title}
-          </h3>
-        </Link>
-      ) : (
+      <Link
+        to={`/article/${id}`}
+        className="block"
+        onClick={e => e.stopPropagation()}
+      >
         <h3 className="hover-title text-sm font-medium text-foreground mb-2 transition-colors line-clamp-2">
           {title}
         </h3>
-      )}
+      </Link>
 
       <p className="text-xs text-muted-foreground mb-3 line-clamp-2 flex-grow">
         {summary}
