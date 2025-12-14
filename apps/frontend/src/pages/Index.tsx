@@ -497,7 +497,7 @@ const Index = () => {
           {!showSavedOnly && selectedSources.length === 0 ? (
             <div className="flex-1 flex items-center justify-center bg-card/30 border border-border rounded p-12 sm:p-20">
               <div className="text-center text-muted-foreground">
-                <p className="text-sm">Please select some sources to get news</p>
+                <p className="text-sm">Please select some sources to get the latest news</p>
                 <button
                   type="button"
                   onClick={() => setSettingsOpen(true)}
