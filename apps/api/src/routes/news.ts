@@ -92,6 +92,7 @@ export const createNewsRouter = (
         if (v === "cointelegraph") return "Cointelegraph";
         if (v === "blockworks") return "Blockworks";
         if (v === "bitcoin.com") return "bitcoin.com";
+        if (v === "cryptopotato") return "CryptoPotato";
         // Best-effort title casing for unknown ids
         return value
             .trim()
@@ -107,6 +108,7 @@ export const createNewsRouter = (
         { id: "cointelegraph", name: "Cointelegraph" },
         { id: "blockworks", name: "Blockworks" },
         { id: "bitcoin.com", name: "bitcoin.com" },
+        { id: "cryptopotato", name: "CryptoPotato" },
     ] as const;
 
     const sourceIdToName = (id: string) => {

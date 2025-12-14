@@ -24,6 +24,11 @@ export const sources = [
         name: "bitcoin.com",
         icon: "₿",
     },
+    {
+        id: "cryptopotato",
+        name: "CryptoPotato",
+        icon: "🥔",
+    },
 ] as const;
 
 export type SourceId = (typeof sources)[number]["id"];

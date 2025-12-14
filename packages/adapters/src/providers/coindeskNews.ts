@@ -111,6 +111,7 @@ export class CoindeskNewsProvider implements NewsProvider {
             if (v === "cointelegraph") return "Cointelegraph";
             if (v === "blockworks") return "Blockworks";
             if (v === "bitcoinmagazine") return "Bitcoin Magazine";
+            if (v === "cryptopotato") return "CryptoPotato";
             return value;
         };
 
@@ -122,6 +123,7 @@ export class CoindeskNewsProvider implements NewsProvider {
                 if (host.endsWith("decrypt.co")) return "Decrypt";
                 if (host.endsWith("cointelegraph.com")) return "Cointelegraph";
                 if (host.endsWith("coindesk.com")) return "CoinDesk";
+                if (host.endsWith("cryptopotato.com")) return "CryptoPotato";
                 return null;
             } catch {
                 return null;

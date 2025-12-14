@@ -102,6 +102,8 @@ export class CoindeskNewsProvider {
                 return "Blockworks";
             if (v === "bitcoinmagazine")
                 return "Bitcoin Magazine";
+            if (v === "cryptopotato")
+                return "CryptoPotato";
             return value;
         };
         const inferSourceFromUrl = (urlValue) => {
@@ -117,6 +119,8 @@ export class CoindeskNewsProvider {
                     return "Cointelegraph";
                 if (host.endsWith("coindesk.com"))
                     return "CoinDesk";
+                if (host.endsWith("cryptopotato.com"))
+                    return "CryptoPotato";
                 return null;
             }
             catch {
