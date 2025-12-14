@@ -522,8 +522,8 @@ const Index = () => {
                           >
                             <Bookmark
                               className={`h-4 w-4 ${savedArticles.includes(item.title)
-                                  ? "fill-primary text-primary"
-                                  : "text-muted-foreground hover:text-primary"
+                                ? "fill-primary text-primary"
+                                : "text-muted-foreground hover:text-primary"
                                 }`}
                             />
                           </button>
@@ -686,8 +686,8 @@ const Index = () => {
                           >
                             <Bookmark
                               className={`h-4 w-4 ${savedArticles.includes(item.title)
-                                  ? "fill-primary text-primary"
-                                  : "text-muted-foreground hover:text-primary"
+                                ? "fill-primary text-primary"
+                                : "text-muted-foreground hover:text-primary"
                                 }`}
                             />
                           </button>
