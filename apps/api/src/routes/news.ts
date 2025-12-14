@@ -93,6 +93,16 @@ export const createNewsRouter = (
         if (v === "blockworks") return "Blockworks";
         if (v === "bitcoin.com") return "bitcoin.com";
         if (v === "cryptopotato") return "CryptoPotato";
+        if (v === "forbes") return "Forbes";
+        if (v === "cryptopolitan") return "Cryptopolitan";
+        if (v === "coinpaprika") return "CoinPaprika";
+        if (v === "seekingalpha") return "SeekingAlpha";
+        if (v === "bitcoinist") return "Bitcoinist";
+        if (v === "newsbtc") return "NewsBTC";
+        if (v === "utoday") return "U.Today";
+        if (v === "investing_comcryptonews") return "Investing.com";
+        if (v === "ethereumfoundation") return "Ethereum Foundation";
+        if (v === "bitcoincore") return "Bitcoin Core";
         // Best-effort title casing for unknown ids
         return value
             .trim()
@@ -109,6 +119,16 @@ export const createNewsRouter = (
         { id: "blockworks", name: "Blockworks" },
         { id: "bitcoin.com", name: "bitcoin.com" },
         { id: "cryptopotato", name: "CryptoPotato" },
+        { id: "forbes", name: "Forbes" },
+        { id: "cryptopolitan", name: "Cryptopolitan" },
+        { id: "coinpaprika", name: "CoinPaprika" },
+        { id: "seekingalpha", name: "SeekingAlpha" },
+        { id: "bitcoinist", name: "Bitcoinist" },
+        { id: "newsbtc", name: "NewsBTC" },
+        { id: "utoday", name: "U.Today" },
+        { id: "investing_comcryptonews", name: "Investing.com" },
+        { id: "ethereumfoundation", name: "Ethereum Foundation" },
+        { id: "bitcoincore", name: "Bitcoin Core" },
     ] as const;
 
     const sourceIdToName = (id: string) => {
