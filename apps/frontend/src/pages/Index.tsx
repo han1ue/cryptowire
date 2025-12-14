@@ -514,11 +514,10 @@ const Index = () => {
                           title={savedArticles.includes(item.title) ? "Remove from saved" : "Save article"}
                         >
                           <Bookmark
-                            className={`h-4 w-4 ${
-                              savedArticles.includes(item.title)
+                            className={`h-4 w-4 ${savedArticles.includes(item.title)
                                 ? "fill-primary text-primary"
                                 : "text-muted-foreground hover:text-primary"
-                            }`}
+                              }`}
                           />
                         </button>
                       </div>
@@ -635,11 +634,10 @@ const Index = () => {
                           title={savedArticles.includes(item.title) ? "Remove from saved" : "Save article"}
                         >
                           <Bookmark
-                            className={`h-4 w-4 ${
-                              savedArticles.includes(item.title)
+                            className={`h-4 w-4 ${savedArticles.includes(item.title)
                                 ? "fill-primary text-primary"
                                 : "text-muted-foreground hover:text-primary"
-                            }`}
+                              }`}
                           />
                         </button>
                       </div>
