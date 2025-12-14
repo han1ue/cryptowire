@@ -193,9 +193,9 @@ export const Header = ({
                 <div className="text-xs text-foreground">
                   {isOnline ? "Connected" : "Disconnected"}
                 </div>
-                {isOnline && lastRefreshAt ? (
+                {isOnline ? (
                   <div className="text-[11px] text-muted-foreground">
-                    Updated {formatAgeShort(lastRefreshAt)} ago
+                    {lastRefreshAt ? `Updated ${formatAgeShort(lastRefreshAt)} ago` : "Updated —"}
                   </div>
                 ) : null}
               </div>
