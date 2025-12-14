@@ -10,7 +10,7 @@ import { useInfiniteNews } from "@/hooks/useInfiniteNews";
 import { useSavedArticles } from "@/hooks/useSavedArticles";
 import { useState, useEffect } from "react";
 import { toast } from "@/components/ui/sonner";
-import { Bookmark, Share2 } from "lucide-react";
+import { Bookmark, MoreVertical, Share2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import {
   AlertDialog,
@@ -25,6 +25,12 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 import { NewsItemSchema } from "@cryptowire/types";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Seo } from "@/components/Seo";
 import { useNavigate } from "react-router-dom";
 
@@ -477,49 +483,93 @@ const Index = () => {
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
-                        {item.url ? (
+                        <div className="hidden sm:flex items-center gap-2">
+                          {item.url ? (
+                            <button
+                              type="button"
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                try {
+                                  if (navigator.share) {
+                                    await navigator.share({ title: item.title, url: item.url });
+                                  } else {
+                                    await navigator.clipboard.writeText(item.url);
+                                    window.dispatchEvent(
+                                      new CustomEvent("show-toast", {
+                                        detail: { message: "Link copied to clipboard" },
+                                      }),
+                                    );
+                                  }
+                                } catch {
+                                  // ignore
+                                }
+                              }}
+                              className="transition-colors"
+                              title="Share article"
+                            >
+                              <Share2 className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                            </button>
+                          ) : null}
+
                           <button
                             type="button"
-                            onClick={async (e) => {
+                            onClick={(e) => {
                               e.stopPropagation();
-                              try {
-                                if (navigator.share) {
-                                  await navigator.share({ title: item.title, url: item.url });
-                                } else {
-                                  await navigator.clipboard.writeText(item.url);
-                                  window.dispatchEvent(
-                                    new CustomEvent("show-toast", {
-                                      detail: { message: "Link copied to clipboard" },
-                                    }),
-                                  );
-                                }
-                              } catch {
-                                // ignore
-                              }
+                              toggleSaveArticle(item.title);
                             }}
                             className="transition-colors"
-                            title="Share article"
+                            title={savedArticles.includes(item.title) ? "Remove from saved" : "Save article"}
                           >
-                            <Share2 className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                            <Bookmark
+                              className={`h-4 w-4 ${savedArticles.includes(item.title)
+                                  ? "fill-primary text-primary"
+                                  : "text-muted-foreground hover:text-primary"
+                                }`}
+                            />
                           </button>
-                        ) : null}
+                        </div>
 
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleSaveArticle(item.title);
-                          }}
-                          className="transition-colors"
-                          title={savedArticles.includes(item.title) ? "Remove from saved" : "Save article"}
-                        >
-                          <Bookmark
-                            className={`h-4 w-4 ${savedArticles.includes(item.title)
-                                ? "fill-primary text-primary"
-                                : "text-muted-foreground hover:text-primary"
-                              }`}
-                          />
-                        </button>
+                        <div className="sm:hidden">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button
+                                type="button"
+                                className="transition-colors"
+                                title="Actions"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <MoreVertical className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                              {item.url ? (
+                                <DropdownMenuItem
+                                  onSelect={async () => {
+                                    try {
+                                      if (navigator.share) {
+                                        await navigator.share({ title: item.title, url: item.url! });
+                                      } else {
+                                        await navigator.clipboard.writeText(item.url!);
+                                        window.dispatchEvent(
+                                          new CustomEvent("show-toast", {
+                                            detail: { message: "Link copied to clipboard" },
+                                          }),
+                                        );
+                                      }
+                                    } catch {
+                                      // ignore
+                                    }
+                                  }}
+                                >
+                                  Share
+                                </DropdownMenuItem>
+                              ) : null}
+                              <DropdownMenuItem onSelect={() => toggleSaveArticle(item.title)}>
+                                {savedArticles.includes(item.title) ? "Remove saved" : "Save"}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -597,49 +647,93 @@ const Index = () => {
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
-                        {item.url ? (
+                        <div className="hidden sm:flex items-center gap-2">
+                          {item.url ? (
+                            <button
+                              type="button"
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                try {
+                                  if (navigator.share) {
+                                    await navigator.share({ title: item.title, url: item.url });
+                                  } else {
+                                    await navigator.clipboard.writeText(item.url);
+                                    window.dispatchEvent(
+                                      new CustomEvent("show-toast", {
+                                        detail: { message: "Link copied to clipboard" },
+                                      }),
+                                    );
+                                  }
+                                } catch {
+                                  // ignore
+                                }
+                              }}
+                              className="transition-colors"
+                              title="Share article"
+                            >
+                              <Share2 className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                            </button>
+                          ) : null}
+
                           <button
                             type="button"
-                            onClick={async (e) => {
+                            onClick={(e) => {
                               e.stopPropagation();
-                              try {
-                                if (navigator.share) {
-                                  await navigator.share({ title: item.title, url: item.url });
-                                } else {
-                                  await navigator.clipboard.writeText(item.url);
-                                  window.dispatchEvent(
-                                    new CustomEvent("show-toast", {
-                                      detail: { message: "Link copied to clipboard" },
-                                    }),
-                                  );
-                                }
-                              } catch {
-                                // ignore
-                              }
+                              toggleSaveArticle(item.title);
                             }}
                             className="transition-colors"
-                            title="Share article"
+                            title={savedArticles.includes(item.title) ? "Remove from saved" : "Save article"}
                           >
-                            <Share2 className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                            <Bookmark
+                              className={`h-4 w-4 ${savedArticles.includes(item.title)
+                                  ? "fill-primary text-primary"
+                                  : "text-muted-foreground hover:text-primary"
+                                }`}
+                            />
                           </button>
-                        ) : null}
+                        </div>
 
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleSaveArticle(item.title);
-                          }}
-                          className="transition-colors"
-                          title={savedArticles.includes(item.title) ? "Remove from saved" : "Save article"}
-                        >
-                          <Bookmark
-                            className={`h-4 w-4 ${savedArticles.includes(item.title)
-                                ? "fill-primary text-primary"
-                                : "text-muted-foreground hover:text-primary"
-                              }`}
-                          />
-                        </button>
+                        <div className="sm:hidden">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button
+                                type="button"
+                                className="transition-colors"
+                                title="Actions"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <MoreVertical className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                              {item.url ? (
+                                <DropdownMenuItem
+                                  onSelect={async () => {
+                                    try {
+                                      if (navigator.share) {
+                                        await navigator.share({ title: item.title, url: item.url! });
+                                      } else {
+                                        await navigator.clipboard.writeText(item.url!);
+                                        window.dispatchEvent(
+                                          new CustomEvent("show-toast", {
+                                            detail: { message: "Link copied to clipboard" },
+                                          }),
+                                        );
+                                      }
+                                    } catch {
+                                      // ignore
+                                    }
+                                  }}
+                                >
+                                  Share
+                                </DropdownMenuItem>
+                              ) : null}
+                              <DropdownMenuItem onSelect={() => toggleSaveArticle(item.title)}>
+                                {savedArticles.includes(item.title) ? "Remove saved" : "Save"}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
                     </div>
                   </div>
