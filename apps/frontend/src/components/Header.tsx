@@ -1,4 +1,4 @@
-import { Newspaper, Activity, Settings, Bell, Menu } from "lucide-react";
+import { Activity, Settings, Bell, Menu } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
 type NotificationItem = {
@@ -132,6 +132,12 @@ export const Header = ({
             <Menu className="h-5 w-5 text-muted-foreground" />
           </button>
           <a href="/" className="flex items-center gap-2 group cursor-pointer select-none">
+            <img
+              src="/favicon.svg"
+              alt=""
+              aria-hidden="true"
+              className="h-5 w-5"
+            />
             <span className="text-lg font-bold text-foreground tracking-tight group-hover:text-primary transition-colors">
               CRYPTO<span className="text-primary">WI</span>
               <span className="text-primary">.</span>
