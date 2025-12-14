@@ -367,7 +367,14 @@ export const createNewsRouter = (
 
         const supportedIds = new Set<string>(SUPPORTED_SOURCES.map((s) => s.id));
         const requested = requestedSourceIds.filter((id) => supportedIds.has(id));
-        const requestedSourceNames = requested.length > 0 ? new Set(requested.map(sourceIdToName)) : null;
+        const requestedSourceKeys = requested.length > 0
+            ? new Set(
+                requested
+                    .flatMap((id) => [id, sourceIdToName(id)])
+                    .map((s) => s.trim().toLowerCase())
+                    .filter(Boolean),
+            )
+            : null;
 
         const getFilteredPageFromStore = async (): Promise<unknown[]> => {
 
@@ -388,7 +395,8 @@ export const createNewsRouter = (
 
                 for (const item of chunk as any[]) {
                     const src = typeof item?.source === "string" ? item.source : "";
-                    if (requestedSourceNames && !requestedSourceNames.has(src)) continue;
+                    const srcKey = src.trim().toLowerCase();
+                    if (requestedSourceKeys && !requestedSourceKeys.has(srcKey)) continue;
 
                     if (requestedCategoryKey) {
                         const cat = typeof item?.category === "string" ? item.category.trim().toLowerCase() : "";
@@ -410,7 +418,7 @@ export const createNewsRouter = (
 
         const maybeWarmForRequestedSources = async () => {
             if (offset !== 0) return;
-            if (!requestedSourceNames || requestedSourceNames.size === 0) return;
+            if (!requestedSourceKeys || requestedSourceKeys.size === 0) return;
 
             // If the store doesn't have any recent items for one of the requested
             // sources, warm it using the selected source ids. This is important
@@ -419,11 +427,16 @@ export const createNewsRouter = (
             const present = new Set<string>();
             for (const item of sample as any[]) {
                 const src = typeof item?.source === "string" ? item.source : "";
-                if (src) present.add(src);
+                const key = src.trim().toLowerCase();
+                if (key) present.add(key);
             }
 
             const requestedNames = requested.map(sourceIdToName);
-            const missing = requestedNames.filter((name) => !present.has(name));
+            const requestedKeys = requested
+                .flatMap((id) => [id, sourceIdToName(id)])
+                .map((s) => s.trim().toLowerCase())
+                .filter(Boolean);
+            const missing = Array.from(new Set(requestedKeys)).filter((key) => !present.has(key));
             const isCold = sample.length === 0;
             if (!isCold && missing.length === 0) return;
 

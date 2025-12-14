@@ -104,6 +104,26 @@ export class CoindeskNewsProvider {
                 return "Bitcoin Magazine";
             if (v === "cryptopotato")
                 return "CryptoPotato";
+            if (v === "forbes")
+                return "Forbes";
+            if (v === "cryptopolitan")
+                return "Cryptopolitan";
+            if (v === "coinpaprika")
+                return "CoinPaprika";
+            if (v === "seekingalpha")
+                return "SeekingAlpha";
+            if (v === "bitcoinist")
+                return "Bitcoinist";
+            if (v === "newsbtc")
+                return "NewsBTC";
+            if (v === "utoday")
+                return "U.Today";
+            if (v === "investing_comcryptonews")
+                return "Investing.com";
+            if (v === "ethereumfoundation")
+                return "Ethereum Foundation";
+            if (v === "bitcoincore")
+                return "Bitcoin Core";
             return value;
         };
         const inferSourceFromUrl = (urlValue) => {
