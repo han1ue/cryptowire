@@ -507,6 +507,24 @@ const Index = () => {
                 </button>
               </div>
             </div>
+          ) : !showSavedOnly && selectedSources.length > 0 && allNews.length === 0 && !(
+            (selectedCategory === 'All News'
+              ? (infinite.isLoading || infinite.isFetching)
+              : (categoryInfinite.isLoading || categoryInfinite.isFetching))
+          ) ? (
+            <div className="flex-1 flex items-center justify-center bg-card/30 border border-border rounded p-12 sm:p-20">
+              <div className="text-center text-muted-foreground">
+                <p className="text-sm">No news found for your selected sources</p>
+                <p className="text-xs mt-2">Try selecting more sources and check back</p>
+                <button
+                  type="button"
+                  onClick={() => setSettingsOpen(true)}
+                  className="mt-4 px-3 py-2 text-xs font-medium uppercase tracking-wider transition-colors bg-primary text-primary-foreground"
+                >
+                  Edit sources
+                </button>
+              </div>
+            </div>
           ) : allNews.length === 0 && showSavedOnly ? (
             <div className="flex-1 flex items-center justify-center bg-card/30 border border-border rounded p-12 sm:p-20">
               <div className="text-center text-muted-foreground">
