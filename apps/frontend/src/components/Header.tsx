@@ -1,6 +1,5 @@
 import { Activity, Settings, Bell, Menu } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 type NotificationItem = {
   id: string;
@@ -50,6 +49,10 @@ export const Header = ({
   const notificationsRef = useRef<HTMLDivElement>(null);
   const hasUnread = notifications.some(notification => !notification.read);
   const [statusOpen, setStatusOpen] = useState(false);
+  const [hoverCapable, setHoverCapable] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia?.("(hover: hover) and (pointer: fine)")?.matches ?? false;
+  });
 
   const formatAgeShort = (iso: string): string => {
     const t = new Date(iso).getTime();
@@ -87,6 +90,17 @@ export const Header = ({
     }, 1000);
 
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const media = window.matchMedia?.("(hover: hover) and (pointer: fine)");
+    if (!media) return;
+
+    const onChange = () => setHoverCapable(media.matches);
+    onChange();
+    media.addEventListener?.("change", onChange);
+    return () => media.removeEventListener?.("change", onChange);
   }, []);
 
   useEffect(() => {
@@ -162,45 +176,51 @@ export const Header = ({
               <span className="text-primary">RE</span>
             </span>
           </a>
-          <Popover open={statusOpen} onOpenChange={setStatusOpen}>
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                className="flex items-center gap-1 px-2 py-1 bg-muted/50 rounded"
-                aria-label="Connection status"
-                onMouseEnter={() => setStatusOpen(true)}
-                onMouseLeave={() => setStatusOpen(false)}
-                onClick={() => setStatusOpen((v) => !v)}
-              >
-                <Activity
-                  className={`h-3 w-3 ${isOnline ? "text-terminal-green pulse-glow" : "text-terminal-red"}`}
-                />
-                <span
-                  className={`hidden sm:inline text-[10px] uppercase ${isOnline ? "text-terminal-green" : "text-terminal-red"}`}
-                >
-                  {isOnline ? "Connected" : "Disconnected"}
-                </span>
-              </button>
-            </PopoverTrigger>
-            <PopoverContent
-              align="start"
-              className="w-56"
-              onMouseEnter={() => setStatusOpen(true)}
-              onMouseLeave={() => setStatusOpen(false)}
+
+          <div
+            className="relative"
+            onMouseEnter={() => {
+              if (hoverCapable) setStatusOpen(true);
+            }}
+            onMouseLeave={() => {
+              if (hoverCapable) setStatusOpen(false);
+            }}
+          >
+            <button
+              type="button"
+              className="flex items-center gap-1 px-2 py-1 bg-muted/50 rounded"
+              aria-label="Connection status"
+              aria-expanded={statusOpen}
+              onClick={() => {
+                if (!hoverCapable) setStatusOpen((v) => !v);
+              }}
+              onFocus={() => setStatusOpen(true)}
+              onBlur={() => {
+                if (hoverCapable) setStatusOpen(false);
+              }}
             >
-              <div className="space-y-1">
-                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Status</div>
-                <div className="text-xs text-foreground">
-                  {isOnline ? "Connected" : "Disconnected"}
+              <Activity className={`h-3 w-3 ${isOnline ? "text-terminal-green pulse-glow" : "text-terminal-red"}`} />
+              <span
+                className={`hidden sm:inline text-[10px] uppercase ${isOnline ? "text-terminal-green" : "text-terminal-red"}`}
+              >
+                {isOnline ? "Connected" : "Disconnected"}
+              </span>
+            </button>
+
+            {statusOpen ? (
+              <div className="absolute left-0 top-full mt-2 w-56 rounded-md border border-border bg-popover p-3 text-popover-foreground shadow-md z-50">
+                <div className="space-y-1">
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Status</div>
+                  <div className="text-xs text-foreground">{isOnline ? "Connected" : "Disconnected"}</div>
+                  {isOnline ? (
+                    <div className="text-[11px] text-muted-foreground">
+                      {lastRefreshAt ? `Updated ${formatAgeShort(lastRefreshAt)} ago` : "Updated —"}
+                    </div>
+                  ) : null}
                 </div>
-                {isOnline ? (
-                  <div className="text-[11px] text-muted-foreground">
-                    {lastRefreshAt ? `Updated ${formatAgeShort(lastRefreshAt)} ago` : "Updated —"}
-                  </div>
-                ) : null}
               </div>
-            </PopoverContent>
-          </Popover>
+            ) : null}
+          </div>
         </div>
 
         {/* Center - Navigation */}
