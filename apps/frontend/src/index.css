@@ -171,6 +171,11 @@
     width: max-content;
     will-change: transform;
   }
+  
+  .ticker-scroll:hover,
+  .ticker-scroll:focus-within {
+    animation-play-state: paused;
+  }
 
   @keyframes ticker {
     0% {

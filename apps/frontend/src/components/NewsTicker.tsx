@@ -26,6 +26,8 @@ const fallbackHeadlines: Headline[] = [
 export const NewsTicker = ({ sources }: NewsTickerProps) => {
   const { data } = useNews({ limit: 30, sources });
 
+  const hasData = Boolean(data?.items && data.items.length > 0);
+
   const nextHeadlines = useMemo<Headline[]>(
     () => data?.items?.slice(0, 8).map((n) => ({ title: n.title, url: n.url })) ?? fallbackHeadlines,
     [data?.items],
@@ -33,11 +35,22 @@ export const NewsTicker = ({ sources }: NewsTickerProps) => {
 
   const [headlines, setHeadlines] = useState<Headline[]>(nextHeadlines);
   const pendingRef = useRef<Headline[] | null>(null);
+  const hydratedFromApiRef = useRef(false);
 
   useEffect(() => {
+    if (!hasData) return;
+
+    // First successful load: swap immediately so users see real (clickable) headlines.
+    if (!hydratedFromApiRef.current) {
+      hydratedFromApiRef.current = true;
+      pendingRef.current = null;
+      setHeadlines(nextHeadlines);
+      return;
+    }
+
+    // Subsequent refreshes: defer to animation boundary to avoid visible jumps.
     pendingRef.current = nextHeadlines;
-    if (headlines.length === 0) setHeadlines(nextHeadlines);
-  }, [nextHeadlines, headlines.length]);
+  }, [hasData, nextHeadlines]);
 
   const applyPendingAtLoopBoundary = () => {
     const pending = pendingRef.current;
