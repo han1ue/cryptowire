@@ -65,14 +65,9 @@ const Index = () => {
 
   const normalizeSelectedSources = (raw: unknown): SourceId[] => {
     const byId = new Set<SourceId>(sourcesConfig.map((s) => s.id));
-    const nameToId = new Map<string, SourceId>(
-      sourcesConfig.map((s) => [s.name.toLowerCase(), s.id])
-    );
 
     const arr = Array.isArray(raw) ? raw : [];
-    const normalized = arr
-      .map((v) => String(v).trim())
-      .map((v) => nameToId.get(v.toLowerCase()) ?? (v.toLowerCase() as SourceId));
+    const normalized = arr.map((v) => String(v).trim().toLowerCase() as SourceId);
 
     const isSourceId = (s: string): s is SourceId => byId.has(s as SourceId);
 
@@ -119,23 +114,26 @@ const Index = () => {
     const saved = localStorage.getItem("displayMode");
     if (saved === "compact" || saved === "line" || saved === "cards") return saved;
 
-    // Back-compat: older builds stored a boolean in `lineView`.
-    const legacy = localStorage.getItem("lineView");
-    if (legacy) {
-      try {
-        const parsed = JSON.parse(legacy);
-        return parsed ? "line" : "cards";
-      } catch {
-        // ignore
-      }
-    }
-
     // Default stays as the previous default (line).
     return "line";
   });
   const { savedArticles, savedTitles: savedArticleTitles, toggleSaved: toggleSaveArticle } = useSavedArticles();
   const [showSavedOnly, setShowSavedOnly] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All News');
+
+  const SCROLL_THRESHOLD_PX = 24;
+  const [hasUserScrolled, setHasUserScrolled] = useState(false);
+  const END_OF_LIST_BASE = "You’ve reached the end.";
+  const END_OF_LIST_SUFFIXES = [
+    "That was a lot of reading.",
+    "You’re officially caught up.",
+    "No more headlines — go hydrate.",
+    "The feed is empty. The charts are calling.",
+    "Achievement unlocked: Doomscrolling (Peaceful Mode).",
+    "End of transmission.",
+    "That’s all, folks. Until the next candle.",
+  ];
+  const [endOfListSuffix, setEndOfListSuffix] = useState<string>("");
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
     const saved = localStorage.getItem("notifications");
     return saved ? JSON.parse(saved) : initialNotifications;
@@ -143,6 +141,16 @@ const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const selectedCategoryKey = selectedCategory && selectedCategory !== "All News" ? selectedCategory : null;
+
+  useEffect(() => {
+    const onScroll = () => {
+      if (window.scrollY > SCROLL_THRESHOLD_PX) setHasUserScrolled(true);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Used by ticker/header components that want a small, frequently-updated set.
   const { data: newsData, isLoading: newsLoading, error: newsError } = useNews({
@@ -183,6 +191,12 @@ const Index = () => {
     category: selectedCategoryKey ?? undefined,
   });
   const categoryInfiniteItems = categoryInfinite.data?.pages.flatMap((p) => p.items ?? []) ?? [];
+
+  // Reset scroll/end-message state when the list context changes.
+  useEffect(() => {
+    setHasUserScrolled(false);
+    setEndOfListSuffix("");
+  }, [showSavedOnly, selectedCategory, selectedSources.join("|")]);
 
   const [devToolsOpen, setDevToolsOpen] = useState(false);
   const [devShowSchemaButtons, setDevShowSchemaButtons] = useState(() => {
@@ -247,8 +261,6 @@ const Index = () => {
   }, [theme, themeIsUserSelected]);
   useEffect(() => {
     localStorage.setItem("displayMode", displayMode);
-    // Keep legacy key in sync for older deployments that might still read it.
-    localStorage.setItem("lineView", JSON.stringify(displayMode !== "cards"));
   }, [displayMode]);
   useEffect(() => {
     localStorage.setItem("notifications", JSON.stringify(notifications));
@@ -397,6 +409,29 @@ const Index = () => {
   const totalSourceCount = availableSources.length;
   const loadedArticlesCount = allNews.length;
 
+  const isFetchingNext = selectedCategory === 'All News'
+    ? infinite.isFetchingNextPage
+    : categoryInfinite.isFetchingNextPage;
+  const hasNextPage = selectedCategory === 'All News'
+    ? infinite.hasNextPage
+    : categoryInfinite.hasNextPage;
+  const shouldShowEndMessage =
+    !showSavedOnly &&
+    !isFetchingNext &&
+    allNews.length > 0 &&
+    !hasNextPage &&
+    hasUserScrolled;
+
+  useEffect(() => {
+    if (!shouldShowEndMessage) return;
+    setEndOfListSuffix((prev) => {
+      if (prev) return prev;
+      const pick = END_OF_LIST_SUFFIXES[Math.floor(Math.random() * END_OF_LIST_SUFFIXES.length)];
+      return pick;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shouldShowEndMessage]);
+
   const siteUrl = (import.meta.env.VITE_SITE_URL as string | undefined) ?? "https://cryptowi.re";
   const normalizedSiteUrl = siteUrl.replace(/\/+$/, "");
 
@@ -451,7 +486,12 @@ const Index = () => {
             savedArticlesCount={savedArticles.length}
             showSavedOnly={showSavedOnly}
             onToggleSavedView={() => {
-              setShowSavedOnly(!showSavedOnly);
+              setShowSavedOnly((prev) => {
+                const next = !prev;
+                // When leaving Saved Articles, always return to All News.
+                if (prev && !next) setSelectedCategory('All News');
+                return next;
+              });
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             savedArticles={savedArticles}
@@ -477,7 +517,12 @@ const Index = () => {
                 savedArticlesCount={savedArticles.length}
                 showSavedOnly={showSavedOnly}
                 onToggleSavedView={() => {
-                  setShowSavedOnly(!showSavedOnly);
+                  setShowSavedOnly((prev) => {
+                    const next = !prev;
+                    // When leaving Saved Articles, always return to All News.
+                    if (prev && !next) setSelectedCategory('All News');
+                    return next;
+                  });
                   setSidebarOpen(false);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
@@ -703,8 +748,10 @@ const Index = () => {
                   </div>
                 ) : null}
 
-                {!showSavedOnly && !(selectedCategory === 'All News' ? infinite.isFetchingNextPage : categoryInfinite.isFetchingNextPage) && allNews.length > 0 && !(selectedCategory === 'All News' ? infinite.hasNextPage : categoryInfinite.hasNextPage) ? (
-                  <div className="px-2 py-4 text-xs text-muted-foreground">You’ve reached the end.</div>
+                {shouldShowEndMessage ? (
+                  <div className="px-2 py-4 text-xs text-muted-foreground">
+                    {END_OF_LIST_BASE} {endOfListSuffix}
+                  </div>
                 ) : null}
               </div>
             </div>
@@ -887,8 +934,10 @@ const Index = () => {
                   </div>
                 ) : null}
 
-                {!showSavedOnly && !(selectedCategory === 'All News' ? infinite.isFetchingNextPage : categoryInfinite.isFetchingNextPage) && allNews.length > 0 && !(selectedCategory === 'All News' ? infinite.hasNextPage : categoryInfinite.hasNextPage) ? (
-                  <div className="px-2 py-4 text-xs text-muted-foreground">You’ve reached the end.</div>
+                {shouldShowEndMessage ? (
+                  <div className="px-2 py-4 text-xs text-muted-foreground">
+                    {END_OF_LIST_BASE} {endOfListSuffix}
+                  </div>
                 ) : null}
               </div>
             </div>
@@ -949,8 +998,10 @@ const Index = () => {
                 </div>
               ) : null}
 
-              {!showSavedOnly && !(selectedCategory === 'All News' ? infinite.isFetchingNextPage : categoryInfinite.isFetchingNextPage) && allNews.length > 0 && !(selectedCategory === 'All News' ? infinite.hasNextPage : categoryInfinite.hasNextPage) ? (
-                <div className="col-span-full px-2 py-4 text-xs text-muted-foreground">You’ve reached the end.</div>
+              {shouldShowEndMessage ? (
+                <div className="col-span-full px-2 py-4 text-xs text-muted-foreground">
+                  {END_OF_LIST_BASE} {endOfListSuffix}
+                </div>
               ) : null}
             </div>
           )}
@@ -991,6 +1042,9 @@ const Index = () => {
             <PopoverContent align="end" className="w-64">
               <div className="space-y-3">
                 <div className="text-xs font-medium uppercase tracking-wider text-foreground">Dev tools</div>
+                <div className="text-xs text-muted-foreground">
+                  Saved articles (localStorage): {savedArticles.length}
+                </div>
                 <button
                   type="button"
                   className="w-full text-left text-xs text-muted-foreground hover:text-foreground transition-colors"
