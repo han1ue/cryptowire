@@ -34,6 +34,75 @@ import {
 import { Seo } from "@/components/Seo";
 import { useNavigate } from "react-router-dom";
 
+const SOURCES_INTRO_DISMISSED_KEY = "sourcesIntroDismissed";
+
+type MobileActionsMenuProps = {
+  canShare: boolean;
+  onShare: () => Promise<void>;
+  onToggleSave: () => void;
+  isSaved: boolean;
+};
+
+const MobileActionsMenu = ({ canShare, onShare, onToggleSave, isSaved }: MobileActionsMenuProps) => {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const close = () => setOpen(false);
+    window.addEventListener("scroll", close, { capture: true, passive: true });
+    window.addEventListener("touchmove", close, { capture: true, passive: true });
+    window.addEventListener("resize", close);
+    return () => {
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("touchmove", close, true);
+      window.removeEventListener("resize", close);
+    };
+  }, [open]);
+
+  return (
+    <div className="sm:hidden">
+      <DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className="transition-colors"
+            title="Actions"
+            onClick={(e) => e.stopPropagation()}
+            aria-expanded={open}
+            aria-haspopup="menu"
+          >
+            <MoreVertical className="h-4 w-4 text-muted-foreground hover:text-primary" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+          {canShare ? (
+            <DropdownMenuItem
+              onSelect={async () => {
+                try {
+                  await onShare();
+                } finally {
+                  setOpen(false);
+                }
+              }}
+            >
+              Share
+            </DropdownMenuItem>
+          ) : null}
+          <DropdownMenuItem
+            onSelect={() => {
+              onToggleSave();
+              setOpen(false);
+            }}
+          >
+            {isSaved ? "Remove saved" : "Save"}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+};
+
 type NotificationItem = {
   id: string;
   title: string;
@@ -144,6 +213,23 @@ const Index = () => {
     return saved ? JSON.parse(saved) : initialNotifications;
   });
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const [showSourcesIntro, setShowSourcesIntro] = useState(() => {
+    try {
+      return localStorage.getItem(SOURCES_INTRO_DISMISSED_KEY) !== "true";
+    } catch {
+      return true;
+    }
+  });
+
+  const dismissSourcesIntro = () => {
+    setShowSourcesIntro(false);
+    try {
+      localStorage.setItem(SOURCES_INTRO_DISMISSED_KEY, "true");
+    } catch {
+      // ignore
+    }
+  };
 
   const selectedCategoryKey = selectedCategory && selectedCategory !== "All News" ? selectedCategory : null;
 
@@ -557,6 +643,33 @@ const Index = () => {
         <main
           className={`flex-1 ${displayMode === "cards" ? "p-2 sm:p-4" : "px-0 py-2 sm:p-4"}`}
         >
+          {!showSavedOnly && showSourcesIntro ? (
+            <div className="mb-2 sm:mb-4 bg-card/30 border border-border rounded p-3 flex items-start justify-between gap-3">
+              <button
+                type="button"
+                className="text-left flex-1"
+                onClick={() => setSettingsOpen(true)}
+              >
+                <div className="text-xs text-muted-foreground">
+                  Getting news from <span className="text-foreground">{selectedSources.length}/{availableSources.length}</span> sources.
+                  <span className="text-primary"> Change in settings</span>.
+                </div>
+              </button>
+              <button
+                type="button"
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  dismissSourcesIntro();
+                }}
+                aria-label="Dismiss"
+                title="Dismiss"
+              >
+                ×
+              </button>
+            </div>
+          ) : null}
+
           {!showSavedOnly && selectedSources.length === 0 ? (
             <div className="flex-1 flex items-center justify-center bg-card/30 border border-border rounded p-12 sm:p-20">
               <div className="text-center text-muted-foreground">
@@ -720,74 +833,49 @@ const Index = () => {
                           </button>
                         </div>
 
-                        <div className="sm:hidden">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <button
-                                type="button"
-                                className="transition-colors"
-                                title="Actions"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <MoreVertical className="h-4 w-4 text-muted-foreground hover:text-primary" />
-                              </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                              {item.url ? (
-                                <DropdownMenuItem
-                                  onSelect={async () => {
-                                    try {
-                                      if (navigator.share) {
-                                        await navigator.share({ title: item.title, url: item.url! });
-                                      } else {
-                                        await navigator.clipboard.writeText(item.url!);
-                                        window.dispatchEvent(
-                                          new CustomEvent("show-toast", {
-                                            detail: { message: "Link copied to clipboard" },
-                                          }),
-                                        );
-                                      }
-                                    } catch {
-                                      // ignore
-                                    }
-                                  }}
-                                >
-                                  Share
-                                </DropdownMenuItem>
-                              ) : null}
-                              <DropdownMenuItem
-                                onSelect={() =>
-                                  toggleSaveArticle({
-                                    id: showSavedOnly
-                                      ? item.id?.startsWith("id:")
-                                        ? item.id.slice("id:".length)
-                                        : undefined
-                                      : item.id,
-                                    title: item.title,
-                                    url: item.url,
-                                    publishedAt: item.publishedAt,
-                                    source: item.sourceName,
-                                    summary: item.summary,
-                                    category: item.category,
-                                  })
-                                }
-                              >
-                                {isSavedInput({
-                                  id: showSavedOnly
-                                    ? item.id?.startsWith("id:")
-                                      ? item.id.slice("id:".length)
-                                      : undefined
-                                    : item.id,
-                                  title: item.title,
-                                  url: item.url,
-                                  publishedAt: item.publishedAt,
-                                })
-                                  ? "Remove saved"
-                                  : "Save"}
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
+                        <MobileActionsMenu
+                          canShare={Boolean(item.url)}
+                          onShare={async () => {
+                            if (!item.url) return;
+                            if (navigator.share) {
+                              await navigator.share({ title: item.title, url: item.url });
+                            } else {
+                              await navigator.clipboard.writeText(item.url);
+                              window.dispatchEvent(
+                                new CustomEvent("show-toast", {
+                                  detail: { message: "Link copied to clipboard" },
+                                }),
+                              );
+                            }
+                          }}
+                          onToggleSave={() =>
+                            toggleSaveArticle({
+                              id: showSavedOnly
+                                ? item.id?.startsWith("id:")
+                                  ? item.id.slice("id:".length)
+                                  : undefined
+                                : item.id,
+                              title: item.title,
+                              url: item.url,
+                              publishedAt: item.publishedAt,
+                              source: item.sourceName,
+                              summary: item.summary,
+                              category: item.category,
+                            })
+                          }
+                          isSaved={
+                            isSavedInput({
+                              id: showSavedOnly
+                                ? item.id?.startsWith("id:")
+                                  ? item.id.slice("id:".length)
+                                  : undefined
+                                : item.id,
+                              title: item.title,
+                              url: item.url,
+                              publishedAt: item.publishedAt,
+                            })
+                          }
+                        />
                       </div>
                     </div>
                   </div>
@@ -947,74 +1035,49 @@ const Index = () => {
                           </button>
                         </div>
 
-                        <div className="sm:hidden">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <button
-                                type="button"
-                                className="transition-colors"
-                                title="Actions"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <MoreVertical className="h-4 w-4 text-muted-foreground hover:text-primary" />
-                              </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                              {item.url ? (
-                                <DropdownMenuItem
-                                  onSelect={async () => {
-                                    try {
-                                      if (navigator.share) {
-                                        await navigator.share({ title: item.title, url: item.url! });
-                                      } else {
-                                        await navigator.clipboard.writeText(item.url!);
-                                        window.dispatchEvent(
-                                          new CustomEvent("show-toast", {
-                                            detail: { message: "Link copied to clipboard" },
-                                          }),
-                                        );
-                                      }
-                                    } catch {
-                                      // ignore
-                                    }
-                                  }}
-                                >
-                                  Share
-                                </DropdownMenuItem>
-                              ) : null}
-                              <DropdownMenuItem
-                                onSelect={() =>
-                                  toggleSaveArticle({
-                                    id: showSavedOnly
-                                      ? item.id?.startsWith("id:")
-                                        ? item.id.slice("id:".length)
-                                        : undefined
-                                      : item.id,
-                                    title: item.title,
-                                    url: item.url,
-                                    publishedAt: item.publishedAt,
-                                    source: item.sourceName,
-                                    summary: item.summary,
-                                    category: item.category,
-                                  })
-                                }
-                              >
-                                {isSavedInput({
-                                  id: showSavedOnly
-                                    ? item.id?.startsWith("id:")
-                                      ? item.id.slice("id:".length)
-                                      : undefined
-                                    : item.id,
-                                  title: item.title,
-                                  url: item.url,
-                                  publishedAt: item.publishedAt,
-                                })
-                                  ? "Remove saved"
-                                  : "Save"}
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
+                        <MobileActionsMenu
+                          canShare={Boolean(item.url)}
+                          onShare={async () => {
+                            if (!item.url) return;
+                            if (navigator.share) {
+                              await navigator.share({ title: item.title, url: item.url });
+                            } else {
+                              await navigator.clipboard.writeText(item.url);
+                              window.dispatchEvent(
+                                new CustomEvent("show-toast", {
+                                  detail: { message: "Link copied to clipboard" },
+                                }),
+                              );
+                            }
+                          }}
+                          onToggleSave={() =>
+                            toggleSaveArticle({
+                              id: showSavedOnly
+                                ? item.id?.startsWith("id:")
+                                  ? item.id.slice("id:".length)
+                                  : undefined
+                                : item.id,
+                              title: item.title,
+                              url: item.url,
+                              publishedAt: item.publishedAt,
+                              source: item.sourceName,
+                              summary: item.summary,
+                              category: item.category,
+                            })
+                          }
+                          isSaved={
+                            isSavedInput({
+                              id: showSavedOnly
+                                ? item.id?.startsWith("id:")
+                                  ? item.id.slice("id:".length)
+                                  : undefined
+                                : item.id,
+                              title: item.title,
+                              url: item.url,
+                              publishedAt: item.publishedAt,
+                            })
+                          }
+                        />
                       </div>
                     </div>
                   </div>

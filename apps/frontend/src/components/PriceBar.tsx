@@ -34,25 +34,33 @@ export const PriceBar = () => {
 
   return (
     <div className="border-b border-border bg-card/50 overflow-hidden">
-      <div className="flex items-center gap-6 px-4 py-2">
-        <div className="flex items-center gap-6 overflow-x-auto scrollbar-hide">
+      <div className="flex items-center">
+        <a
+          href="https://www.coingecko.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 px-4 py-2 bg-primary/10 border-r border-border shrink-0"
+          aria-label="Live prices by CoinGecko"
+          title="Live prices by CoinGecko"
+        >
+          <img src="/CG-Symbol.svg" alt="" aria-hidden="true" className="h-3.5 w-3.5" />
+          <span className="text-xs font-medium text-terminal-amber uppercase tracking-wider whitespace-nowrap">
+            Live prices
+            <span className="hidden lg:inline text-muted-foreground normal-case tracking-normal font-normal"> by CoinGecko</span>
+          </span>
+        </a>
+
+        <div className="flex items-center gap-6 px-4 py-2 overflow-x-auto scrollbar-hide flex-1">
           {prices.map((item) => (
             <div key={item.symbol} className="flex items-center gap-2 shrink-0">
-              <span className="text-xs font-medium text-foreground">
-                {item.symbol}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                ${item.price}
-              </span>
+              <span className="text-xs font-medium text-foreground">{item.symbol}</span>
+              <span className="text-xs text-muted-foreground">${item.price}</span>
               <span
-                className={`flex items-center gap-0.5 text-xs ${item.change >= 0 ? "text-terminal-green" : "text-terminal-red"
-                  }`}
+                className={`flex items-center gap-0.5 text-xs ${
+                  item.change >= 0 ? "text-terminal-green" : "text-terminal-red"
+                }`}
               >
-                {item.change >= 0 ? (
-                  <TrendingUp className="h-3 w-3" />
-                ) : (
-                  <TrendingDown className="h-3 w-3" />
-                )}
+                {item.change >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
                 {Math.abs(item.change).toFixed(2)}%
               </span>
             </div>
