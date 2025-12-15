@@ -195,7 +195,12 @@ export const createNewsRouter = (
                         KV_CATEGORIES_BY_SOURCE_HASH_KEY,
                         ...requested,
                     )) as unknown;
-                    const rows: Array<unknown | null> = Array.isArray(raw) ? (raw as Array<unknown | null>) : [];
+
+                    const rows: Array<unknown | null> = Array.isArray(raw)
+                        ? (raw as Array<unknown | null>)
+                        : raw && typeof raw === "object"
+                            ? requested.map((id) => (raw as Record<string, unknown>)[id] ?? null)
+                            : [];
 
                     const merged = new Set<string>();
                     for (const row of rows) {
@@ -341,7 +346,11 @@ export const createNewsRouter = (
                 ? kv.hmget<Record<string, unknown>>(KV_CATEGORIES_BY_SOURCE_HASH_KEY, ...touchedSourceIds)
                 : Promise.resolve([] as unknown));
 
-            const rows: Array<unknown | null> = Array.isArray(rawBySource) ? (rawBySource as Array<unknown | null>) : [];
+            const rows: Array<unknown | null> = Array.isArray(rawBySource)
+                ? (rawBySource as Array<unknown | null>)
+                : rawBySource && typeof rawBySource === "object"
+                    ? touchedSourceIds.map((id) => (rawBySource as Record<string, unknown>)[id] ?? null)
+                    : [];
             const updates: Record<string, unknown> = {};
 
             for (let i = 0; i < touchedSourceIds.length; i++) {
