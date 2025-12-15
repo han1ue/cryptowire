@@ -39,7 +39,7 @@ export const PriceBar = () => {
           href="https://www.coingecko.com"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-2 px-4 py-2 bg-primary/10 border-r border-border shrink-0 cursor-pointer"
+          className="flex items-center gap-2 px-4 py-2 bg-primary/10 border-r border-border shrink-0 !cursor-pointer"
           aria-label="Live prices by CoinGecko"
           title="Live prices by CoinGecko"
         >

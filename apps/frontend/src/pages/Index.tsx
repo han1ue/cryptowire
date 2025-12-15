@@ -644,10 +644,10 @@ const Index = () => {
           className={`flex-1 ${displayMode === "cards" ? "p-2 sm:p-4" : "px-0 py-2 sm:p-4"}`}
         >
           {!showSavedOnly && showSourcesIntro ? (
-            <div className="mb-2 sm:mb-4 bg-muted/20 border border-border rounded p-3 flex items-start justify-between gap-3">
+            <div className="mb-2 sm:mb-4 relative">
               <button
                 type="button"
-                className="text-left flex-1"
+                className="w-full text-left bg-muted/20 hover:bg-muted/30 border border-border rounded px-3 py-2.5 pr-10 transition-colors"
                 onClick={() => setSettingsOpen(true)}
               >
                 <div className="text-xs text-muted-foreground">
@@ -657,7 +657,7 @@ const Index = () => {
               </button>
               <button
                 type="button"
-                className="h-8 w-8 -mt-1 flex items-center justify-center rounded text-lg leading-none text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 flex items-center justify-center rounded text-lg leading-none text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
                 onClick={(e) => {
                   e.stopPropagation();
                   dismissSourcesIntro();
