@@ -9,7 +9,7 @@ import { useNews } from "@/hooks/useNews";
 import { useInfiniteNews } from "@/hooks/useInfiniteNews";
 import { useSavedArticles } from "@/hooks/useSavedArticles";
 import { useNewsStatus } from "@/hooks/useNewsStatus";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "@/components/ui/sonner";
 import { Bookmark, MoreVertical, Share2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -123,6 +123,7 @@ const Index = () => {
 
   const SCROLL_THRESHOLD_PX = 24;
   const [hasUserScrolled, setHasUserScrolled] = useState(false);
+  const userInitiatedScrollRef = useRef(false);
   const END_OF_LIST_BASE = "You’ve reached the end.";
   const END_OF_LIST_SUFFIXES = [
     "That was a lot of reading.",
@@ -144,11 +145,38 @@ const Index = () => {
 
   useEffect(() => {
     const onScroll = () => {
+      if (!userInitiatedScrollRef.current) return;
       if (window.scrollY > SCROLL_THRESHOLD_PX) setHasUserScrolled(true);
     };
+
+    const markUserScrollIntent = () => {
+      userInitiatedScrollRef.current = true;
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      // Only treat common scroll/navigation keys as scroll intent.
+      if (
+        e.key === "ArrowDown" ||
+        e.key === "PageDown" ||
+        e.key === "End" ||
+        e.key === " "
+      ) {
+        markUserScrollIntent();
+      }
+    };
+
     window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("wheel", markUserScrollIntent, { passive: true });
+    window.addEventListener("touchmove", markUserScrollIntent, { passive: true });
+    window.addEventListener("keydown", onKeyDown);
     onScroll();
-    return () => window.removeEventListener("scroll", onScroll);
+
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("wheel", markUserScrollIntent);
+      window.removeEventListener("touchmove", markUserScrollIntent);
+      window.removeEventListener("keydown", onKeyDown);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -194,6 +222,7 @@ const Index = () => {
 
   // Reset scroll/end-message state when the list context changes.
   useEffect(() => {
+    userInitiatedScrollRef.current = false;
     setHasUserScrolled(false);
     setEndOfListSuffix("");
   }, [showSavedOnly, selectedCategory, selectedSources.join("|")]);
@@ -421,6 +450,8 @@ const Index = () => {
     allNews.length > 0 &&
     !hasNextPage &&
     hasUserScrolled;
+
+  const shouldRenderInfiniteSentinel = !showSavedOnly && (hasNextPage ?? true);
 
   useEffect(() => {
     if (!shouldShowEndMessage) return;
@@ -737,7 +768,7 @@ const Index = () => {
                   </div>
                 ))}
 
-                {!showSavedOnly ? <div id="news-infinite-sentinel" className="h-8 w-full" /> : null}
+                {shouldRenderInfiniteSentinel ? <div id="news-infinite-sentinel" className="h-8 w-full" /> : null}
 
                 {!showSavedOnly && (selectedCategory === 'All News' ? infinite.isFetchingNextPage : categoryInfinite.isFetchingNextPage) ? (
                   <div className="px-2 py-3">
@@ -923,7 +954,7 @@ const Index = () => {
                   </div>
                 ))}
 
-                {!showSavedOnly ? <div id="news-infinite-sentinel" className="h-8 w-full" /> : null}
+                {shouldRenderInfiniteSentinel ? <div id="news-infinite-sentinel" className="h-8 w-full" /> : null}
 
                 {!showSavedOnly && (selectedCategory === 'All News' ? infinite.isFetchingNextPage : categoryInfinite.isFetchingNextPage) ? (
                   <div className="px-2 py-3">
@@ -987,7 +1018,7 @@ const Index = () => {
                 />
               ))}
 
-              {!showSavedOnly ? <div id="news-infinite-sentinel" className="h-8 w-full" /> : null}
+              {shouldRenderInfiniteSentinel ? <div id="news-infinite-sentinel" className="h-8 w-full" /> : null}
 
               {!showSavedOnly && (selectedCategory === 'All News' ? infinite.isFetchingNextPage : categoryInfinite.isFetchingNextPage) ? (
                 <div className="col-span-full px-2 py-3">
