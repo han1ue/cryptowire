@@ -169,7 +169,8 @@ export const createNewsRouter = (
             .map((x) => x.trim().toLowerCase())
             .filter(Boolean);
 
-        // Keep behavior consistent with /news: clients must specify sources.
+        // If sources aren't specified, return no categories.
+        // The product requirement is that categories are scoped to selected sources.
         if (requestedSourceIds.length === 0) {
             const payload = { categories: [], sources: SUPPORTED_SOURCES };
             const validated = NewsCategoriesResponseSchema.safeParse(payload);
@@ -230,20 +231,10 @@ export const createNewsRouter = (
 
     const kvEnabled = Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
     const KV_LAST_REFRESH_KEY = "news:lastRefreshAt";
-    const KV_CATEGORIES_KEY = "news:categories";
     const KV_CATEGORIES_BY_SOURCE_HASH_KEY = "news:categories:bySource";
-    const KV_LAST_SOURCE_WARM_ATTEMPT_PREFIX = "news:lastWarmAttemptAt:source:";
-    const KV_LAST_SOURCE_WARM_KEY_PREFIX = "news:lastWarmAt:source:";
-    const KV_LAST_SOURCE_REFRESH_ATTEMPT_PREFIX = "news:lastRefreshAttemptAt:source:";
-    const KV_LAST_SOURCE_REFRESH_KEY_PREFIX = "news:lastRefreshAt:source:";
 
     let lastRefreshAtMemory: string | null = null;
-    let categoriesMemory: string[] = [];
     const categoriesBySourceMemory = new Map<string, string[]>();
-    const lastWarmAttemptAtMemory = new Map<string, string>();
-    const lastWarmAtMemory = new Map<string, string>();
-    const lastRefreshAttemptAtMemory = new Map<string, string>();
-    const lastSourceRefreshAtMemory = new Map<string, string>();
 
     const normalizeCategory = (raw: unknown): string => {
         const v = typeof raw === "string" ? raw.trim() : "";
@@ -312,12 +303,10 @@ export const createNewsRouter = (
     const updateCategoriesFromItems = async (items: NewsItem[]): Promise<void> => {
         if (!items || items.length === 0) return;
 
-        const incomingGlobal = new Set<string>();
         const incomingBySource = new Map<string, Set<string>>();
 
         for (const item of items) {
             const cat = normalizeCategory(item.category);
-            incomingGlobal.add(cat);
 
             const srcKey = item.source.trim().toLowerCase();
             const id = sourceKeyToId.get(srcKey) ?? null;
@@ -327,8 +316,6 @@ export const createNewsRouter = (
             incomingBySource.set(id, set);
         }
 
-        const incomingGlobalList = sortCategories(Array.from(incomingGlobal));
-        categoriesMemory = mergeCategoryLists(categoriesMemory, incomingGlobalList);
         for (const [id, set] of incomingBySource) {
             const existing = categoriesBySourceMemory.get(id) ?? [];
             categoriesBySourceMemory.set(id, mergeCategoryLists(existing, Array.from(set)));
@@ -340,16 +327,9 @@ export const createNewsRouter = (
             const { kv } = await import("@vercel/kv");
             const touchedSourceIds = Array.from(incomingBySource.keys());
 
-            const [rawGlobal, rawBySource] = await Promise.all([
-                kv.get(KV_CATEGORIES_KEY),
-                touchedSourceIds.length > 0
-                    ? kv.hmget<Record<string, unknown>>(KV_CATEGORIES_BY_SOURCE_HASH_KEY, ...touchedSourceIds)
-                    : Promise.resolve([] as unknown),
-            ]);
-
-            const existingGlobal = safeParseJsonArray(rawGlobal);
-            const mergedGlobal = mergeCategoryLists(existingGlobal, incomingGlobalList);
-            const shouldWriteGlobal = !sameCategorySet(existingGlobal, mergedGlobal);
+            const rawBySource = await (touchedSourceIds.length > 0
+                ? kv.hmget<Record<string, unknown>>(KV_CATEGORIES_BY_SOURCE_HASH_KEY, ...touchedSourceIds)
+                : Promise.resolve([] as unknown));
 
             const rows: Array<unknown | null> = Array.isArray(rawBySource) ? (rawBySource as Array<unknown | null>) : [];
             const updates: Record<string, string> = {};
@@ -364,10 +344,9 @@ export const createNewsRouter = (
                 }
             }
 
-            const writes: Promise<unknown>[] = [];
-            if (shouldWriteGlobal) writes.push(kv.set(KV_CATEGORIES_KEY, JSON.stringify(mergedGlobal)));
-            if (Object.keys(updates).length > 0) writes.push(kv.hset(KV_CATEGORIES_BY_SOURCE_HASH_KEY, updates));
-            if (writes.length > 0) await Promise.all(writes);
+            if (Object.keys(updates).length > 0) {
+                await kv.hset(KV_CATEGORIES_BY_SOURCE_HASH_KEY, updates);
+            }
         } catch {
             // ignore
         }
@@ -385,33 +364,6 @@ export const createNewsRouter = (
         }
     };
 
-    const setPerSourceIso = async (
-        prefix: string,
-        memory: Map<string, string>,
-        sourceIds: string[],
-        iso: string,
-    ) => {
-        for (const id of sourceIds) memory.set(id, iso);
-        if (!kvEnabled) return;
-        try {
-            const { kv } = await import("@vercel/kv");
-            await Promise.all(sourceIds.map((id) => kv.set(prefix + id, iso, { ex: 8 * 24 * 60 * 60 })));
-        } catch {
-            // ignore
-        }
-    };
-
-    const getPerSourceIso = async (prefix: string, memory: Map<string, string>, sourceId: string) => {
-        if (!kvEnabled) return memory.get(sourceId) ?? null;
-        try {
-            const { kv } = await import("@vercel/kv");
-            const v = await kv.get(prefix + sourceId);
-            return typeof v === "string" && v.trim().length > 0 ? v : memory.get(sourceId) ?? null;
-        } catch {
-            return memory.get(sourceId) ?? null;
-        }
-    };
-
     const getLastRefreshAt = async (): Promise<string | null> => {
         if (!kvEnabled) return lastRefreshAtMemory;
         try {
@@ -423,60 +375,10 @@ export const createNewsRouter = (
         }
     };
 
-    router.get("/news/status", async (req, res) => {
-        const querySchema = z.object({
-            sources: z.string().optional(),
-        });
-
-        const parsed = querySchema.safeParse(req.query);
-        if (!parsed.success) {
-            return res.status(400).json({ error: parsed.error.message });
-        }
-
-        const requestedSourceIds = (parsed.data.sources ?? "")
-            .split(",")
-            .map((x) => x.trim().toLowerCase())
-            .filter(Boolean);
-
-        const supportedIds = new Set<string>(SUPPORTED_SOURCES.map((s) => s.id));
-        const requested = requestedSourceIds.filter((id) => supportedIds.has(id));
-
-        const sourceStatus = requested.length
-            ? Object.fromEntries(
-                await Promise.all(
-                    requested.map(async (id) => [
-                        id,
-                        {
-                            lastWarmAttemptAt: await getPerSourceIso(
-                                KV_LAST_SOURCE_WARM_ATTEMPT_PREFIX,
-                                lastWarmAttemptAtMemory,
-                                id,
-                            ),
-                            lastWarmAt: await getPerSourceIso(
-                                KV_LAST_SOURCE_WARM_KEY_PREFIX,
-                                lastWarmAtMemory,
-                                id,
-                            ),
-                            lastRefreshAttemptAt: await getPerSourceIso(
-                                KV_LAST_SOURCE_REFRESH_ATTEMPT_PREFIX,
-                                lastRefreshAttemptAtMemory,
-                                id,
-                            ),
-                            lastRefreshAt: await getPerSourceIso(
-                                KV_LAST_SOURCE_REFRESH_KEY_PREFIX,
-                                lastSourceRefreshAtMemory,
-                                id,
-                            ),
-                        },
-                    ]),
-                ),
-            )
-            : null;
-
+    router.get("/news/status", async (_req, res) => {
         return res.json({
             lastRefreshAt: await getLastRefreshAt(),
             now: new Date().toISOString(),
-            sourceStatus,
         });
     });
 
@@ -518,16 +420,6 @@ export const createNewsRouter = (
         const requested = requestedSourceIds.filter((id) => supportedIds.has(id));
         const sourceIdsForFetch = requested.length > 0 ? requested.join(",") : SUPPORTED_SOURCES.map((s) => s.id).join(",");
 
-        const refreshStartedAt = new Date().toISOString();
-        if (requested.length > 0) {
-            await setPerSourceIso(
-                KV_LAST_SOURCE_REFRESH_ATTEMPT_PREFIX,
-                lastRefreshAttemptAtMemory,
-                requested,
-                refreshStartedAt,
-            );
-        }
-
         const items = await newsService.refreshHeadlines({
             limit,
             retentionDays,
@@ -545,15 +437,6 @@ export const createNewsRouter = (
         await newsStore.pruneOlderThan(cutoff);
 
         await setLastRefreshAt(new Date().toISOString());
-
-        if (requested.length > 0) {
-            await setPerSourceIso(
-                KV_LAST_SOURCE_REFRESH_KEY_PREFIX,
-                lastSourceRefreshAtMemory,
-                requested,
-                refreshStartedAt,
-            );
-        }
 
         return res.json({
             ok: true,
