@@ -26,10 +26,11 @@ type ToggleSavedInput = {
 };
 
 const toKey = (input: { id?: string; url?: string; title: string; publishedAt?: string }): string => {
-    const id = (input.id ?? "").trim();
-    if (id) return `id:${id}`;
+    // Prefer URL as the primary key since it stays stable across views.
     const url = (input.url ?? "").trim();
     if (url) return `url:${url}`;
+    const id = (input.id ?? "").trim();
+    if (id) return `id:${id}`;
     const publishedAt = (input.publishedAt ?? "").trim();
     return `title:${input.title.trim().toLowerCase()}@${publishedAt}`;
 };
@@ -55,27 +56,31 @@ const readSaved = (): SavedArticle[] => {
         if (!Array.isArray(parsed)) return [];
 
         const out: SavedArticle[] = [];
+        let shouldRewriteStorage = false;
         for (const row of parsed as unknown[]) {
             if (!row || typeof row !== "object") continue;
             const r = row as Record<string, unknown>;
             const title = typeof r.title === "string" ? r.title : "";
             if (!title.trim()) continue;
             const savedAt = typeof r.savedAt === "string" && r.savedAt ? r.savedAt : new Date().toISOString();
-            const key =
-                typeof r.key === "string" && r.key
-                    ? r.key
-                    : toKey({
-                        id: typeof r.id === "string" ? r.id : undefined,
-                        url: typeof r.url === "string" ? r.url : undefined,
-                        title,
-                        publishedAt: typeof r.publishedAt === "string" ? r.publishedAt : undefined,
-                    });
+
+            const url = typeof r.url === "string" ? r.url : undefined;
+            const publishedAt = typeof r.publishedAt === "string" ? r.publishedAt : undefined;
+            const canonicalKey = toKey({
+                id: typeof r.id === "string" ? r.id : undefined,
+                url,
+                title,
+                publishedAt,
+            });
+
+            const storedKey = typeof r.key === "string" && r.key ? r.key : undefined;
+            if (storedKey && storedKey !== canonicalKey) shouldRewriteStorage = true;
 
             out.push({
-                key,
+                key: canonicalKey,
                 title,
-                url: typeof r.url === "string" ? r.url : undefined,
-                publishedAt: typeof r.publishedAt === "string" ? r.publishedAt : undefined,
+                url,
+                publishedAt,
                 source: typeof r.source === "string" ? r.source : undefined,
                 summary: typeof r.summary === "string" ? r.summary : undefined,
                 category: typeof r.category === "string" ? r.category : undefined,
@@ -85,11 +90,19 @@ const readSaved = (): SavedArticle[] => {
 
         // De-dupe by key preserving order.
         const seen = new Set<string>();
-        return out.filter((a) => {
+        const deduped = out.filter((a) => {
             if (seen.has(a.key)) return false;
             seen.add(a.key);
             return true;
         });
+
+        if (deduped.length !== out.length) shouldRewriteStorage = true;
+        if (shouldRewriteStorage) {
+            // Rewrite without dispatching the custom event to avoid loops.
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(deduped));
+        }
+
+        return deduped;
     } catch {
         return [];
     }

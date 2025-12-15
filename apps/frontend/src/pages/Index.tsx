@@ -668,7 +668,7 @@ const Index = () => {
                             onClick={(e) => {
                               e.stopPropagation();
                               toggleSaveArticle({
-                                id: item.id,
+                                id: showSavedOnly ? undefined : item.id,
                                 title: item.title,
                                 url: item.url,
                                 publishedAt: item.publishedAt,
@@ -727,7 +727,7 @@ const Index = () => {
                               <DropdownMenuItem
                                 onSelect={() =>
                                   toggleSaveArticle({
-                                    id: item.id,
+                                    id: showSavedOnly ? undefined : item.id,
                                     title: item.title,
                                     url: item.url,
                                     publishedAt: item.publishedAt,
@@ -854,7 +854,7 @@ const Index = () => {
                             onClick={(e) => {
                               e.stopPropagation();
                               toggleSaveArticle({
-                                id: item.id,
+                                id: showSavedOnly ? undefined : item.id,
                                 title: item.title,
                                 url: item.url,
                                 publishedAt: item.publishedAt,
@@ -913,7 +913,7 @@ const Index = () => {
                               <DropdownMenuItem
                                 onSelect={() =>
                                   toggleSaveArticle({
-                                    id: item.id,
+                                    id: showSavedOnly ? undefined : item.id,
                                     title: item.title,
                                     url: item.url,
                                     publishedAt: item.publishedAt,
@@ -983,7 +983,7 @@ const Index = () => {
                   }}
                   onToggleSave={() =>
                     toggleSaveArticle({
-                      id: item.id,
+                      id: showSavedOnly ? undefined : item.id,
                       title: item.title,
                       url: item.url,
                       publishedAt: item.publishedAt,
