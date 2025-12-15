@@ -11,6 +11,10 @@ export const createNewsRouter = (
 ) => {
     const router = Router();
 
+    const isProd = process.env.NODE_ENV === "production";
+    let devLastAutoRefreshAtMs = 0;
+    let devAutoRefreshInFlight: Promise<void> | null = null;
+
     const escapeXml = (value: string) =>
         value
             .replaceAll("&", "&amp;")
@@ -491,6 +495,47 @@ export const createNewsRouter = (
 
         const supportedIds = new Set<string>(SUPPORTED_SOURCES.map((s) => s.id));
         const requested = requestedSourceIds.filter((id) => supportedIds.has(id));
+
+        const maybeDevAutoRefreshIfEmpty = async () => {
+            if (isProd) return;
+            if (requested.length === 0) return;
+
+            const count = await newsStore.count();
+            if (count > 0) return;
+
+            const now = Date.now();
+            // Avoid hammering providers during dev HMR reload loops.
+            if (now - devLastAutoRefreshAtMs < 60_000) return;
+
+            if (devAutoRefreshInFlight) return devAutoRefreshInFlight;
+
+            devAutoRefreshInFlight = (async () => {
+                try {
+                    devLastAutoRefreshAtMs = now;
+
+                    const sourceIdsForFetch = requested.join(",");
+                    const items = await newsService.refreshHeadlines({
+                        limit: 30,
+                        retentionDays,
+                        force: true,
+                        sourceIds: sourceIdsForFetch,
+                    });
+
+                    if (items.length > 0) {
+                        await newsStore.putMany(items);
+                        const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000).toISOString();
+                        await newsStore.pruneOlderThan(cutoff);
+                        await setLastRefreshAt(new Date().toISOString());
+                    }
+                } catch (error) {
+                    console.error("[news] dev auto-refresh failed", error);
+                } finally {
+                    devAutoRefreshInFlight = null;
+                }
+            })();
+
+            return devAutoRefreshInFlight;
+        };
         const requestedSourceKeys = requested.length > 0
             ? new Set(
                 requested
@@ -539,7 +584,10 @@ export const createNewsRouter = (
             return out;
         };
 
-        // Serve from store (KV/in-memory) only; upstream fetching is done by the scheduled refresh job.
+        // In production, serve from store (KV/in-memory) only; upstream fetching is done by the scheduled refresh job.
+        // In local dev, auto-refresh once if the store is empty so the UI isn't blank.
+        await maybeDevAutoRefreshIfEmpty();
+
         const items = await getFilteredPageFromStore();
 
         const payload = { items, sources: SUPPORTED_SOURCES };
