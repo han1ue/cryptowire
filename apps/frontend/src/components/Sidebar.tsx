@@ -116,17 +116,13 @@ export const Sidebar = ({
       };
     });
 
-  const derivedCategories = Array.from(
-    new Set(allNews.map((a) => a.category).filter((c): c is string => Boolean(c)).map((c) => c.trim()).filter(Boolean)),
-  );
-
   const providedCategories = Array.isArray(categoriesProp)
     ? categoriesProp.map((c) => String(c).trim()).filter(Boolean)
     : [];
 
   const categories = [
     "All News",
-    ...Array.from(new Set((providedCategories.length > 0 ? providedCategories : derivedCategories))),
+    ...Array.from(new Set(providedCategories)),
   ].sort((a, b) => {
     if (a === "All News") return -1;
     if (b === "All News") return 1;

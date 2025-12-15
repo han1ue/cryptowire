@@ -182,83 +182,43 @@ export const createNewsRouter = (
         const supportedIds = new Set<string>(SUPPORTED_SOURCES.map((s) => s.id));
         const requested = requestedSourceIds.filter((id) => supportedIds.has(id));
 
-        // In local dev, the store is often empty on first load (in-memory).
-        // Seed it so categories reflect the full available set immediately.
-        // In production, upstream fetching should be done via the scheduled refresh job.
-        if (!isProd && requested.length > 0) {
-            const count = await newsStore.count();
-            if (count === 0) {
-                const now = Date.now();
-                // Avoid hammering providers during dev HMR reload loops.
-                if (now - devLastAutoRefreshAtMs >= 60_000) {
-                    if (!devAutoRefreshInFlight) {
-                        devAutoRefreshInFlight = (async () => {
-                            try {
-                                devLastAutoRefreshAtMs = now;
-                                const retentionDays = 7;
-                                const sourceIdsForFetch = requested.join(",");
-                                const items = await newsService.refreshHeadlines({
-                                    limit: 30,
-                                    retentionDays,
-                                    force: true,
-                                    sourceIds: sourceIdsForFetch,
-                                });
-                                if (items.length > 0) {
-                                    await newsStore.putMany(items);
-                                    const cutoff = new Date(
-                                        Date.now() - retentionDays * 24 * 60 * 60 * 1000,
-                                    ).toISOString();
-                                    await newsStore.pruneOlderThan(cutoff);
-                                }
-                            } catch (error) {
-                                console.error("[news] dev auto-refresh (categories) failed", error);
-                            } finally {
-                                devAutoRefreshInFlight = null;
-                            }
-                        })();
+        // Categories are updated during refresh (cron/manual) and cached in KV (or memory).
+        // This endpoint never triggers provider fetches.
+        let list: string[] = [];
+
+        if (requested.length > 0) {
+            if (kvEnabled) {
+                try {
+                    const { kv } = await import("@vercel/kv");
+                    const raw = (await kv.hmget<Record<string, unknown>>(
+                        KV_CATEGORIES_BY_SOURCE_HASH_KEY,
+                        ...requested,
+                    )) as unknown;
+                    const rows: Array<unknown | null> = Array.isArray(raw) ? (raw as Array<unknown | null>) : [];
+
+                    const merged = new Set<string>();
+                    for (const row of rows) {
+                        const arr = safeParseJsonArray(row);
+                        for (const c of arr) merged.add(normalizeCategory(c));
                     }
-
-                    await devAutoRefreshInFlight;
+                    list = sortCategories(Array.from(merged));
+                } catch {
+                    const merged = new Set<string>();
+                    for (const id of requested) {
+                        const arr = categoriesBySourceMemory.get(id) ?? [];
+                        for (const c of arr) merged.add(normalizeCategory(c));
+                    }
+                    list = sortCategories(Array.from(merged));
                 }
+            } else {
+                const merged = new Set<string>();
+                for (const id of requested) {
+                    const arr = categoriesBySourceMemory.get(id) ?? [];
+                    for (const c of arr) merged.add(normalizeCategory(c));
+                }
+                list = sortCategories(Array.from(merged));
             }
         }
-
-        const requestedSourceKeys = requested.length > 0
-            ? new Set(
-                requested
-                    .flatMap((id) => [id, sourceIdToName(id)])
-                    .map((s) => s.trim().toLowerCase())
-                    .filter(Boolean),
-            )
-            : null;
-
-        const categories = new Set<string>();
-
-        // Scan the store in chunks and collect distinct categories for the selected sources.
-        const chunkSize = 400;
-        const maxChunks = 40; // hard cap to avoid unbounded scans
-        let rawOffset = 0;
-
-        for (let i = 0; i < maxChunks; i++) {
-            const chunk = await newsStore.getPage({ limit: chunkSize, offset: rawOffset });
-            if (chunk.length === 0) break;
-            rawOffset += chunk.length;
-
-            for (const item of chunk) {
-                const srcKey = item.source.trim().toLowerCase();
-                if (requestedSourceKeys && !requestedSourceKeys.has(srcKey)) continue;
-
-                const cat = (item.category ?? "").trim();
-                categories.add(cat.length > 0 ? cat : "News");
-
-                // Safety cap (categories should be small anyway)
-                if (categories.size >= 250) break;
-            }
-
-            if (categories.size >= 250) break;
-        }
-
-        const list = Array.from(categories).sort((a, b) => a.localeCompare(b));
 
         const payload = { categories: list, sources: SUPPORTED_SOURCES };
         const validated = NewsCategoriesResponseSchema.safeParse(payload);
@@ -270,16 +230,148 @@ export const createNewsRouter = (
 
     const kvEnabled = Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
     const KV_LAST_REFRESH_KEY = "news:lastRefreshAt";
+    const KV_CATEGORIES_KEY = "news:categories";
+    const KV_CATEGORIES_BY_SOURCE_HASH_KEY = "news:categories:bySource";
     const KV_LAST_SOURCE_WARM_ATTEMPT_PREFIX = "news:lastWarmAttemptAt:source:";
     const KV_LAST_SOURCE_WARM_KEY_PREFIX = "news:lastWarmAt:source:";
     const KV_LAST_SOURCE_REFRESH_ATTEMPT_PREFIX = "news:lastRefreshAttemptAt:source:";
     const KV_LAST_SOURCE_REFRESH_KEY_PREFIX = "news:lastRefreshAt:source:";
 
     let lastRefreshAtMemory: string | null = null;
+    let categoriesMemory: string[] = [];
+    const categoriesBySourceMemory = new Map<string, string[]>();
     const lastWarmAttemptAtMemory = new Map<string, string>();
     const lastWarmAtMemory = new Map<string, string>();
     const lastRefreshAttemptAtMemory = new Map<string, string>();
     const lastSourceRefreshAtMemory = new Map<string, string>();
+
+    const normalizeCategory = (raw: unknown): string => {
+        const v = typeof raw === "string" ? raw.trim() : "";
+        return v.length > 0 ? v : "News";
+    };
+
+    const sortCategories = (cats: string[]) =>
+        cats
+            .map((c) => c.trim())
+            .filter(Boolean)
+            .sort((a, b) => a.localeCompare(b));
+
+    const mergeCategoryLists = (existing: string[], incoming: string[]) => {
+        const out: string[] = [];
+        const seen = new Set<string>();
+
+        const add = (value: string) => {
+            const v = value.trim();
+            if (!v) return;
+            const key = v.toLowerCase();
+            if (seen.has(key)) return;
+            seen.add(key);
+            out.push(v);
+        };
+
+        for (const c of existing) add(c);
+        for (const c of incoming) add(c);
+        return sortCategories(out);
+    };
+
+    const sameCategorySet = (a: string[], b: string[]) => {
+        if (a.length !== b.length) return false;
+        const ak = a.map((x) => x.trim().toLowerCase()).sort();
+        const bk = b.map((x) => x.trim().toLowerCase()).sort();
+        for (let i = 0; i < ak.length; i++) if (ak[i] !== bk[i]) return false;
+        return true;
+    };
+
+    const safeParseJsonArray = (raw: unknown): string[] => {
+        const arr = Array.isArray(raw)
+            ? raw
+            : typeof raw === "string"
+                ? (() => {
+                    try {
+                        const v = JSON.parse(raw) as unknown;
+                        return Array.isArray(v) ? v : [];
+                    } catch {
+                        return [];
+                    }
+                })()
+                : [];
+        return sortCategories(
+            arr.map((c) => (typeof c === "string" ? normalizeCategory(c) : "")).filter(Boolean),
+        );
+    };
+
+    const sourceKeyToId = (() => {
+        const m = new Map<string, string>();
+        for (const s of SUPPORTED_SOURCES) {
+            m.set(s.id.trim().toLowerCase(), s.id);
+            m.set(s.name.trim().toLowerCase(), s.id);
+        }
+        return m;
+    })();
+
+    const updateCategoriesFromItems = async (items: NewsItem[]): Promise<void> => {
+        if (!items || items.length === 0) return;
+
+        const incomingGlobal = new Set<string>();
+        const incomingBySource = new Map<string, Set<string>>();
+
+        for (const item of items) {
+            const cat = normalizeCategory(item.category);
+            incomingGlobal.add(cat);
+
+            const srcKey = item.source.trim().toLowerCase();
+            const id = sourceKeyToId.get(srcKey) ?? null;
+            if (!id) continue;
+            const set = incomingBySource.get(id) ?? new Set<string>();
+            set.add(cat);
+            incomingBySource.set(id, set);
+        }
+
+        const incomingGlobalList = sortCategories(Array.from(incomingGlobal));
+        categoriesMemory = mergeCategoryLists(categoriesMemory, incomingGlobalList);
+        for (const [id, set] of incomingBySource) {
+            const existing = categoriesBySourceMemory.get(id) ?? [];
+            categoriesBySourceMemory.set(id, mergeCategoryLists(existing, Array.from(set)));
+        }
+
+        if (!kvEnabled) return;
+
+        try {
+            const { kv } = await import("@vercel/kv");
+            const touchedSourceIds = Array.from(incomingBySource.keys());
+
+            const [rawGlobal, rawBySource] = await Promise.all([
+                kv.get(KV_CATEGORIES_KEY),
+                touchedSourceIds.length > 0
+                    ? kv.hmget<Record<string, unknown>>(KV_CATEGORIES_BY_SOURCE_HASH_KEY, ...touchedSourceIds)
+                    : Promise.resolve([] as unknown),
+            ]);
+
+            const existingGlobal = safeParseJsonArray(rawGlobal);
+            const mergedGlobal = mergeCategoryLists(existingGlobal, incomingGlobalList);
+            const shouldWriteGlobal = !sameCategorySet(existingGlobal, mergedGlobal);
+
+            const rows: Array<unknown | null> = Array.isArray(rawBySource) ? (rawBySource as Array<unknown | null>) : [];
+            const updates: Record<string, string> = {};
+
+            for (let i = 0; i < touchedSourceIds.length; i++) {
+                const id = touchedSourceIds[i]!;
+                const existingForSource = safeParseJsonArray(rows[i]);
+                const incomingForSource = sortCategories(Array.from(incomingBySource.get(id) ?? new Set<string>()));
+                const merged = mergeCategoryLists(existingForSource, incomingForSource);
+                if (!sameCategorySet(existingForSource, merged)) {
+                    updates[id] = JSON.stringify(merged);
+                }
+            }
+
+            const writes: Promise<unknown>[] = [];
+            if (shouldWriteGlobal) writes.push(kv.set(KV_CATEGORIES_KEY, JSON.stringify(mergedGlobal)));
+            if (Object.keys(updates).length > 0) writes.push(kv.hset(KV_CATEGORIES_BY_SOURCE_HASH_KEY, updates));
+            if (writes.length > 0) await Promise.all(writes);
+        } catch {
+            // ignore
+        }
+    };
 
     const setLastRefreshAt = async (iso: string) => {
         lastRefreshAtMemory = iso;
@@ -444,6 +536,9 @@ export const createNewsRouter = (
         });
 
         await newsStore.putMany(items);
+
+        // Incrementally update cached categories from this refresh batch.
+        await updateCategoriesFromItems(items);
 
         // Keep only up to one week old in storage.
         const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000).toISOString();
@@ -637,6 +732,7 @@ export const createNewsRouter = (
 
                     if (items.length > 0) {
                         await newsStore.putMany(items);
+                        await updateCategoriesFromItems(items);
                         const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000).toISOString();
                         await newsStore.pruneOlderThan(cutoff);
                         await setLastRefreshAt(new Date().toISOString());
