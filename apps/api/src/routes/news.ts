@@ -181,6 +181,48 @@ export const createNewsRouter = (
 
         const supportedIds = new Set<string>(SUPPORTED_SOURCES.map((s) => s.id));
         const requested = requestedSourceIds.filter((id) => supportedIds.has(id));
+
+        // In local dev, the store is often empty on first load (in-memory).
+        // Seed it so categories reflect the full available set immediately.
+        // In production, upstream fetching should be done via the scheduled refresh job.
+        if (!isProd && requested.length > 0) {
+            const count = await newsStore.count();
+            if (count === 0) {
+                const now = Date.now();
+                // Avoid hammering providers during dev HMR reload loops.
+                if (now - devLastAutoRefreshAtMs >= 60_000) {
+                    if (!devAutoRefreshInFlight) {
+                        devAutoRefreshInFlight = (async () => {
+                            try {
+                                devLastAutoRefreshAtMs = now;
+                                const retentionDays = 7;
+                                const sourceIdsForFetch = requested.join(",");
+                                const items = await newsService.refreshHeadlines({
+                                    limit: 30,
+                                    retentionDays,
+                                    force: true,
+                                    sourceIds: sourceIdsForFetch,
+                                });
+                                if (items.length > 0) {
+                                    await newsStore.putMany(items);
+                                    const cutoff = new Date(
+                                        Date.now() - retentionDays * 24 * 60 * 60 * 1000,
+                                    ).toISOString();
+                                    await newsStore.pruneOlderThan(cutoff);
+                                }
+                            } catch (error) {
+                                console.error("[news] dev auto-refresh (categories) failed", error);
+                            } finally {
+                                devAutoRefreshInFlight = null;
+                            }
+                        })();
+                    }
+
+                    await devAutoRefreshInFlight;
+                }
+            }
+        }
+
         const requestedSourceKeys = requested.length > 0
             ? new Set(
                 requested
