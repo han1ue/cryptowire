@@ -615,10 +615,7 @@ const Index = () => {
                 onClick={() => setSettingsOpen(true)}
               >
                 <div className="text-xs text-muted-foreground">
-                  <span className="text-foreground">{selectedSources.length}</span>
-                  <span className="text-foreground">/</span>
-                  <span className="text-foreground">{availableSources.length}</span>
-                  <span> news sources active.</span>
+                  News sources: <span className="text-foreground">{selectedSources.length}/{availableSources.length}</span> active.
                   <span className="text-primary"> Customize in Settings</span>.
                 </div>
               </button>
