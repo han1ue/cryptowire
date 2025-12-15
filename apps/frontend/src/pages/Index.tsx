@@ -616,9 +616,9 @@ const Index = () => {
               >
                 <div className="text-xs text-muted-foreground">
                   <span className="text-foreground">{selectedSources.length}</span>
-                  <span className="mx-1">out of</span>
+                  <span className="text-foreground">/</span>
                   <span className="text-foreground">{availableSources.length}</span>
-                  news sources active.
+                  <span> news sources active.</span>
                   <span className="text-primary"> Customize in Settings</span>.
                 </div>
               </button>
