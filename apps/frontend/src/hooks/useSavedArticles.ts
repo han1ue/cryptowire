@@ -152,6 +152,14 @@ export const useSavedArticles = () => {
         [savedKeys, savedTitleSet],
     );
 
+    const isSavedInput = useCallback(
+        (input: ToggleSavedInput) => {
+            const normalized = normalizeToggleInput(input);
+            return savedKeys.has(normalized.key);
+        },
+        [savedKeys],
+    );
+
     const toggleSaved = useCallback((input: ToggleSavedInput) => {
         const normalized = normalizeToggleInput(input);
 
@@ -169,7 +177,7 @@ export const useSavedArticles = () => {
     }, []);
 
     return useMemo(
-        () => ({ savedArticles, savedTitles, isSaved, toggleSaved }),
-        [savedArticles, savedTitles, isSaved, toggleSaved],
+        () => ({ savedArticles, savedTitles, isSaved, isSavedInput, toggleSaved }),
+        [savedArticles, savedTitles, isSaved, isSavedInput, toggleSaved],
     );
 };

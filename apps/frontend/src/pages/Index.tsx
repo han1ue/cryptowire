@@ -116,7 +116,12 @@ const Index = () => {
     // Default stays as the previous default (line).
     return "line";
   });
-  const { savedArticles, savedTitles: savedArticleTitles, toggleSaved: toggleSaveArticle } = useSavedArticles();
+  const {
+    savedArticles,
+    savedTitles: savedArticleTitles,
+    isSavedInput,
+    toggleSaved: toggleSaveArticle,
+  } = useSavedArticles();
   const [showSavedOnly, setShowSavedOnly] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All News');
 
@@ -668,7 +673,11 @@ const Index = () => {
                             onClick={(e) => {
                               e.stopPropagation();
                               toggleSaveArticle({
-                                id: showSavedOnly ? undefined : item.id,
+                                id: showSavedOnly
+                                  ? item.id?.startsWith("id:")
+                                    ? item.id.slice("id:".length)
+                                    : undefined
+                                  : item.id,
                                 title: item.title,
                                 url: item.url,
                                 publishedAt: item.publishedAt,
@@ -678,10 +687,32 @@ const Index = () => {
                               });
                             }}
                             className="transition-colors"
-                            title={savedArticleTitles.includes(item.title) ? "Remove from saved" : "Save article"}
+                            title={
+                              isSavedInput({
+                                id: showSavedOnly
+                                  ? item.id?.startsWith("id:")
+                                    ? item.id.slice("id:".length)
+                                    : undefined
+                                  : item.id,
+                                title: item.title,
+                                url: item.url,
+                                publishedAt: item.publishedAt,
+                              })
+                                ? "Remove from saved"
+                                : "Save article"
+                            }
                           >
                             <Bookmark
-                              className={`h-4 w-4 ${savedArticleTitles.includes(item.title)
+                              className={`h-4 w-4 ${isSavedInput({
+                                id: showSavedOnly
+                                  ? item.id?.startsWith("id:")
+                                    ? item.id.slice("id:".length)
+                                    : undefined
+                                  : item.id,
+                                title: item.title,
+                                url: item.url,
+                                publishedAt: item.publishedAt,
+                              })
                                 ? "fill-primary text-primary"
                                 : "text-muted-foreground hover:text-primary"
                                 }`}
@@ -727,7 +758,11 @@ const Index = () => {
                               <DropdownMenuItem
                                 onSelect={() =>
                                   toggleSaveArticle({
-                                    id: showSavedOnly ? undefined : item.id,
+                                    id: showSavedOnly
+                                      ? item.id?.startsWith("id:")
+                                        ? item.id.slice("id:".length)
+                                        : undefined
+                                      : item.id,
                                     title: item.title,
                                     url: item.url,
                                     publishedAt: item.publishedAt,
@@ -737,7 +772,18 @@ const Index = () => {
                                   })
                                 }
                               >
-                                {savedArticleTitles.includes(item.title) ? "Remove saved" : "Save"}
+                                {isSavedInput({
+                                  id: showSavedOnly
+                                    ? item.id?.startsWith("id:")
+                                      ? item.id.slice("id:".length)
+                                      : undefined
+                                    : item.id,
+                                  title: item.title,
+                                  url: item.url,
+                                  publishedAt: item.publishedAt,
+                                })
+                                  ? "Remove saved"
+                                  : "Save"}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -854,7 +900,11 @@ const Index = () => {
                             onClick={(e) => {
                               e.stopPropagation();
                               toggleSaveArticle({
-                                id: showSavedOnly ? undefined : item.id,
+                                id: showSavedOnly
+                                  ? item.id?.startsWith("id:")
+                                    ? item.id.slice("id:".length)
+                                    : undefined
+                                  : item.id,
                                 title: item.title,
                                 url: item.url,
                                 publishedAt: item.publishedAt,
@@ -864,10 +914,32 @@ const Index = () => {
                               });
                             }}
                             className="transition-colors"
-                            title={savedArticleTitles.includes(item.title) ? "Remove from saved" : "Save article"}
+                            title={
+                              isSavedInput({
+                                id: showSavedOnly
+                                  ? item.id?.startsWith("id:")
+                                    ? item.id.slice("id:".length)
+                                    : undefined
+                                  : item.id,
+                                title: item.title,
+                                url: item.url,
+                                publishedAt: item.publishedAt,
+                              })
+                                ? "Remove from saved"
+                                : "Save article"
+                            }
                           >
                             <Bookmark
-                              className={`h-4 w-4 ${savedArticleTitles.includes(item.title)
+                              className={`h-4 w-4 ${isSavedInput({
+                                id: showSavedOnly
+                                  ? item.id?.startsWith("id:")
+                                    ? item.id.slice("id:".length)
+                                    : undefined
+                                  : item.id,
+                                title: item.title,
+                                url: item.url,
+                                publishedAt: item.publishedAt,
+                              })
                                 ? "fill-primary text-primary"
                                 : "text-muted-foreground hover:text-primary"
                                 }`}
@@ -913,7 +985,11 @@ const Index = () => {
                               <DropdownMenuItem
                                 onSelect={() =>
                                   toggleSaveArticle({
-                                    id: showSavedOnly ? undefined : item.id,
+                                    id: showSavedOnly
+                                      ? item.id?.startsWith("id:")
+                                        ? item.id.slice("id:".length)
+                                        : undefined
+                                      : item.id,
                                     title: item.title,
                                     url: item.url,
                                     publishedAt: item.publishedAt,
@@ -923,7 +999,18 @@ const Index = () => {
                                   })
                                 }
                               >
-                                {savedArticleTitles.includes(item.title) ? "Remove saved" : "Save"}
+                                {isSavedInput({
+                                  id: showSavedOnly
+                                    ? item.id?.startsWith("id:")
+                                      ? item.id.slice("id:".length)
+                                      : undefined
+                                    : item.id,
+                                  title: item.title,
+                                  url: item.url,
+                                  publishedAt: item.publishedAt,
+                                })
+                                  ? "Remove saved"
+                                  : "Save"}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -983,7 +1070,11 @@ const Index = () => {
                   }}
                   onToggleSave={() =>
                     toggleSaveArticle({
-                      id: showSavedOnly ? undefined : item.id,
+                      id: showSavedOnly
+                        ? item.id?.startsWith("id:")
+                          ? item.id.slice("id:".length)
+                          : undefined
+                        : item.id,
                       title: item.title,
                       url: item.url,
                       publishedAt: item.publishedAt,
