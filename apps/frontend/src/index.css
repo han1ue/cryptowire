@@ -166,7 +166,7 @@
   }
 
   .ticker-scroll {
-    animation: ticker 110s linear infinite;
+    animation: ticker 120s linear infinite;
     display: inline-flex;
     width: max-content;
     will-change: transform;
