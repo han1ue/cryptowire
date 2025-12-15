@@ -1,6 +1,6 @@
 import { Router, type Request } from "express";
 import { z } from "zod";
-import { NewsListResponseSchema, type NewsItem } from "@cryptowire/types";
+import { NewsCategoriesResponseSchema, NewsListResponseSchema, type NewsItem } from "@cryptowire/types";
 import type { NewsService } from "../services/newsService.js";
 import type { NewsStore } from "../stores/newsStore.js";
 
@@ -152,6 +152,78 @@ export const createNewsRouter = (
         const item = await newsStore.getById(parsed.data.id);
         if (!item) return res.status(404).json({ error: "Not found" });
         return res.json({ item });
+    });
+
+    router.get("/news/categories", async (req, res) => {
+        const querySchema = z.object({
+            sources: z.string().optional(),
+        });
+
+        const parsed = querySchema.safeParse(req.query);
+        if (!parsed.success) {
+            return res.status(400).json({ error: parsed.error.message });
+        }
+
+        const requestedSourceIds = (parsed.data.sources ?? "")
+            .split(",")
+            .map((x) => x.trim().toLowerCase())
+            .filter(Boolean);
+
+        // Keep behavior consistent with /news: clients must specify sources.
+        if (requestedSourceIds.length === 0) {
+            const payload = { categories: [], sources: SUPPORTED_SOURCES };
+            const validated = NewsCategoriesResponseSchema.safeParse(payload);
+            if (!validated.success) {
+                return res.status(500).json({ error: "Invalid response shape" });
+            }
+            return res.json(payload);
+        }
+
+        const supportedIds = new Set<string>(SUPPORTED_SOURCES.map((s) => s.id));
+        const requested = requestedSourceIds.filter((id) => supportedIds.has(id));
+        const requestedSourceKeys = requested.length > 0
+            ? new Set(
+                requested
+                    .flatMap((id) => [id, sourceIdToName(id)])
+                    .map((s) => s.trim().toLowerCase())
+                    .filter(Boolean),
+            )
+            : null;
+
+        const categories = new Set<string>();
+
+        // Scan the store in chunks and collect distinct categories for the selected sources.
+        const chunkSize = 400;
+        const maxChunks = 40; // hard cap to avoid unbounded scans
+        let rawOffset = 0;
+
+        for (let i = 0; i < maxChunks; i++) {
+            const chunk = await newsStore.getPage({ limit: chunkSize, offset: rawOffset });
+            if (chunk.length === 0) break;
+            rawOffset += chunk.length;
+
+            for (const item of chunk) {
+                const srcKey = item.source.trim().toLowerCase();
+                if (requestedSourceKeys && !requestedSourceKeys.has(srcKey)) continue;
+
+                const cat = (item.category ?? "").trim();
+                categories.add(cat.length > 0 ? cat : "News");
+
+                // Safety cap (categories should be small anyway)
+                if (categories.size >= 250) break;
+            }
+
+            if (categories.size >= 250) break;
+        }
+
+        const list = Array.from(categories).sort((a, b) => a.localeCompare(b));
+
+        const payload = { categories: list, sources: SUPPORTED_SOURCES };
+        const validated = NewsCategoriesResponseSchema.safeParse(payload);
+        if (!validated.success) {
+            return res.status(500).json({ error: "Invalid response shape" });
+        }
+        return res.json(payload);
     });
 
     const kvEnabled = Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);

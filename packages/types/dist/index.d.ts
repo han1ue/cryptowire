@@ -110,6 +110,32 @@ export declare const NewsListResponseSchema: z.ZodObject<{
     }[];
 }>;
 export type NewsListResponse = z.infer<typeof NewsListResponseSchema>;
+export declare const NewsCategoriesResponseSchema: z.ZodObject<{
+    categories: z.ZodArray<z.ZodString, "many">;
+    sources: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        name: z.ZodString;
+    }, "strip", z.ZodTypeAny, {
+        id: string;
+        name: string;
+    }, {
+        id: string;
+        name: string;
+    }>, "many">>;
+}, "strip", z.ZodTypeAny, {
+    categories: string[];
+    sources?: {
+        id: string;
+        name: string;
+    }[] | undefined;
+}, {
+    categories: string[];
+    sources?: {
+        id: string;
+        name: string;
+    }[] | undefined;
+}>;
+export type NewsCategoriesResponse = z.infer<typeof NewsCategoriesResponseSchema>;
 export declare const PriceQuoteSchema: z.ZodObject<{
     symbol: z.ZodString;
     usd: z.ZodNumber;

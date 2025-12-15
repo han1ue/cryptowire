@@ -27,6 +27,13 @@ export const NewsListResponseSchema = z.object({
 
 export type NewsListResponse = z.infer<typeof NewsListResponseSchema>;
 
+export const NewsCategoriesResponseSchema = z.object({
+    categories: z.array(z.string()),
+    sources: z.array(NewsSourceSchema).optional(),
+});
+
+export type NewsCategoriesResponse = z.infer<typeof NewsCategoriesResponseSchema>;
+
 export const PriceQuoteSchema = z.object({
     symbol: z.string(),
     usd: z.number(),

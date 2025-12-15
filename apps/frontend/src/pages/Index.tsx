@@ -8,6 +8,7 @@ import { sources as sourcesConfig, SourceId, SourceName } from "@/data/sources";
 import { useInfiniteNews } from "@/hooks/useInfiniteNews";
 import { useSavedArticles } from "@/hooks/useSavedArticles";
 import { useNewsStatus } from "@/hooks/useNewsStatus";
+import { useNewsCategories } from "@/hooks/useNewsCategories";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "@/components/ui/sonner";
 import { Bookmark, MoreVertical, Share2 } from "lucide-react";
@@ -156,6 +157,7 @@ const Index = () => {
   });
 
   const newsStatus = useNewsStatus();
+  const categoriesQuery = useNewsCategories({ sources: selectedSources });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const getSavedTheme = (): "light" | "dark" | null => {
     try {
@@ -229,6 +231,14 @@ const Index = () => {
   };
 
   const selectedCategoryKey = selectedCategory && selectedCategory !== "All News" ? selectedCategory : null;
+
+  useEffect(() => {
+    if (!selectedCategoryKey) return;
+    const cats = categoriesQuery.data?.categories;
+    if (!cats || cats.length === 0) return;
+    const exists = cats.some((c) => c.trim().toLowerCase() === selectedCategoryKey.trim().toLowerCase());
+    if (!exists) setSelectedCategory("All News");
+  }, [selectedCategoryKey, categoriesQuery.data?.categories]);
 
   const availableSources = sourcesConfig;
 
@@ -550,6 +560,7 @@ const Index = () => {
             }}
             savedArticles={savedArticles}
             allNews={sidebarNews}
+            categories={categoriesQuery.data?.categories ?? []}
             selectedCategory={selectedCategory}
             onCategorySelect={cat => {
               setSelectedCategory((prev) => (prev === cat ? 'All News' : cat));
@@ -577,6 +588,7 @@ const Index = () => {
                 }}
                 savedArticles={savedArticles}
                 allNews={sidebarNews}
+                categories={categoriesQuery.data?.categories ?? []}
                 selectedCategory={selectedCategory}
                 onCategorySelect={cat => {
                   setSelectedCategory((prev) => (prev === cat ? 'All News' : cat));
