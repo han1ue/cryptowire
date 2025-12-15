@@ -1112,7 +1112,12 @@ const Index = () => {
       {/* Status Bar */}
       <footer className="border-t border-border bg-card/50 px-4 py-2 flex items-center justify-between">
         <div className="flex gap-4">
-          <span className="text-[10px] text-muted-foreground flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            className="text-[10px] text-muted-foreground flex items-center gap-2 hover:text-primary transition-colors"
+            title="Open settings"
+          >
             <span
               className={
                 activeSourceCount === totalSourceCount ? "text-terminal-green" : "text-terminal-amber"
@@ -1124,10 +1129,7 @@ const Index = () => {
             <span className={activeSourceCount === totalSourceCount ? "text-terminal-green" : "text-muted-foreground"}>
               {activeSourceCount}/{totalSourceCount} Sources Active
             </span>
-          </span>
-          <span className="text-[10px] text-muted-foreground">
-            {loadedArticlesCount} Articles Loaded
-          </span>
+          </button>
         </div>
         <div className="flex items-center gap-3">
           <Popover open={devToolsOpen} onOpenChange={setDevToolsOpen}>
@@ -1144,7 +1146,7 @@ const Index = () => {
               <div className="space-y-3">
                 <div className="text-xs font-medium uppercase tracking-wider text-foreground">Dev tools</div>
                 <div className="text-xs text-muted-foreground">
-                  Saved articles (localStorage): {savedArticles.length}
+                  Articles loaded: {loadedArticlesCount}
                 </div>
                 <button
                   type="button"
