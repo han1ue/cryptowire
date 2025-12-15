@@ -194,9 +194,6 @@ const Index = () => {
   const [showSavedOnly, setShowSavedOnly] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All News');
 
-  const SCROLL_THRESHOLD_PX = 24;
-  const [hasUserScrolled, setHasUserScrolled] = useState(false);
-  const userInitiatedScrollRef = useRef(false);
   const END_OF_LIST_BASE = "You’ve reached the end.";
   const END_OF_LIST_SUFFIXES = [
     "That was a lot of reading.",
@@ -233,43 +230,6 @@ const Index = () => {
 
   const selectedCategoryKey = selectedCategory && selectedCategory !== "All News" ? selectedCategory : null;
 
-  useEffect(() => {
-    const onScroll = () => {
-      if (!userInitiatedScrollRef.current) return;
-      if (window.scrollY > SCROLL_THRESHOLD_PX) setHasUserScrolled(true);
-    };
-
-    const markUserScrollIntent = () => {
-      userInitiatedScrollRef.current = true;
-    };
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      // Only treat common scroll/navigation keys as scroll intent.
-      if (
-        e.key === "ArrowDown" ||
-        e.key === "PageDown" ||
-        e.key === "End" ||
-        e.key === " "
-      ) {
-        markUserScrollIntent();
-      }
-    };
-
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("wheel", markUserScrollIntent, { passive: true });
-    window.addEventListener("touchmove", markUserScrollIntent, { passive: true });
-    window.addEventListener("keydown", onKeyDown);
-    onScroll();
-
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("wheel", markUserScrollIntent);
-      window.removeEventListener("touchmove", markUserScrollIntent);
-      window.removeEventListener("keydown", onKeyDown);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const availableSources = sourcesConfig;
 
   useEffect(() => {
@@ -298,8 +258,6 @@ const Index = () => {
 
   // Reset scroll/end-message state when the list context changes.
   useEffect(() => {
-    userInitiatedScrollRef.current = false;
-    setHasUserScrolled(false);
     setEndOfListSuffix("");
   }, [showSavedOnly, selectedCategory, selectedSources.join("|")]);
 
@@ -516,10 +474,10 @@ const Index = () => {
     : categoryInfinite.hasNextPage;
   const shouldShowEndMessage =
     !showSavedOnly &&
+    selectedCategory === 'All News' &&
     !isFetchingNext &&
     allNews.length > 0 &&
-    !hasNextPage &&
-    hasUserScrolled;
+    !hasNextPage;
 
   const shouldRenderInfiniteSentinel = !showSavedOnly && (hasNextPage ?? true);
 
@@ -587,12 +545,7 @@ const Index = () => {
             savedArticlesCount={savedArticles.length}
             showSavedOnly={showSavedOnly}
             onToggleSavedView={() => {
-              setShowSavedOnly((prev) => {
-                const next = !prev;
-                // When leaving Saved Articles, always return to All News.
-                if (prev && !next) setSelectedCategory('All News');
-                return next;
-              });
+              setShowSavedOnly((prev) => !prev);
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             savedArticles={savedArticles}
@@ -618,12 +571,7 @@ const Index = () => {
                 savedArticlesCount={savedArticles.length}
                 showSavedOnly={showSavedOnly}
                 onToggleSavedView={() => {
-                  setShowSavedOnly((prev) => {
-                    const next = !prev;
-                    // When leaving Saved Articles, always return to All News.
-                    if (prev && !next) setSelectedCategory('All News');
-                    return next;
-                  });
+                  setShowSavedOnly((prev) => !prev);
                   setSidebarOpen(false);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
@@ -643,6 +591,22 @@ const Index = () => {
         <main
           className={`flex-1 ${displayMode === "cards" ? "p-2 sm:p-4" : "px-0 py-2 sm:p-4"}`}
         >
+          {showSavedOnly ? (
+            <div className="mb-2 px-2 sm:px-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSavedOnly(false);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="inline-flex items-center border border-border rounded px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground bg-card/30 hover:bg-card/40 hover:text-foreground transition-colors"
+              >
+                <span className="text-[12px] leading-none relative -top-px">‹</span>
+                <span className="ml-1">Back</span>
+              </button>
+            </div>
+          ) : null}
+
           {!showSavedOnly && showSourcesIntro ? (
             <div className="mb-2 sm:mb-4 relative">
               <button
@@ -669,6 +633,25 @@ const Index = () => {
               </button>
             </div>
           ) : null}
+
+          {/* Category Tag - above news, smaller, left-aligned */}
+          {!showSavedOnly && selectedCategoryKey && (
+            <div className="mb-2 flex px-2">
+              <span className="inline-flex items-center px-2 py-1 rounded bg-primary/10 text-primary text-sm font-medium uppercase tracking-wider">
+                {selectedCategoryKey}
+                <button
+                  type="button"
+                  className="ml-2 text-sm text-primary-foreground bg-primary/40 rounded-full w-4 h-4 flex items-center justify-center hover:bg-primary/70 transition-colors"
+                  style={{ lineHeight: 1 }}
+                  aria-label="Clear category filter"
+                  title="Clear category filter"
+                  onClick={() => setSelectedCategory('All News')}
+                >
+                  ×
+                </button>
+              </span>
+            </div>
+          )}
 
           {!showSavedOnly && selectedSources.length === 0 ? (
             <div className="flex-1 flex items-center justify-center bg-card/30 border border-border rounded p-12 sm:p-20">
