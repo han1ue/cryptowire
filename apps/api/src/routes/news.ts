@@ -274,21 +274,31 @@ export const createNewsRouter = (
     };
 
     const safeParseJsonArray = (raw: unknown): string[] => {
-        const arr = Array.isArray(raw)
-            ? raw
-            : typeof raw === "string"
-                ? (() => {
+        const parseStringToArray = (text: string): unknown[] => {
+            const t = text.trim();
+            if (!t) return [];
+            try {
+                const v1 = JSON.parse(t) as unknown;
+                if (Array.isArray(v1)) return v1;
+                // Some KV clients may round-trip JSON strings (double-encoded).
+                // Example stored value: "[\"BUSINESS\",\"BTC\"]" (note outer quotes)
+                // First parse yields a string "[\"BUSINESS\",...]"; parse again.
+                if (typeof v1 === "string") {
                     try {
-                        const v = JSON.parse(raw) as unknown;
-                        return Array.isArray(v) ? v : [];
+                        const v2 = JSON.parse(v1) as unknown;
+                        return Array.isArray(v2) ? v2 : [];
                     } catch {
                         return [];
                     }
-                })()
-                : [];
-        return sortCategories(
-            arr.map((c) => (typeof c === "string" ? normalizeCategory(c) : "")).filter(Boolean),
-        );
+                }
+                return [];
+            } catch {
+                return [];
+            }
+        };
+
+        const arr = Array.isArray(raw) ? raw : typeof raw === "string" ? parseStringToArray(raw) : [];
+        return sortCategories(arr.map((c) => (typeof c === "string" ? normalizeCategory(c) : "")).filter(Boolean));
     };
 
     const sourceKeyToId = (() => {
@@ -332,16 +342,14 @@ export const createNewsRouter = (
                 : Promise.resolve([] as unknown));
 
             const rows: Array<unknown | null> = Array.isArray(rawBySource) ? (rawBySource as Array<unknown | null>) : [];
-            const updates: Record<string, string> = {};
+            const updates: Record<string, unknown> = {};
 
             for (let i = 0; i < touchedSourceIds.length; i++) {
                 const id = touchedSourceIds[i]!;
                 const existingForSource = safeParseJsonArray(rows[i]);
                 const incomingForSource = sortCategories(Array.from(incomingBySource.get(id) ?? new Set<string>()));
                 const merged = mergeCategoryLists(existingForSource, incomingForSource);
-                if (!sameCategorySet(existingForSource, merged)) {
-                    updates[id] = JSON.stringify(merged);
-                }
+                if (!sameCategorySet(existingForSource, merged)) updates[id] = merged;
             }
 
             if (Object.keys(updates).length > 0) {
