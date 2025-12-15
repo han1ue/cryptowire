@@ -56,9 +56,8 @@ export const PriceBar = () => {
               <span className="text-xs font-medium text-foreground">{item.symbol}</span>
               <span className="text-xs text-muted-foreground">${item.price}</span>
               <span
-                className={`flex items-center gap-0.5 text-xs ${
-                  item.change >= 0 ? "text-terminal-green" : "text-terminal-red"
-                }`}
+                className={`flex items-center gap-0.5 text-xs ${item.change >= 0 ? "text-terminal-green" : "text-terminal-red"
+                  }`}
               >
                 {item.change >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
                 {Math.abs(item.change).toFixed(2)}%
