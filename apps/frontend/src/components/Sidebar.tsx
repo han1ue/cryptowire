@@ -301,7 +301,7 @@ export const Sidebar = ({
       </div>
 
       {/* Bookmarks */}
-      <div className="p-4 flex-1 overflow-y-auto">
+      <div className="p-4 shrink-0 min-h-40 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
         <button
           onClick={onToggleSavedView}
           className={`w-full text-left p-2 -mx-2 rounded transition-colors ${showSavedOnly ? "bg-primary/10" : "hover:bg-muted/30"
