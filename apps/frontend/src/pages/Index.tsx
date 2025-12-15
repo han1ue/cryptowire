@@ -644,20 +644,20 @@ const Index = () => {
           className={`flex-1 ${displayMode === "cards" ? "p-2 sm:p-4" : "px-0 py-2 sm:p-4"}`}
         >
           {!showSavedOnly && showSourcesIntro ? (
-            <div className="mb-2 sm:mb-4 bg-card/30 border border-border rounded p-3 flex items-start justify-between gap-3">
+            <div className="mb-2 sm:mb-4 bg-muted/20 border border-border rounded p-3 flex items-start justify-between gap-3">
               <button
                 type="button"
                 className="text-left flex-1"
                 onClick={() => setSettingsOpen(true)}
               >
                 <div className="text-xs text-muted-foreground">
-                  Getting news from <span className="text-foreground">{selectedSources.length}/{availableSources.length}</span> sources.
-                  <span className="text-primary"> Change in settings</span>.
+                  News sources: <span className="text-foreground">{selectedSources.length}/{availableSources.length}</span> active.
+                  <span className="text-primary"> Tap to change in Settings</span>.
                 </div>
               </button>
               <button
                 type="button"
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                className="h-8 w-8 -mt-1 flex items-center justify-center rounded text-lg leading-none text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
                 onClick={(e) => {
                   e.stopPropagation();
                   dismissSourcesIntro();

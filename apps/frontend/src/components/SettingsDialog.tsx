@@ -39,7 +39,7 @@ export const SettingsDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm p-8">
         <DialogHeader>
-          <DialogTitle className="mb-4">Settings</DialogTitle>
+          <DialogTitle className="mb-4 text-center">Settings</DialogTitle>
         </DialogHeader>
         <div className="space-y-6">
           {/* Theme */}

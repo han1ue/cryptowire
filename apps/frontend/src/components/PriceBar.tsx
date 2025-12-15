@@ -39,11 +39,16 @@ export const PriceBar = () => {
           href="https://www.coingecko.com"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-2 px-4 py-2 bg-primary/10 border-r border-border shrink-0"
+          className="flex items-center gap-2 px-4 py-2 bg-primary/10 border-r border-border shrink-0 cursor-pointer"
           aria-label="Live prices by CoinGecko"
           title="Live prices by CoinGecko"
         >
-          <img src="/CG-Symbol.svg" alt="" aria-hidden="true" className="h-3.5 w-3.5" />
+          <img
+            src="/CG-Symbol.svg"
+            alt=""
+            aria-hidden="true"
+            className="h-3.5 w-3.5 pointer-events-none"
+          />
           <span className="text-xs font-medium text-terminal-amber uppercase tracking-wider whitespace-nowrap">
             Live prices
             <span className="hidden lg:inline text-muted-foreground normal-case tracking-normal font-normal"> by CoinGecko</span>
