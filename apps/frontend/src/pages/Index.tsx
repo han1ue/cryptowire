@@ -599,7 +599,7 @@ const Index = () => {
                   setShowSavedOnly(false);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className="inline-flex items-center border border-border rounded px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground bg-card/30 hover:bg-card/40 hover:text-foreground transition-colors"
+                className="inline-flex items-center border border-border rounded px-2.5 py-1.5 text-[12px] font-medium uppercase tracking-wider text-muted-foreground bg-card/30 hover:bg-card/40 hover:text-foreground transition-colors"
               >
                 <span className="text-[12px] leading-none relative -top-px">‹</span>
                 <span className="ml-1">Back</span>
