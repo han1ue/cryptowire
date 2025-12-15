@@ -5,7 +5,6 @@ import { Sidebar } from "@/components/Sidebar";
 import { SettingsDialog } from "@/components/SettingsDialog";
 import { NewsCard } from "@/components/NewsCard";
 import { sources as sourcesConfig, SourceId, SourceName } from "@/data/sources";
-import { useNews } from "@/hooks/useNews";
 import { useInfiniteNews } from "@/hooks/useInfiniteNews";
 import { useSavedArticles } from "@/hooks/useSavedArticles";
 import { useNewsStatus } from "@/hooks/useNewsStatus";
@@ -180,20 +179,6 @@ const Index = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Used by ticker/header components that want a small, frequently-updated set.
-  const { data: newsData, isLoading: newsLoading, error: newsError } = useNews({
-    limit: 25,
-    sources: selectedSources,
-  });
-
-  // When a category is selected, fetch the first 20 items in that category from the backend.
-  // This avoids only filtering whatever happened to be loaded in the infinite list.
-  const { data: categoryNewsData } = useNews({
-    limit: 20,
-    sources: selectedSources,
-    category: selectedCategoryKey ?? undefined,
-  });
-
   const availableSources = sourcesConfig;
 
   useEffect(() => {
@@ -244,12 +229,6 @@ const Index = () => {
     setSchemaDialogText(JSON.stringify(jsonSchema, null, 2));
     setSchemaDialogOpen(true);
   };
-
-  useEffect(() => {
-    if (newsError) {
-      toast("Failed to load news");
-    }
-  }, [newsError]);
 
   useEffect(() => {
     localStorage.setItem("selectedSources", JSON.stringify(selectedSources));

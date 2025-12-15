@@ -3,7 +3,7 @@ name: Refresh CryptoWire news cache
 on:
   schedule:
     # GitHub scheduled workflows run at best-effort; minimum granularity is 5 minutes.
-    - cron: "*/5 * * * *"
+    - cron: "*/10 * * * *"
   workflow_dispatch: {}
 
 jobs:
@@ -58,10 +58,11 @@ jobs:
           }
 
           # Primary: current API route
-          try_url "${base}/api/news/refresh?limit=30&force=1" && exit 0
+          # Explicit sources list keeps the store warm across all supported sources.
+          try_url "${base}/api/news/refresh?limit=30&force=1&sources=coindesk,decrypt,cointelegraph,blockworks,bitcoin.com,cryptopotato,forbes,cryptopolitan,coinpaprika,seekingalpha,bitcoinist,newsbtc,utoday,investing_comcryptonews,ethereumfoundation,bitcoincore" && exit 0
 
           # Fallback: if someone deploys without the /api prefix (older setup)
-          try_url "${base}/news/refresh?limit=30&force=1" && exit 0
+          try_url "${base}/news/refresh?limit=30&force=1&sources=coindesk,decrypt,cointelegraph,blockworks,bitcoin.com,cryptopotato,forbes,cryptopolitan,coinpaprika,seekingalpha,bitcoinist,newsbtc,utoday,investing_comcryptonews,ethereumfoundation,bitcoincore" && exit 0
 
           echo "Refresh failed for both candidate endpoints."
           exit 22

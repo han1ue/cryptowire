@@ -48,23 +48,31 @@ export const createNewsStore = (): NewsStore => {
 
     // Lazy import to avoid bundling issues when KV isn't configured.
     const KV_NEWS_ZSET_KEY = "news:z";
-    const KV_ITEM_KEY_PREFIX = "news:item:";
+    const KV_NEWS_HASH_KEY = "news:h";
 
     const kvStore: NewsStore = {
         async putMany(items: NewsItem[]): Promise<void> {
             const { kv } = await import("@vercel/kv");
 
-            // Store each item body with a TTL so it naturally expires.
-            // The index is pruned separately via `pruneOlderThan`.
-            const itemTtlSeconds = 7 * 24 * 60 * 60;
+            // Store bodies in a single hash and index IDs in a single zset.
+            // This keeps KV command usage low (one HSET + one ZADD per refresh batch).
+            const bodyById: Record<string, NewsItem> = {};
+            const scoreMembers: Array<{ score: number; member: string }> = [];
 
             for (const item of items) {
+                const id = String(item.id ?? "").trim();
+                if (!id) continue;
                 const score = new Date(item.publishedAt).getTime();
                 if (!Number.isFinite(score)) continue;
+                bodyById[id] = item;
+                scoreMembers.push({ score, member: id });
+            }
 
-                const itemKey = `${KV_ITEM_KEY_PREFIX}${item.id}`;
-                await kv.set(itemKey, item, { ex: itemTtlSeconds });
-                await kv.zadd(KV_NEWS_ZSET_KEY, { score, member: item.id });
+            if (Object.keys(bodyById).length > 0) {
+                await kv.hset(KV_NEWS_HASH_KEY, bodyById);
+            }
+            if (scoreMembers.length > 0) {
+                await kv.zadd(KV_NEWS_ZSET_KEY, scoreMembers[0]!, ...scoreMembers.slice(1));
             }
         },
 
@@ -78,8 +86,13 @@ export const createNewsStore = (): NewsStore => {
             const ids = (await kv.zrange(KV_NEWS_ZSET_KEY, start, stop, { rev: true })) as string[];
             if (!ids || ids.length === 0) return [];
 
-            const keys = ids.map((id) => `${KV_ITEM_KEY_PREFIX}${id}`);
-            const rows = (await kv.mget(...keys)) as Array<unknown | null>;
+            const raw = (await kv.hmget<Record<string, unknown>>(KV_NEWS_HASH_KEY, ...ids)) as unknown;
+            const rows: Array<unknown | null> = Array.isArray(raw)
+                ? (raw as Array<unknown | null>)
+                : raw && typeof raw === "object"
+                    ? ids.map((id) => (raw as Record<string, unknown>)[id] ?? null)
+                    : [];
+
             const parsed: NewsItem[] = [];
             for (const row of rows) {
                 if (!row) continue;
@@ -94,7 +107,7 @@ export const createNewsStore = (): NewsStore => {
 
         async getById(id: string): Promise<NewsItem | null> {
             const { kv } = await import("@vercel/kv");
-            const row = await kv.get(`${KV_ITEM_KEY_PREFIX}${id}`);
+            const row = await kv.hget(KV_NEWS_HASH_KEY, id);
             const validated = NewsItemSchema.safeParse(row);
             return validated.success ? validated.data : null;
         },
@@ -110,8 +123,16 @@ export const createNewsStore = (): NewsStore => {
             const cutoffScore = new Date(isoCutoff).getTime();
             if (!Number.isFinite(cutoffScore)) return;
 
-            // Remove old IDs from the index in a single operation.
-            // Item bodies expire naturally via per-item TTL.
+            // Remove old IDs from the index and delete their bodies from the hash.
+            const oldIds = (await kv.zrange(KV_NEWS_ZSET_KEY, "-inf", cutoffScore, { byScore: true })) as string[];
+            if (oldIds && oldIds.length > 0) {
+                // Chunk to avoid very large argument lists.
+                const chunkSize = 500;
+                for (let i = 0; i < oldIds.length; i += chunkSize) {
+                    const chunk = oldIds.slice(i, i + chunkSize);
+                    await kv.hdel(KV_NEWS_HASH_KEY, ...chunk);
+                }
+            }
             await kv.zremrangebyscore(KV_NEWS_ZSET_KEY, "-inf", cutoffScore);
         },
     };

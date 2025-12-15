@@ -306,7 +306,7 @@ export const createNewsRouter = (
 
         const supportedIds = new Set<string>(SUPPORTED_SOURCES.map((s) => s.id));
         const requested = requestedSourceIds.filter((id) => supportedIds.has(id));
-        const sourceIdsForFetch = requested.length > 0 ? requested.join(",") : undefined;
+        const sourceIdsForFetch = requested.length > 0 ? requested.join(",") : SUPPORTED_SOURCES.map((s) => s.id).join(",");
 
         const refreshStartedAt = new Date().toISOString();
         if (requested.length > 0) {
@@ -539,94 +539,7 @@ export const createNewsRouter = (
             return out;
         };
 
-        const maybeWarmForRequestedSources = async () => {
-            if (offset !== 0) return;
-            if (!requestedSourceKeys || requestedSourceKeys.size === 0) return;
-
-            // If the store doesn't have any recent items for one of the requested
-            // sources, warm it using the selected source ids. This is important
-            // when the defaults exclude an optional source like bitcoin.com.
-            const sample = await newsStore.getPage({ limit: 200, offset: 0 });
-            const present = new Set<string>();
-            for (const item of sample) {
-                const key = item.source.trim().toLowerCase();
-                if (key) present.add(key);
-            }
-
-            const missingSourceIds = requested.filter((id) => {
-                const idKey = id.trim().toLowerCase();
-                const nameKey = sourceIdToName(id).trim().toLowerCase();
-                return !(present.has(idKey) || present.has(nameKey));
-            });
-            const isCold = sample.length === 0;
-
-            if (!isCold && missingSourceIds.length === 0) return;
-
-            // Cooldown prevents repeatedly warming low-volume sources that simply
-            // don't appear in the most recent store sample.
-            const SOURCE_WARM_COOLDOWN_MS = 15 * 60 * 1000;
-            const now = Date.now();
-            const warmCandidates = missingSourceIds;
-
-            const eligible: string[] = [];
-            for (const id of warmCandidates) {
-                const lastAttemptIso = await getPerSourceIso(
-                    KV_LAST_SOURCE_WARM_ATTEMPT_PREFIX,
-                    lastWarmAttemptAtMemory,
-                    id,
-                );
-                const lastAttempt = lastAttemptIso ? Date.parse(lastAttemptIso) : NaN;
-                if (!Number.isFinite(lastAttempt) || now - lastAttempt > SOURCE_WARM_COOLDOWN_MS) {
-                    eligible.push(id);
-                }
-            }
-
-            if (!isCold && eligible.length === 0) return;
-
-            const warmStartedAt = new Date().toISOString();
-            const sourcesToWarm = isCold
-                ? Array.from(new Set([...requested, ...eligible]))
-                : eligible;
-
-            await setPerSourceIso(
-                KV_LAST_SOURCE_WARM_ATTEMPT_PREFIX,
-                lastWarmAttemptAtMemory,
-                sourcesToWarm,
-                warmStartedAt,
-            );
-
-            const sourceIdsForWarm = sourcesToWarm.join(",");
-            const warmed = await newsService.listHeadlines({
-                limit: 100,
-                retentionDays,
-                sourceIds: sourceIdsForWarm,
-            });
-
-            if (warmed.length === 0) return;
-
-            await newsStore.putMany(warmed);
-            const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000).toISOString();
-            await newsStore.pruneOlderThan(cutoff);
-            await setLastRefreshAt(new Date().toISOString());
-
-            await setPerSourceIso(
-                KV_LAST_SOURCE_WARM_KEY_PREFIX,
-                lastWarmAtMemory,
-                sourcesToWarm,
-                warmStartedAt,
-            );
-
-            // This indicates we performed a refresh/warm *with these sources included*.
-            await setPerSourceIso(
-                KV_LAST_SOURCE_REFRESH_KEY_PREFIX,
-                lastSourceRefreshAtMemory,
-                sourcesToWarm,
-                warmStartedAt,
-            );
-        };
-
-        // Serve from store (KV/in-memory). This avoids hitting upstream on every user request.
-        await maybeWarmForRequestedSources();
+        // Serve from store (KV/in-memory) only; upstream fetching is done by the scheduled refresh job.
         const items = await getFilteredPageFromStore();
 
         const payload = { items, sources: SUPPORTED_SOURCES };
