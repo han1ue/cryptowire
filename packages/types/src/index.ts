@@ -22,14 +22,12 @@ export type NewsSource = z.infer<typeof NewsSourceSchema>;
 
 export const NewsListResponseSchema = z.object({
     items: z.array(NewsItemSchema),
-    sources: z.array(NewsSourceSchema),
 });
 
 export type NewsListResponse = z.infer<typeof NewsListResponseSchema>;
 
 export const NewsCategoriesResponseSchema = z.object({
     categories: z.array(z.string()),
-    sources: z.array(NewsSourceSchema).optional(),
 });
 
 export type NewsCategoriesResponse = z.infer<typeof NewsCategoriesResponseSchema>;

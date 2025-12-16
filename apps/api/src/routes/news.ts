@@ -172,7 +172,7 @@ export const createNewsRouter = (
         // If sources aren't specified, return no categories.
         // The product requirement is that categories are scoped to selected sources.
         if (requestedSourceIds.length === 0) {
-            const payload = { categories: [], sources: SUPPORTED_SOURCES };
+            const payload = { categories: [] };
             const validated = NewsCategoriesResponseSchema.safeParse(payload);
             if (!validated.success) {
                 return res.status(500).json({ error: "Invalid response shape" });
@@ -226,7 +226,7 @@ export const createNewsRouter = (
             }
         }
 
-        const payload = { categories: list, sources: SUPPORTED_SOURCES };
+        const payload = { categories: list };
         const validated = NewsCategoriesResponseSchema.safeParse(payload);
         if (!validated.success) {
             return res.status(500).json({ error: "Invalid response shape" });
@@ -591,7 +591,7 @@ export const createNewsRouter = (
 
         // API has no concept of default sources: clients must specify sources.
         if (requestedSourceIds.length === 0) {
-            const payload = { items: [], sources: SUPPORTED_SOURCES };
+            const payload = { items: [] };
             const validated = NewsListResponseSchema.safeParse(payload);
             if (!validated.success) {
                 return res.status(500).json({ error: "Invalid response shape" });
@@ -700,7 +700,7 @@ export const createNewsRouter = (
 
         const items = await getFilteredPageFromStore();
 
-        const payload = { items, sources: SUPPORTED_SOURCES };
+        const payload = { items };
         const validated = NewsListResponseSchema.safeParse(payload);
         if (!validated.success) {
             return res.status(500).json({ error: "Invalid response shape" });
