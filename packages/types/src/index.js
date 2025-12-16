@@ -5,7 +5,7 @@ export const NewsItemSchema = z.object({
     summary: z.string().default(""),
     url: z.string().url().optional(),
     source: z.string(),
-    category: z.string().default("News"),
+    categories: z.array(z.string().min(1)).min(1).default(["News"]),
     publishedAt: z.string(),
     imageUrl: z.string().url().optional(),
 });

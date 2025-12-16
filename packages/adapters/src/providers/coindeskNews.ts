@@ -81,6 +81,25 @@ const toIso = (value: string | number | undefined): string | null => {
 
 const nowMinusDaysIso = (days: number) => new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 
+const normalizeCategoryValue = (raw: unknown): string | null => {
+    const v = typeof raw === "string" ? raw.trim() : "";
+    return v.length > 0 ? v : null;
+};
+
+const dedupeCategories = (values: Array<string | null | undefined>): string[] => {
+    const out: string[] = [];
+    const seen = new Set<string>();
+    for (const v of values) {
+        const s = (v ?? "").trim();
+        if (!s) continue;
+        const key = s.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push(s);
+    }
+    return out;
+};
+
 export class CoindeskNewsProvider implements NewsProvider {
     public readonly name = "CoinDesk";
 
@@ -187,12 +206,22 @@ export class CoindeskNewsProvider implements NewsProvider {
             const publishedAt = toIso(a.publishedAt ?? a.published_on ?? a.PUBLISHED_ON);
             if (!title || !publishedAt) return;
 
-            const category =
-                a.category ??
-                a.categories ??
-                a.CATEGORY_DATA?.[0]?.CATEGORY ??
-                a.CATEGORY_DATA?.[0]?.NAME ??
-                "News";
+            const categoriesFromCategoryData = Array.isArray(a.CATEGORY_DATA)
+                ? a.CATEGORY_DATA.map((c) => normalizeCategoryValue(c.CATEGORY ?? c.NAME))
+                : [];
+
+            const categoriesFromStrings = (() => {
+                const raw = normalizeCategoryValue(a.categories ?? a.category);
+                if (!raw) return [];
+                // Best-effort split for providers that return comma-separated categories.
+                const parts = raw.split(",").map((p) => p.trim()).filter(Boolean);
+                return parts.length > 1 ? parts : [raw];
+            })();
+
+            const categories = (() => {
+                const merged = dedupeCategories([...categoriesFromCategoryData, ...categoriesFromStrings]);
+                return merged.length > 0 ? merged : ["News"];
+            })();
 
             const urlValue = (a.URL ?? a.url ?? "").trim();
 
@@ -231,7 +260,7 @@ export class CoindeskNewsProvider implements NewsProvider {
                 title,
                 summary,
                 source: sourceFromFields,
-                category,
+                categories,
                 publishedAt,
             };
 

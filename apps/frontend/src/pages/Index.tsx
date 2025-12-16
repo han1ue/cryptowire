@@ -232,6 +232,21 @@ const Index = () => {
 
   const selectedCategoryKey = selectedCategory && selectedCategory !== "All News" ? selectedCategory : null;
 
+  const selectedCategoryKeyLower = selectedCategoryKey ? selectedCategoryKey.trim().toLowerCase() : null;
+
+  const getCategoryForDisplay = (item: { categories?: string[] }): string => {
+    const cats = Array.isArray(item.categories)
+      ? item.categories.map((c) => (typeof c === "string" ? c.trim() : "")).filter(Boolean)
+      : [];
+
+    if (selectedCategoryKeyLower) {
+      const match = cats.find((c) => c.toLowerCase() === selectedCategoryKeyLower);
+      if (match) return match;
+    }
+
+    return cats[0] ?? "News";
+  };
+
   useEffect(() => {
     if (!selectedCategoryKey) return;
     const cats = categoriesQuery.data?.categories;
@@ -439,7 +454,7 @@ const Index = () => {
         title: n.title,
         summary: n.summary || "",
         time: formatDistanceToNow(new Date(n.publishedAt), { addSuffix: true }).replace(/^about /, ""),
-        category: n.category || "News",
+        category: getCategoryForDisplay(n),
         url: n.url,
         isBreaking: false,
         publishedAt: n.publishedAt,
@@ -459,7 +474,7 @@ const Index = () => {
         title: n.title,
         summary: n.summary || "",
         time: formatDistanceToNow(new Date(n.publishedAt), { addSuffix: true }).replace(/^about /, ""),
-        category: n.category || "News",
+        category: getCategoryForDisplay(n),
         url: n.url,
         isBreaking: false,
         publishedAt: n.publishedAt,

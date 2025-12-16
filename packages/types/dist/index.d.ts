@@ -5,7 +5,7 @@ export declare const NewsItemSchema: z.ZodObject<{
     summary: z.ZodDefault<z.ZodString>;
     url: z.ZodOptional<z.ZodString>;
     source: z.ZodString;
-    category: z.ZodDefault<z.ZodString>;
+    categories: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
     publishedAt: z.ZodString;
     imageUrl: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
@@ -13,7 +13,7 @@ export declare const NewsItemSchema: z.ZodObject<{
     title: string;
     summary: string;
     source: string;
-    category: string;
+    categories: string[];
     publishedAt: string;
     url?: string | undefined;
     imageUrl?: string | undefined;
@@ -24,7 +24,7 @@ export declare const NewsItemSchema: z.ZodObject<{
     publishedAt: string;
     summary?: string | undefined;
     url?: string | undefined;
-    category?: string | undefined;
+    categories?: string[] | undefined;
     imageUrl?: string | undefined;
 }>;
 export type NewsItem = z.infer<typeof NewsItemSchema>;
@@ -46,7 +46,7 @@ export declare const NewsListResponseSchema: z.ZodObject<{
         summary: z.ZodDefault<z.ZodString>;
         url: z.ZodOptional<z.ZodString>;
         source: z.ZodString;
-        category: z.ZodDefault<z.ZodString>;
+        categories: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
         publishedAt: z.ZodString;
         imageUrl: z.ZodOptional<z.ZodString>;
     }, "strip", z.ZodTypeAny, {
@@ -54,7 +54,7 @@ export declare const NewsListResponseSchema: z.ZodObject<{
         title: string;
         summary: string;
         source: string;
-        category: string;
+        categories: string[];
         publishedAt: string;
         url?: string | undefined;
         imageUrl?: string | undefined;
@@ -65,7 +65,7 @@ export declare const NewsListResponseSchema: z.ZodObject<{
         publishedAt: string;
         summary?: string | undefined;
         url?: string | undefined;
-        category?: string | undefined;
+        categories?: string[] | undefined;
         imageUrl?: string | undefined;
     }>, "many">;
 }, "strip", z.ZodTypeAny, {
@@ -74,7 +74,7 @@ export declare const NewsListResponseSchema: z.ZodObject<{
         title: string;
         summary: string;
         source: string;
-        category: string;
+        categories: string[];
         publishedAt: string;
         url?: string | undefined;
         imageUrl?: string | undefined;
@@ -87,7 +87,7 @@ export declare const NewsListResponseSchema: z.ZodObject<{
         publishedAt: string;
         summary?: string | undefined;
         url?: string | undefined;
-        category?: string | undefined;
+        categories?: string[] | undefined;
         imageUrl?: string | undefined;
     }[];
 }>;

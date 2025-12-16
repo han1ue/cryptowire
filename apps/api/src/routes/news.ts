@@ -65,7 +65,10 @@ export const createNewsRouter = (
                     const pubDate = new Date(item.publishedAt).toUTCString();
                     const guid = item.id;
                     const description = item.summary?.trim() ? item.summary.trim() : item.title;
-                    const category = item.category?.trim() ? item.category.trim() : "News";
+                                        const categories =
+                                                Array.isArray(item.categories) && item.categories.length > 0
+                                                        ? item.categories.map((c) => (typeof c === "string" ? c.trim() : "")).filter(Boolean)
+                                                        : ["News"];
                     const source = item.source?.trim() ? item.source.trim() : "cryptowi.re";
 
                     return `
@@ -75,7 +78,7 @@ export const createNewsRouter = (
       <guid isPermaLink="false">${escapeXml(guid)}</guid>
       <pubDate>${escapeXml(pubDate)}</pubDate>
       <description>${escapeXml(description)}</description>
-      <category>${escapeXml(category)}</category>
+            ${categories.map((c) => `<category>${escapeXml(c)}</category>`).join("")}
       <source>${escapeXml(source)}</source>
     </item>`;
                 })
@@ -321,13 +324,16 @@ export const createNewsRouter = (
         const incomingBySource = new Map<string, Set<string>>();
 
         for (const item of items) {
-            const cat = normalizeCategory(item.category);
-
             const srcKey = item.source.trim().toLowerCase();
             const id = sourceKeyToId.get(srcKey) ?? null;
             if (!id) continue;
             const set = incomingBySource.get(id) ?? new Set<string>();
-            set.add(cat);
+
+            const cats = Array.isArray(item.categories) && item.categories.length > 0 ? item.categories : ["News"];
+            for (const rawCat of cats) {
+                const cat = normalizeCategory(rawCat);
+                set.add(cat);
+            }
             incomingBySource.set(id, set);
         }
 
@@ -677,8 +683,9 @@ export const createNewsRouter = (
                     if (requestedSourceKeys && !requestedSourceKeys.has(srcKey)) continue;
 
                     if (requestedCategoryKey) {
-                        const cat = item.category.trim().toLowerCase();
-                        if (cat !== requestedCategoryKey) continue;
+                        const cats = Array.isArray(item.categories) ? item.categories : [];
+                        const matches = cats.some((c) => (typeof c === "string" ? c.trim().toLowerCase() : "") === requestedCategoryKey);
+                        if (!matches) continue;
                     }
 
                     if (filteredSeen < offset) {
