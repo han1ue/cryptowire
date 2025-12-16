@@ -52,7 +52,7 @@ export const PriceBar = () => {
                   aria-hidden="true"
                   className="h-3.5 w-3.5 pointer-events-none"
                 />
-                <span className="text-xs font-medium text-terminal-amber uppercase tracking-wider whitespace-nowrap pointer-events-none">
+                <span className="hidden sm:inline text-xs font-medium text-terminal-amber uppercase tracking-wider whitespace-nowrap pointer-events-none">
                   Live prices
                   <span className="hidden lg:inline text-muted-foreground normal-case tracking-normal font-normal">
                     {" "}
