@@ -666,7 +666,7 @@ export const createNewsRouter = (
             // Implement offset/limit on the *filtered* sequence by scanning the
             // underlying store in chunks.
             const chunkSize = Math.max(50, Math.min(400, limit * 4));
-            const maxChunks = 30; // hard cap to avoid unbounded scans
+            const maxChunks = 30; // Hard cap to avoid unbounded scans
 
             let rawOffset = 0;
             let filteredSeen = 0;
