@@ -5,7 +5,8 @@ interface NewsCardProps {
   summary: string;
   source: string;
   time: string;
-  category: string;
+  category?: string;
+  categories?: string[];
   url?: string;
   isBreaking?: boolean;
   isSaved?: boolean;
@@ -22,6 +23,7 @@ export const NewsCard = ({
   source,
   time,
   category,
+  categories,
   url,
   isBreaking,
   isSaved,
@@ -31,6 +33,12 @@ export const NewsCard = ({
   showSchemaButton,
   onShowSchema,
 }: NewsCardProps) => {
+  const tags = Array.isArray(categories)
+    ? categories.map((c) => (typeof c === "string" ? c.trim() : "")).filter(Boolean)
+    : [];
+
+  const effectiveTags = tags.length > 0 ? tags : category ? [category] : ["News"];
+
   return (
     <article
       className="hover-group hover-border p-3 sm:p-4 bg-card border border-border transition-all duration-200 cursor-pointer terminal-glow flex flex-col h-full"
@@ -45,17 +53,20 @@ export const NewsCard = ({
             Breaking
           </span>
         )}
-        <button
-          type="button"
-          className="px-1.5 py-0.5 text-[10px] font-medium bg-primary/10 text-primary uppercase tracking-wider"
-          onClick={(e) => {
-            e.stopPropagation();
-            onCategoryClick?.(category);
-          }}
-          title={`Filter by ${category}`}
-        >
-          {category}
-        </button>
+        {effectiveTags.map((tag) => (
+          <button
+            key={tag}
+            type="button"
+            className="px-1.5 py-0.5 text-[10px] font-medium bg-primary/10 text-primary uppercase tracking-wider"
+            onClick={(e) => {
+              e.stopPropagation();
+              onCategoryClick?.(tag);
+            }}
+            title={`Filter by ${tag}`}
+          >
+            {tag}
+          </button>
+        ))}
         <span className="text-[10px] text-muted-foreground uppercase">
           {source}
         </span>

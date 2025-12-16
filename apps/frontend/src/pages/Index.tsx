@@ -439,6 +439,7 @@ const Index = () => {
         summary: a.summary || "",
         time: formatDistanceToNow(new Date(publishedAt), { addSuffix: true }).replace(/^about /, ""),
         category: a.category || "News",
+        categories: [a.category || "News"],
         url: a.url,
         isBreaking: false,
         publishedAt,
@@ -455,6 +456,7 @@ const Index = () => {
         summary: n.summary || "",
         time: formatDistanceToNow(new Date(n.publishedAt), { addSuffix: true }).replace(/^about /, ""),
         category: getCategoryForDisplay(n),
+        categories: Array.isArray(n.categories) && n.categories.length > 0 ? n.categories : [getCategoryForDisplay(n)],
         url: n.url,
         isBreaking: false,
         publishedAt: n.publishedAt,
@@ -475,6 +477,7 @@ const Index = () => {
         summary: n.summary || "",
         time: formatDistanceToNow(new Date(n.publishedAt), { addSuffix: true }).replace(/^about /, ""),
         category: getCategoryForDisplay(n),
+        categories: Array.isArray(n.categories) && n.categories.length > 0 ? n.categories : [getCategoryForDisplay(n)],
         url: n.url,
         isBreaking: false,
         publishedAt: n.publishedAt,
@@ -947,19 +950,22 @@ const Index = () => {
                         <span className="hover-title text-xs sm:text-sm text-foreground transition-colors block">{item.title}</span>
                         <div className="flex flex-wrap items-center gap-2 mt-1 text-[10px] text-muted-foreground">
                           <span className="text-news-time tabular-nums">{item.time}</span>
-                          <button
-                            type="button"
-                            className="px-1.5 py-0.5 rounded bg-primary/10 text-primary uppercase tracking-wider font-medium"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedCategory((prev) => (prev === item.category ? 'All News' : item.category));
-                              setShowSavedOnly(false);
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }}
-                            title={`Filter by ${item.category}`}
-                          >
-                            {item.category}
-                          </button>
+                          {(Array.isArray(item.categories) ? item.categories : [item.category]).map((cat) => (
+                            <button
+                              key={cat}
+                              type="button"
+                              className="px-1.5 py-0.5 rounded bg-primary/10 text-primary uppercase tracking-wider font-medium"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedCategory((prev) => (prev === cat ? 'All News' : cat));
+                                setShowSavedOnly(false);
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                              }}
+                              title={`Filter by ${cat}`}
+                            >
+                              {cat}
+                            </button>
+                          ))}
                           <span>{item.sourceName}</span>
                         </div>
                       </div>
@@ -1133,7 +1139,7 @@ const Index = () => {
                   summary={item.summary}
                   source={item.sourceName}
                   time={item.time}
-                  category={item.category}
+                  categories={item.categories}
                   url={item.url}
                   isSaved={savedArticleTitles.includes(item.title)}
                   onCategoryClick={(cat) => {

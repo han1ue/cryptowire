@@ -65,10 +65,10 @@ export const createNewsRouter = (
                     const pubDate = new Date(item.publishedAt).toUTCString();
                     const guid = item.id;
                     const description = item.summary?.trim() ? item.summary.trim() : item.title;
-                                        const categories =
-                                                Array.isArray(item.categories) && item.categories.length > 0
-                                                        ? item.categories.map((c) => (typeof c === "string" ? c.trim() : "")).filter(Boolean)
-                                                        : ["News"];
+                    const categories =
+                        Array.isArray(item.categories) && item.categories.length > 0
+                            ? item.categories.map((c) => (typeof c === "string" ? c.trim() : "")).filter(Boolean)
+                            : ["News"];
                     const source = item.source?.trim() ? item.source.trim() : "cryptowi.re";
 
                     return `
