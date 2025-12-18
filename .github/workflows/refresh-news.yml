@@ -3,7 +3,7 @@ name: Refresh CryptoWire news cache
 on:
   schedule:
     # GitHub scheduled workflows run at best-effort; minimum granularity is 5 minutes.
-    - cron: "*/10 * * * *"
+    - cron: "*/12 * * * *"
   workflow_dispatch: {}
 
 jobs:
