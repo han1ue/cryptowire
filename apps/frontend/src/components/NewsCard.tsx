@@ -1,4 +1,6 @@
 import { Clock, Bookmark, Share2 } from "lucide-react";
+import { ShareMenu } from "@/components/ShareMenu";
+import { isUrlVisited, markUrlVisited } from "@/lib/visitedLinks";
 
 interface NewsCardProps {
   title: string;
@@ -33,6 +35,8 @@ export const NewsCard = ({
   showSchemaButton,
   onShowSchema,
 }: NewsCardProps) => {
+  const visited = url ? isUrlVisited(url) : false;
+
   const tags = Array.isArray(categories)
     ? categories.map((c) => (typeof c === "string" ? c.trim() : "")).filter(Boolean)
     : [];
@@ -44,7 +48,10 @@ export const NewsCard = ({
       className="hover-group hover-border p-3 sm:p-4 bg-card border border-border transition-all duration-200 cursor-pointer terminal-glow flex flex-col h-full"
       onClick={() => {
         if (onOpen) return onOpen();
-        if (url) window.open(url, '_blank', 'noopener,noreferrer');
+        if (url) {
+          markUrlVisited(url);
+          window.open(url, '_blank', 'noopener,noreferrer');
+        }
       }}
     >
       <div className="flex items-center gap-2 mb-2">
@@ -78,14 +85,19 @@ export const NewsCard = ({
           target="_blank"
           rel="noopener noreferrer"
           className="block"
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            markUrlVisited(url);
+          }}
         >
-          <h3 className="hover-title text-sm font-medium text-foreground mb-2 transition-colors line-clamp-2">
+          <h3
+            className={`hover-title text-sm font-medium mb-2 transition-colors line-clamp-2 cw-title ${visited ? "cw-title--visited" : ""}`}
+          >
             {title}
           </h3>
         </a>
       ) : (
-        <h3 className="hover-title text-sm font-medium text-foreground mb-2 transition-colors line-clamp-2">
+        <h3 className="hover-title text-sm font-medium mb-2 transition-colors line-clamp-2 cw-title">
           {title}
         </h3>
       )}
@@ -113,27 +125,17 @@ export const NewsCard = ({
             </button>
           )}
           {url && (
-            <button
-              onClick={async (e) => {
-                e.stopPropagation();
-                if (navigator.share) {
-                  try {
-                    await navigator.share({ title, url });
-                  } catch {
-                    void 0;
-                  }
-                } else {
-                  await navigator.clipboard.writeText(url);
-                  if (typeof window !== 'undefined' && window.dispatchEvent) {
-                    window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Link copied to clipboard' } }));
-                  }
-                }
-              }}
-              className="transition-colors"
-              title="Share article"
-            >
-              <Share2 className="h-5 w-5 text-muted-foreground hover:text-primary" />
-            </button>
+            <ShareMenu url={url} title={title}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                }}
+                className="transition-colors"
+                title="Share article"
+              >
+                <Share2 className="h-5 w-5 text-muted-foreground hover:text-primary" />
+              </button>
+            </ShareMenu>
           )}
           {onToggleSave && (
             <button

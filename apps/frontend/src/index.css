@@ -60,6 +60,16 @@
     --sidebar-accent-foreground: 222 47% 11%;
     --sidebar-border: 0 0% 85%;
     --sidebar-ring: 156 100% 38%;
+
+    /*
+      Title shade tuning:
+      - `--cw-title` is used for default article titles.
+      - `--cw-title-visited` is used after a link is clicked.
+      - By default (light mode), keep titles the same as `--foreground`.
+    */
+    --cw-title: var(--foreground);
+    /* Light mode: titles are already dark, so make visited clearly darker */
+    --cw-title-visited: 80 40% 30%;
   }
 
   .dark {
@@ -96,6 +106,15 @@
     --sidebar-accent-foreground: 150 100% 95%;
     --sidebar-border: 0 0% 15%;
     --sidebar-ring: 156 100% 50%;
+
+    /*
+      Dark mode title tuning:
+      - These are intentionally close to `--foreground` but slightly dimmer.
+      - Change the % values here to experiment with different shades.
+    */
+    --cw-title: 150 90% 90%;
+    /* Dark mode: make visited noticeably dimmer */
+    --cw-title-visited: 150 25% 60%;
   }
 }
 
@@ -111,6 +130,15 @@
 }
 
 @layer utilities {
+
+  .cw-title {
+    color: hsl(var(--cw-title)) !important;
+  }
+
+  .cw-title--visited {
+    color: hsl(var(--cw-title-visited)) !important;
+  }
+
   .terminal-glow {
     box-shadow: 0 0 20px hsl(var(--terminal-green) / 0.2),
       inset 0 0 20px hsl(var(--terminal-green) / 0.05);

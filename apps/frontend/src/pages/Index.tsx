@@ -4,11 +4,13 @@ import { NewsTicker } from "@/components/NewsTicker";
 import { Sidebar } from "@/components/Sidebar";
 import { SettingsDialog } from "@/components/SettingsDialog";
 import { NewsCard } from "@/components/NewsCard";
+import { ShareMenu } from "@/components/ShareMenu";
 import { sources as sourcesConfig, SourceId, SourceName } from "@/data/sources";
 import { useInfiniteNews } from "@/hooks/useInfiniteNews";
 import { useSavedArticles } from "@/hooks/useSavedArticles";
 import { useNewsStatus } from "@/hooks/useNewsStatus";
 import { useNewsCategories } from "@/hooks/useNewsCategories";
+import { isUrlVisited, markUrlVisited } from "@/lib/visitedLinks";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "@/components/ui/sonner";
 import { Bookmark, MoreVertical, Share2 } from "lucide-react";
@@ -38,14 +40,24 @@ import { useNavigate } from "react-router-dom";
 const SOURCES_INTRO_DISMISSED_KEY = "sourcesIntroDismissed";
 
 type MobileActionsMenuProps = {
-  canShare: boolean;
-  onShare: () => Promise<void>;
+  shareUrl?: string;
+  shareTitle?: string;
   onToggleSave: () => void;
   isSaved: boolean;
 };
 
-const MobileActionsMenu = ({ canShare, onShare, onToggleSave, isSaved }: MobileActionsMenuProps) => {
+const MobileActionsMenu = ({ shareUrl, shareTitle, onToggleSave, isSaved }: MobileActionsMenuProps) => {
   const [open, setOpen] = useState(false);
+
+  const buildShareText = (title?: string) => {
+    const base = "via cryptowi.re";
+    if (!title) return base;
+    return `${title} ${base}`;
+  };
+
+  const openShareWindow = (url: string) => {
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -77,18 +89,73 @@ const MobileActionsMenu = ({ canShare, onShare, onToggleSave, isSaved }: MobileA
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-          {canShare ? (
-            <DropdownMenuItem
-              onSelect={async () => {
-                try {
-                  await onShare();
-                } finally {
+          {shareUrl ? (
+            <>
+              <DropdownMenuItem
+                onSelect={async () => {
+                  try {
+                    await navigator.clipboard.writeText(shareUrl);
+                    window.dispatchEvent(new CustomEvent("show-toast", { detail: { message: "Link copied to clipboard" } }));
+                  } catch {
+                    // ignore
+                  } finally {
+                    setOpen(false);
+                  }
+                }}
+              >
+                Copy link
+              </DropdownMenuItem>
+
+              {typeof navigator !== "undefined" && typeof navigator.share === "function" ? (
+                <DropdownMenuItem
+                  onSelect={async () => {
+                    try {
+                      await navigator.share({
+                        title: shareTitle,
+                        text: buildShareText(shareTitle),
+                        url: shareUrl,
+                      });
+                    } catch {
+                      // ignore
+                    } finally {
+                      setOpen(false);
+                    }
+                  }}
+                >
+                  Share…
+                </DropdownMenuItem>
+              ) : null}
+
+              <DropdownMenuItem
+                onSelect={() => {
+                  const encodedUrl = encodeURIComponent(shareUrl);
+                  const encodedTitle = encodeURIComponent(buildShareText(shareTitle));
+                  openShareWindow(`https://twitter.com/intent/tweet?text=${encodedTitle}&url=${encodedUrl}`);
                   setOpen(false);
-                }
-              }}
-            >
-              Share
-            </DropdownMenuItem>
+                }}
+              >
+                Share on X
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => {
+                  const encodedUrl = encodeURIComponent(shareUrl);
+                  const encodedTitle = encodeURIComponent(buildShareText(shareTitle));
+                  openShareWindow(`https://www.reddit.com/submit?url=${encodedUrl}&title=${encodedTitle}`);
+                  setOpen(false);
+                }}
+              >
+                Share on Reddit
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => {
+                  const encodedUrl = encodeURIComponent(shareUrl);
+                  openShareWindow(`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`);
+                  setOpen(false);
+                }}
+              >
+                Share on Facebook
+              </DropdownMenuItem>
+            </>
           ) : null}
           <DropdownMenuItem
             onSelect={() => {
@@ -125,6 +192,13 @@ const initialNotifications: NotificationItem[] = [
 
 const Index = () => {
   const navigate = useNavigate();
+  const [_visitedVersion, setVisitedVersion] = useState(0);
+
+  useEffect(() => {
+    const onVisitedChanged = () => setVisitedVersion((v) => v + 1);
+    window.addEventListener("cw:visited-changed", onVisitedChanged);
+    return () => window.removeEventListener("cw:visited-changed", onVisitedChanged);
+  }, []);
   const DEFAULT_SELECTED_SOURCE_IDS: SourceId[] = [
     "coindesk",
     "decrypt",
@@ -740,12 +814,16 @@ const Index = () => {
                     key={item.id}
                     className="hover-group hover-enabled px-2 py-1.5 rounded transition-colors border-b border-border/60 last:border-b-0 cursor-pointer"
                     onClick={() => {
-                      if (item.url) window.open(item.url, "_blank", "noopener,noreferrer");
+                      if (item.url) {
+                        markUrlVisited(item.url);
+                        window.open(item.url, "_blank", "noopener,noreferrer");
+                      }
                     }}
                     role="button"
                     tabIndex={0}
                     onKeyDown={(e) => {
                       if ((e.key === "Enter" || e.key === " ") && item.url) {
+                        markUrlVisited(item.url);
                         window.open(item.url, "_blank", "noopener,noreferrer");
                       }
                     }}
@@ -757,7 +835,9 @@ const Index = () => {
                             <div className="text-news-time tabular-nums text-[10px] whitespace-nowrap">{item.time}</div>
                           </div>
                           <div className="min-w-0 flex-1 flex items-baseline gap-2">
-                            <span className="hover-title text-[11px] sm:text-xs leading-snug text-foreground transition-colors block line-clamp-2">
+                            <span
+                              className={`hover-title text-[11px] sm:text-xs leading-snug transition-colors block line-clamp-2 cw-title ${item.url && isUrlVisited(item.url) ? "cw-title--visited" : ""}`}
+                            >
                               <span>{item.title}</span>
                               <span className="text-[10px] text-muted-foreground">&nbsp;·&nbsp;{item.sourceName}</span>
                             </span>
@@ -768,30 +848,18 @@ const Index = () => {
                       <div className="flex items-center gap-2 shrink-0">
                         <div className="hidden sm:flex items-center gap-2">
                           {item.url ? (
-                            <button
-                              type="button"
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                try {
-                                  if (navigator.share) {
-                                    await navigator.share({ title: item.title, url: item.url });
-                                  } else {
-                                    await navigator.clipboard.writeText(item.url);
-                                    window.dispatchEvent(
-                                      new CustomEvent("show-toast", {
-                                        detail: { message: "Link copied to clipboard" },
-                                      }),
-                                    );
-                                  }
-                                } catch {
-                                  // ignore
-                                }
-                              }}
-                              className="transition-colors"
-                              title="Share article"
-                            >
-                              <Share2 className="h-4 w-4 text-muted-foreground hover:text-primary" />
-                            </button>
+                            <ShareMenu url={item.url} title={item.title}>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                }}
+                                className="transition-colors"
+                                title="Share article"
+                              >
+                                <Share2 className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                              </button>
+                            </ShareMenu>
                           ) : null}
 
                           <button
@@ -847,20 +915,8 @@ const Index = () => {
                         </div>
 
                         <MobileActionsMenu
-                          canShare={Boolean(item.url)}
-                          onShare={async () => {
-                            if (!item.url) return;
-                            if (navigator.share) {
-                              await navigator.share({ title: item.title, url: item.url });
-                            } else {
-                              await navigator.clipboard.writeText(item.url);
-                              window.dispatchEvent(
-                                new CustomEvent("show-toast", {
-                                  detail: { message: "Link copied to clipboard" },
-                                }),
-                              );
-                            }
-                          }}
+                          shareUrl={item.url}
+                          shareTitle={item.title}
                           onToggleSave={() =>
                             toggleSaveArticle({
                               id: showSavedOnly
@@ -935,19 +991,27 @@ const Index = () => {
                     key={item.id}
                     className="hover-group hover-enabled p-2 rounded transition-colors border-b border-border/60 last:border-b-0 cursor-pointer"
                     onClick={() => {
-                      if (item.url) window.open(item.url, "_blank", "noopener,noreferrer");
+                      if (item.url) {
+                        markUrlVisited(item.url);
+                        window.open(item.url, "_blank", "noopener,noreferrer");
+                      }
                     }}
                     role="button"
                     tabIndex={0}
                     onKeyDown={(e) => {
                       if ((e.key === "Enter" || e.key === " ") && item.url) {
+                        markUrlVisited(item.url);
                         window.open(item.url, "_blank", "noopener,noreferrer");
                       }
                     }}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        <span className="hover-title text-xs sm:text-sm text-foreground transition-colors block">{item.title}</span>
+                        <span
+                          className={`hover-title text-xs sm:text-sm transition-colors block cw-title ${item.url && isUrlVisited(item.url) ? "cw-title--visited" : ""}`}
+                        >
+                          {item.title}
+                        </span>
                         <div className="flex flex-wrap items-center gap-2 mt-1 text-[10px] text-muted-foreground">
                           <span className="text-news-time tabular-nums">{item.time}</span>
                           {(Array.isArray(item.categories) ? item.categories : [item.category]).map((cat) => (
@@ -973,30 +1037,18 @@ const Index = () => {
                       <div className="flex items-center gap-2 shrink-0">
                         <div className="hidden sm:flex items-center gap-2">
                           {item.url ? (
-                            <button
-                              type="button"
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                try {
-                                  if (navigator.share) {
-                                    await navigator.share({ title: item.title, url: item.url });
-                                  } else {
-                                    await navigator.clipboard.writeText(item.url);
-                                    window.dispatchEvent(
-                                      new CustomEvent("show-toast", {
-                                        detail: { message: "Link copied to clipboard" },
-                                      }),
-                                    );
-                                  }
-                                } catch {
-                                  // ignore
-                                }
-                              }}
-                              className="transition-colors"
-                              title="Share article"
-                            >
-                              <Share2 className="h-4 w-4 text-muted-foreground hover:text-primary" />
-                            </button>
+                            <ShareMenu url={item.url} title={item.title}>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                }}
+                                className="transition-colors"
+                                title="Share article"
+                              >
+                                <Share2 className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                              </button>
+                            </ShareMenu>
                           ) : null}
 
                           <button
@@ -1052,20 +1104,8 @@ const Index = () => {
                         </div>
 
                         <MobileActionsMenu
-                          canShare={Boolean(item.url)}
-                          onShare={async () => {
-                            if (!item.url) return;
-                            if (navigator.share) {
-                              await navigator.share({ title: item.title, url: item.url });
-                            } else {
-                              await navigator.clipboard.writeText(item.url);
-                              window.dispatchEvent(
-                                new CustomEvent("show-toast", {
-                                  detail: { message: "Link copied to clipboard" },
-                                }),
-                              );
-                            }
-                          }}
+                          shareUrl={item.url}
+                          shareTitle={item.title}
                           onToggleSave={() =>
                             toggleSaveArticle({
                               id: showSavedOnly
@@ -1211,6 +1251,7 @@ const Index = () => {
           </button>
         </div>
         <div className="flex items-center gap-3">
+          <span className="text-[10px] text-muted-foreground">© {new Date().getFullYear()} cryptowi.re</span>
           <Popover open={devToolsOpen} onOpenChange={setDevToolsOpen}>
             <PopoverTrigger asChild>
               <button
