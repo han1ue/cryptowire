@@ -112,7 +112,7 @@
       - These are intentionally close to `--foreground` but slightly dimmer.
       - Change the % values here to experiment with different shades.
     */
-    --cw-title: 150 90% 90%;
+    --cw-title: 170 90% 90%;
     /* Dark mode: make visited noticeably dimmer */
     --cw-title-visited: 150 25% 60%;
   }
