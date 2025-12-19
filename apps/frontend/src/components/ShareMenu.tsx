@@ -23,7 +23,6 @@ export const ShareMenu = ({ url, title, children, align = "end" }: ShareMenuProp
     const encodedUrl = useMemo(() => encodeURIComponent(url), [url]);
     const xShareText = useMemo(() => encodeURIComponent(buildShareText(title, 'x')), [title]);
     const redditShareText = useMemo(() => encodeURIComponent(buildShareText(title, 'reddit')), [title]);
-    const facebookShareText = useMemo(() => encodeURIComponent(buildShareText(title, 'facebook')), [title]);
 
     const xShareUrl = `https://twitter.com/intent/tweet?text=${xShareText}&url=${encodedUrl}`;
     const redditShareUrl = `https://www.reddit.com/submit?url=${encodedUrl}&title=${redditShareText}`;
