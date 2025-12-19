@@ -10,7 +10,7 @@ type ShareMenuProps = {
 };
 
 const buildShareText = (title?: string, platform?: string) => {
-    const base = platform === 'x' ? "(via @cryptowi_re)" : "(via cryptowi.re)";
+    const base = platform === 'x' ? '(via @cryptowi_re)' : '(via cryptowi.re)';
     if (!title) return base;
     return `${title} ${base}`;
 };

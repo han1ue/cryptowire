@@ -7,7 +7,7 @@ import {
   Filter,
   ChevronDown,
   ChevronUp,
-  Rss,
+  Rss
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useMarketOverview } from '@/hooks/useMarketOverview';
@@ -377,6 +377,16 @@ export const Sidebar = ({
       {/* Links */}
       <div className="p-4 border-t border-border">
         <div className="space-y-1">
+          <a
+            href="https://x.com/cryptowi_re"
+            className="w-full -mx-2 flex items-center gap-2 px-2 py-2 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors"
+            title="Follow on X"
+          >
+            <svg className="h-4 w-4 text-primary" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12.6.75h2.454l-5.36 6.142L16 15.25h-4.937l-3.867-5.07-4.425 5.07H.316l5.733-6.57L0 .75h5.063l3.495 4.633L12.601.75Zm-.86 13.028h1.36L4.323 2.145H2.865z" />
+            </svg>
+            <span>@cryptowi_re</span>
+          </a>
           <a
             href="/rss.xml"
             className="w-full -mx-2 flex items-center gap-2 px-2 py-2 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors"
