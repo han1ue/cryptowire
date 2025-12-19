@@ -10,7 +10,7 @@ type ShareMenuProps = {
 };
 
 const buildShareText = (title?: string, platform?: string) => {
-    const base = platform === 'x' ? "(via @cryptowire)" : "(via cryptowi.re)";
+    const base = platform === 'x' ? "(via @cryptowi_re)" : "(via cryptowi.re)";
     if (!title) return base;
     return `${title} ${base}`;
 };
@@ -19,8 +19,20 @@ const openNewWindow = (url: string) => {
     window.open(url, "_blank", "noopener,noreferrer");
 };
 
+const stripQueryParams = (rawUrl: string) => {
+    try {
+        const parsed = new URL(rawUrl);
+        parsed.search = "";
+        return parsed.toString();
+    } catch {
+        const qIndex = rawUrl.indexOf("?");
+        return qIndex === -1 ? rawUrl : rawUrl.slice(0, qIndex);
+    }
+};
+
 export const ShareMenu = ({ url, title, children, align = "end" }: ShareMenuProps) => {
-    const encodedUrl = useMemo(() => encodeURIComponent(url), [url]);
+    const strippedUrl = useMemo(() => stripQueryParams(url), [url]);
+    const encodedUrl = useMemo(() => encodeURIComponent(strippedUrl), [strippedUrl]);
     const xShareText = useMemo(() => encodeURIComponent(buildShareText(title, 'x')), [title]);
     const redditShareText = useMemo(() => encodeURIComponent(buildShareText(title, 'reddit')), [title]);
 
@@ -29,7 +41,7 @@ export const ShareMenu = ({ url, title, children, align = "end" }: ShareMenuProp
     const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
 
     const copyLink = async () => {
-        await navigator.clipboard.writeText(url);
+        await navigator.clipboard.writeText(strippedUrl);
         window.dispatchEvent(new CustomEvent("show-toast", { detail: { message: "Link copied to clipboard" } }));
     };
 
@@ -37,7 +49,7 @@ export const ShareMenu = ({ url, title, children, align = "end" }: ShareMenuProp
         await navigator.share({
             title,
             text: buildShareText(title, 'native'),
-            url,
+            url: strippedUrl,
         });
     };
 
