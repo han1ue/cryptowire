@@ -20,13 +20,14 @@ const openNewWindow = (url: string) => {
 };
 
 const stripQueryParams = (rawUrl: string) => {
+    const trimmedUrl = rawUrl.trim();
     try {
-        const parsed = new URL(rawUrl);
+        const parsed = new URL(trimmedUrl);
         parsed.search = "";
         return parsed.toString();
     } catch {
-        const qIndex = rawUrl.indexOf("?");
-        return qIndex === -1 ? rawUrl : rawUrl.slice(0, qIndex);
+        const qIndex = trimmedUrl.indexOf("?");
+        return qIndex === -1 ? trimmedUrl : trimmedUrl.slice(0, qIndex);
     }
 };
 
