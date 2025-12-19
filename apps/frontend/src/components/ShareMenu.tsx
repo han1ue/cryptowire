@@ -9,8 +9,8 @@ type ShareMenuProps = {
     align?: "start" | "center" | "end";
 };
 
-const buildShareText = (title?: string) => {
-    const base = "via cryptowi.re";
+const buildShareText = (title?: string, platform?: string) => {
+    const base = platform === 'x' ? "(via @cryptowire)" : "(via cryptowi.re)";
     if (!title) return base;
     return `${title} ${base}`;
 };
@@ -21,10 +21,12 @@ const openNewWindow = (url: string) => {
 
 export const ShareMenu = ({ url, title, children, align = "end" }: ShareMenuProps) => {
     const encodedUrl = useMemo(() => encodeURIComponent(url), [url]);
-    const encodedTitle = useMemo(() => encodeURIComponent(buildShareText(title)), [title]);
+    const xShareText = useMemo(() => encodeURIComponent(buildShareText(title, 'x')), [title]);
+    const redditShareText = useMemo(() => encodeURIComponent(buildShareText(title, 'reddit')), [title]);
+    const facebookShareText = useMemo(() => encodeURIComponent(buildShareText(title, 'facebook')), [title]);
 
-    const xShareUrl = `https://twitter.com/intent/tweet?text=${encodedTitle}&url=${encodedUrl}`;
-    const redditShareUrl = `https://www.reddit.com/submit?url=${encodedUrl}&title=${encodedTitle}`;
+    const xShareUrl = `https://twitter.com/intent/tweet?text=${xShareText}&url=${encodedUrl}`;
+    const redditShareUrl = `https://www.reddit.com/submit?url=${encodedUrl}&title=${redditShareText}`;
     const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
 
     const copyLink = async () => {
@@ -35,7 +37,7 @@ export const ShareMenu = ({ url, title, children, align = "end" }: ShareMenuProp
     const nativeShare = async () => {
         await navigator.share({
             title,
-            text: buildShareText(title),
+            text: buildShareText(title, 'native'),
             url,
         });
     };
