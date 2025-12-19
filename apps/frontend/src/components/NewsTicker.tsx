@@ -2,6 +2,7 @@
 import { Zap } from "lucide-react";
 import { useNews } from "@/hooks/useNews";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type NewsTickerProps = {
   sources: string[];
@@ -24,9 +25,10 @@ const fallbackHeadlines: Headline[] = [
 ];
 
 export const NewsTicker = ({ sources }: NewsTickerProps) => {
-  const { data } = useNews({ limit: 30, sources });
+  const { data, isLoading } = useNews({ limit: 30, sources });
 
   const hasData = Boolean(data?.items && data.items.length > 0);
+  const showSkeleton = isLoading && !hasData;
 
   const nextHeadlines = useMemo<Headline[]>(
     () => data?.items?.slice(0, 8).map((n) => ({ title: n.title, url: n.url })) ?? fallbackHeadlines,
@@ -58,6 +60,28 @@ export const NewsTicker = ({ sources }: NewsTickerProps) => {
     pendingRef.current = null;
     setHeadlines(pending);
   };
+
+  if (showSkeleton) {
+    return (
+      <div className="bg-muted/30 border-b border-border overflow-hidden">
+        <div className="flex items-center">
+          <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 border-r border-border shrink-0">
+            <Zap className="h-3 w-3 text-terminal-amber pulse-glow" />
+            <span className="text-xs font-medium text-terminal-amber uppercase tracking-wider">
+              Breaking
+            </span>
+          </div>
+          <div className="overflow-hidden flex-1">
+            <div className="flex items-center gap-4 px-4 py-2">
+              <Skeleton className="h-3 w-64" />
+              <Skeleton className="h-3 w-56" />
+              <Skeleton className="h-3 w-72" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-muted/30 border-b border-border overflow-hidden">

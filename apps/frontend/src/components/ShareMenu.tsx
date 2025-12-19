@@ -10,7 +10,14 @@ type ShareMenuProps = {
 };
 
 const buildShareText = (title?: string, platform?: string) => {
-    const base = platform === 'x' ? '(via @cryptowi_re)' : '(via cryptowi.re)';
+    // Some native share targets aggressively linkify domains and may drop surrounding punctuation.
+    // Using an invisible word-joiner prevents linkification while keeping the text visually identical.
+    const nativeDomain = `cryptowi.\u2060re`;
+    const base = platform === 'x'
+        ? '(via @cryptowi_re)'
+        : platform === 'native'
+            ? `(via ${nativeDomain})`
+            : '(via cryptowi.re)';
     if (!title) return base;
     return `${title} ${base}`;
 };
