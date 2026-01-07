@@ -844,7 +844,7 @@ const Index = () => {
             <div className="flex-1 flex items-center justify-center bg-card/30 border border-border rounded p-12 sm:p-20">
               <div className="text-center text-muted-foreground">
                 <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="text-sm">No recent articles yet</p>
+                <p className="text-sm">Nothing viewed yet</p>
                 <p className="text-xs mt-2">Open any article and it will appear here</p>
               </div>
             </div>

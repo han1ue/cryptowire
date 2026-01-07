@@ -287,23 +287,23 @@ export const Sidebar = ({
         </div>
       </div>
 
-      {/* Recent Articles */}
+      {/* Recently Viewed */}
       <div className="p-4 border-b border-border">
         <button
           type="button"
           onClick={onToggleRecentView}
           className={`w-full text-left p-2 -mx-2 rounded transition-colors ${showRecentOnly ? "bg-primary/10" : "hover:bg-muted/30"}`}
-          title="Recent articles"
+          title="Recently viewed"
         >
           <div className="flex items-center gap-2 mb-2">
             <Clock className="h-4 w-4 text-primary" />
             <span className="text-xs font-medium uppercase tracking-wider text-foreground">
-              Recent Articles
+              Recently Viewed
             </span>
           </div>
           <div className="text-xs text-muted-foreground">
             {recentArticlesCount === 0 ? (
-              "No recent articles yet"
+              "Nothing viewed yet"
             ) : (
               ""
             )}
