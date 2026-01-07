@@ -14,7 +14,7 @@ import { useNewsCategories } from "@/hooks/useNewsCategories";
 import { isUrlVisited, markUrlVisited } from "@/lib/visitedLinks";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "@/components/ui/sonner";
-import { Bookmark, MoreVertical, Share2 } from "lucide-react";
+import { Bookmark, Clock, MoreVertical, Share2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import {
   AlertDialog,
@@ -37,9 +37,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Seo } from "@/components/Seo";
 import { useNavigate } from "react-router-dom";
-
-const NAVIGATE_CATEGORY_KEY = "cw:navigate:category";
-const NAVIGATE_SAVED_ONLY_KEY = "cw:navigate:savedOnly";
 
 const SOURCES_INTRO_DISMISSED_KEY = "sourcesIntroDismissed";
 
@@ -273,30 +270,7 @@ const Index = () => {
   } = useSavedArticles();
   const { recentArticles } = useRecentArticles();
   const [showSavedOnly, setShowSavedOnly] = useState(false);
-
-  useEffect(() => {
-    try {
-      const savedOnly = localStorage.getItem(NAVIGATE_SAVED_ONLY_KEY) === "1";
-      const category = localStorage.getItem(NAVIGATE_CATEGORY_KEY);
-
-      if (savedOnly) {
-        localStorage.removeItem(NAVIGATE_SAVED_ONLY_KEY);
-        localStorage.removeItem(NAVIGATE_CATEGORY_KEY);
-        setSelectedCategory("All News");
-        setShowSavedOnly(true);
-        return;
-      }
-
-      if (category && category.trim()) {
-        localStorage.removeItem(NAVIGATE_CATEGORY_KEY);
-        localStorage.removeItem(NAVIGATE_SAVED_ONLY_KEY);
-        setSelectedCategory(category);
-        setShowSavedOnly(false);
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
+  const [showRecentOnly, setShowRecentOnly] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All News');
 
   const END_OF_LIST_BASE = "You’ve reached the end.";
@@ -387,7 +361,7 @@ const Index = () => {
   // Reset scroll/end-message state when the list context changes.
   useEffect(() => {
     setEndOfListSuffix("");
-  }, [showSavedOnly, selectedCategory, selectedSources.join("|")]);
+  }, [showSavedOnly, showRecentOnly, selectedCategory, selectedSources.join("|")]);
 
   const [devToolsOpen, setDevToolsOpen] = useState(false);
   const [devShowSchemaButtons, setDevShowSchemaButtons] = useState(() => {
@@ -473,7 +447,7 @@ const Index = () => {
 
   // Auto-load more when near the bottom of the scrollable list.
   useEffect(() => {
-    if (showSavedOnly) return;
+    if (showSavedOnly || showRecentOnly) return;
     const el = document.getElementById("news-infinite-sentinel");
     if (!el) return;
 
@@ -494,6 +468,7 @@ const Index = () => {
     return () => observer.disconnect();
   }, [
     showSavedOnly,
+    showRecentOnly,
     selectedCategory,
     infinite,
     categoryInfinite,
@@ -550,9 +525,34 @@ const Index = () => {
       };
     });
 
-  const allNews = (showSavedOnly ? savedOnlyNews : filteredBySource)
+  const recentOnlyNews = recentArticles
+    .filter((a) => {
+      const sourceName = a.source ?? "";
+      if (!sourceName) return true;
+      const id = sourceNameToId.get(sourceName.toLowerCase());
+      if (!id) return true;
+      return selectedSources.includes(id);
+    })
+    .map((a) => {
+      const publishedAt = a.clickedAt;
+      const category = (a.category ?? "News") || "News";
+      return {
+        id: a.key,
+        title: a.title,
+        summary: a.summary || "",
+        time: formatDistanceToNow(new Date(publishedAt), { addSuffix: true }).replace(/^about /, ""),
+        category,
+        categories: [category],
+        url: a.url,
+        isBreaking: false,
+        publishedAt,
+        sourceName: a.source ?? "Recent",
+      };
+    });
+
+  const allNews = (showSavedOnly ? savedOnlyNews : showRecentOnly ? recentOnlyNews : filteredBySource)
     .map((n) => {
-      if (showSavedOnly) return n;
+      if (showSavedOnly || showRecentOnly) return n;
       return {
         id: n.id,
         title: n.title,
@@ -605,12 +605,13 @@ const Index = () => {
     : categoryInfinite.hasNextPage;
   const shouldShowEndMessage =
     !showSavedOnly &&
+    !showRecentOnly &&
     selectedCategory === 'All News' &&
     !isFetchingNext &&
     allNews.length > 0 &&
     !hasNextPage;
 
-  const shouldRenderInfiniteSentinel = !showSavedOnly && (hasNextPage ?? true);
+  const shouldRenderInfiniteSentinel = !showSavedOnly && !showRecentOnly && (hasNextPage ?? true);
 
   useEffect(() => {
     if (!shouldShowEndMessage) return;
@@ -677,13 +678,16 @@ const Index = () => {
             showSavedOnly={showSavedOnly}
             onToggleSavedView={() => {
               setShowSavedOnly((prev) => !prev);
+              setShowRecentOnly(false);
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             savedArticles={savedArticles}
             recentArticlesCount={recentArticles.length}
             recentArticles={recentArticles}
-            onNavigateRecents={() => {
-              navigate('/recents');
+            showRecentOnly={showRecentOnly}
+            onToggleRecentView={() => {
+              setShowRecentOnly((prev) => !prev);
+              setShowSavedOnly(false);
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             allNews={sidebarNews}
@@ -692,6 +696,7 @@ const Index = () => {
             onCategorySelect={cat => {
               setSelectedCategory((prev) => (prev === cat ? 'All News' : cat));
               setShowSavedOnly(false);
+              setShowRecentOnly(false);
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
           />
@@ -710,15 +715,18 @@ const Index = () => {
                 showSavedOnly={showSavedOnly}
                 onToggleSavedView={() => {
                   setShowSavedOnly((prev) => !prev);
+                  setShowRecentOnly(false);
                   setSidebarOpen(false);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 savedArticles={savedArticles}
                 recentArticlesCount={recentArticles.length}
                 recentArticles={recentArticles}
-                onNavigateRecents={() => {
+                showRecentOnly={showRecentOnly}
+                onToggleRecentView={() => {
+                  setShowRecentOnly((prev) => !prev);
+                  setShowSavedOnly(false);
                   setSidebarOpen(false);
-                  navigate('/recents');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 allNews={sidebarNews}
@@ -727,6 +735,7 @@ const Index = () => {
                 onCategorySelect={cat => {
                   setSelectedCategory((prev) => (prev === cat ? 'All News' : cat));
                   setShowSavedOnly(false);
+                  setShowRecentOnly(false);
                   setSidebarOpen(false);
                 }}
               />
@@ -737,12 +746,13 @@ const Index = () => {
         <main
           className={`flex-1 ${displayMode === "cards" ? "p-2 sm:p-4" : "px-0 py-2 sm:p-4"}`}
         >
-          {showSavedOnly ? (
+          {showSavedOnly || showRecentOnly ? (
             <div className="mb-2 px-2 sm:px-0">
               <button
                 type="button"
                 onClick={() => {
                   setShowSavedOnly(false);
+                  setShowRecentOnly(false);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 className="inline-flex items-center border border-border rounded px-2.5 py-1.5 text-[12px] font-medium uppercase tracking-wider text-muted-foreground bg-card/30 hover:bg-card/40 hover:text-foreground transition-colors"
@@ -753,7 +763,7 @@ const Index = () => {
             </div>
           ) : null}
 
-          {!showSavedOnly && showSourcesIntro ? (
+          {!showSavedOnly && !showRecentOnly && showSourcesIntro ? (
             <div className="mb-2 sm:mb-4 relative">
               <button
                 type="button"
@@ -781,7 +791,7 @@ const Index = () => {
           ) : null}
 
           {/* Category Tag - above news, smaller, left-aligned */}
-          {!showSavedOnly && selectedCategoryKey && (
+          {!showSavedOnly && !showRecentOnly && selectedCategoryKey && (
             <div className="mb-2 flex px-2">
               <span className="inline-flex items-center px-2 py-1 rounded bg-primary/10 text-primary text-sm font-medium uppercase tracking-wider">
                 {selectedCategoryKey}
@@ -799,7 +809,7 @@ const Index = () => {
             </div>
           )}
 
-          {!showSavedOnly && selectedSources.length === 0 ? (
+          {!showSavedOnly && !showRecentOnly && selectedSources.length === 0 ? (
             <div className="flex-1 flex items-center justify-center bg-card/30 border border-border rounded p-12 sm:p-20">
               <div className="text-center text-muted-foreground">
                 <p className="text-sm">Please select some sources to get the latest news</p>
@@ -812,7 +822,7 @@ const Index = () => {
                 </button>
               </div>
             </div>
-          ) : !showSavedOnly && selectedSources.length > 0 && allNews.length === 0 && !(
+          ) : !showSavedOnly && !showRecentOnly && selectedSources.length > 0 && allNews.length === 0 && !(
             (selectedCategory === 'All News'
               ? (infinite.isLoading || infinite.isFetching)
               : (categoryInfinite.isLoading || categoryInfinite.isFetching))
@@ -830,6 +840,14 @@ const Index = () => {
                 </button>
               </div>
             </div>
+          ) : allNews.length === 0 && showRecentOnly ? (
+            <div className="flex-1 flex items-center justify-center bg-card/30 border border-border rounded p-12 sm:p-20">
+              <div className="text-center text-muted-foreground">
+                <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p className="text-sm">No recent articles yet</p>
+                <p className="text-xs mt-2">Open any article and it will appear here</p>
+              </div>
+            </div>
           ) : allNews.length === 0 && showSavedOnly ? (
             <div className="flex-1 flex items-center justify-center bg-card/30 border border-border rounded p-12 sm:p-20">
               <div className="text-center text-muted-foreground">
@@ -841,7 +859,7 @@ const Index = () => {
           ) : displayMode === "compact" ? (
             <div className="bg-card/30 border border-border rounded p-1 sm:p-4">
               <div className="space-y-0.5 sm:space-y-1">
-                {(infinite.isLoading || infinite.isFetching) && allNews.length === 0 && !showSavedOnly ? (
+                {(infinite.isLoading || infinite.isFetching) && allNews.length === 0 && !showSavedOnly && !showRecentOnly ? (
                   <div className="space-y-2">
                     {Array.from({ length: 10 }).map((_, i) => (
                       <div key={i} className="p-2">
@@ -994,7 +1012,7 @@ const Index = () => {
 
                 {shouldRenderInfiniteSentinel ? <div id="news-infinite-sentinel" className="h-8 w-full" /> : null}
 
-                {!showSavedOnly && (selectedCategory === 'All News' ? infinite.isFetchingNextPage : categoryInfinite.isFetchingNextPage) ? (
+                {!showSavedOnly && !showRecentOnly && (selectedCategory === 'All News' ? infinite.isFetchingNextPage : categoryInfinite.isFetchingNextPage) ? (
                   <div className="px-2 py-3">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span className="inline-block h-2 w-2 rounded-full bg-terminal-amber" />
@@ -1013,7 +1031,7 @@ const Index = () => {
           ) : displayMode === "line" ? (
             <div className="bg-card/30 border border-border rounded p-1 sm:p-4">
               <div className="space-y-1 sm:space-y-2">
-                {(infinite.isLoading || infinite.isFetching) && allNews.length === 0 && !showSavedOnly ? (
+                {(infinite.isLoading || infinite.isFetching) && allNews.length === 0 && !showSavedOnly && !showRecentOnly ? (
                   <div className="space-y-2">
                     {Array.from({ length: 8 }).map((_, i) => (
                       <div key={i} className="p-2">
@@ -1183,7 +1201,7 @@ const Index = () => {
 
                 {shouldRenderInfiniteSentinel ? <div id="news-infinite-sentinel" className="h-8 w-full" /> : null}
 
-                {!showSavedOnly && (selectedCategory === 'All News' ? infinite.isFetchingNextPage : categoryInfinite.isFetchingNextPage) ? (
+                {!showSavedOnly && !showRecentOnly && (selectedCategory === 'All News' ? infinite.isFetchingNextPage : categoryInfinite.isFetchingNextPage) ? (
                   <div className="px-2 py-3">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span className="inline-block h-2 w-2 rounded-full bg-terminal-amber" />
@@ -1201,7 +1219,7 @@ const Index = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-3">
-              {(infinite.isLoading || infinite.isFetching) && allNews.length === 0 && !showSavedOnly ? (
+              {(infinite.isLoading || infinite.isFetching) && allNews.length === 0 && !showSavedOnly && !showRecentOnly ? (
                 <>
                   {Array.from({ length: 6 }).map((_, i) => (
                     <div key={i} className="p-3 sm:p-4 bg-card border border-border">
@@ -1251,7 +1269,7 @@ const Index = () => {
 
               {shouldRenderInfiniteSentinel ? <div id="news-infinite-sentinel" className="h-8 w-full" /> : null}
 
-              {!showSavedOnly && (selectedCategory === 'All News' ? infinite.isFetchingNextPage : categoryInfinite.isFetchingNextPage) ? (
+              {!showSavedOnly && !showRecentOnly && (selectedCategory === 'All News' ? infinite.isFetchingNextPage : categoryInfinite.isFetchingNextPage) ? (
                 <div className="col-span-full px-2 py-3">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <span className="inline-block h-2 w-2 rounded-full bg-terminal-amber" />

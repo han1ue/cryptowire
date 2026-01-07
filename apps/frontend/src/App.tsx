@@ -7,7 +7,6 @@ import Index from "./pages/Index";
 import InstallIOS from "./pages/InstallIOS";
 import InstallAndroid from "./pages/InstallAndroid";
 import NotFound from "./pages/NotFound";
-import Recents from "./pages/Recents";
 
 const queryClient = new QueryClient();
 
@@ -19,7 +18,6 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/recents" element={<Recents />} />
           <Route path="/install/ios" element={<InstallIOS />} />
           <Route path="/install/android" element={<InstallAndroid />} />
           <Route path="*" element={<NotFound />} />

@@ -88,8 +88,8 @@ interface SidebarProps {
   savedArticles?: SavedArticle[];
   recentArticlesCount?: number;
   recentArticles?: RecentArticle[];
-  onNavigateRecents?: () => void;
-  isRecentsPage?: boolean;
+  showRecentOnly?: boolean;
+  onToggleRecentView?: () => void;
   allNews?: Array<{ title: string; time: string; sourceName: string; category?: string; url?: string }>;
   categories?: string[];
   selectedCategory?: string;
@@ -103,8 +103,8 @@ export const Sidebar = ({
   savedArticles = [],
   recentArticlesCount = 0,
   recentArticles = [],
-  onNavigateRecents,
-  isRecentsPage = false,
+  showRecentOnly = false,
+  onToggleRecentView,
   allNews = [],
   categories: categoriesProp,
   selectedCategory = 'All News',
@@ -289,8 +289,8 @@ export const Sidebar = ({
       <div className="p-4 border-b border-border">
         <button
           type="button"
-          onClick={onNavigateRecents}
-          className={`w-full text-left p-2 -mx-2 rounded transition-colors ${isRecentsPage ? "bg-primary/10" : "hover:bg-muted/30"}`}
+          onClick={onToggleRecentView}
+          className={`w-full text-left p-2 -mx-2 rounded transition-colors ${showRecentOnly ? "bg-primary/10" : "hover:bg-muted/30"}`}
           title="Recent articles"
         >
           <div className="flex items-center gap-2 mb-2">
