@@ -268,7 +268,7 @@ const Index = () => {
     isSavedInput,
     toggleSaved: toggleSaveArticle,
   } = useSavedArticles();
-  const { recentArticles } = useRecentArticles();
+  const { recentArticles, addRecent } = useRecentArticles();
   const [showSavedOnly, setShowSavedOnly] = useState(false);
   const [showRecentOnly, setShowRecentOnly] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All News');
@@ -875,6 +875,13 @@ const Index = () => {
                     className="hover-group hover-enabled px-2 py-1.5 rounded transition-colors border-b border-border/60 last:border-b-0 cursor-pointer"
                     onClick={() => {
                       if (item.url) {
+                        addRecent({
+                          title: item.title,
+                          url: item.url,
+                          source: item.sourceName,
+                          summary: item.summary,
+                          category: item.category,
+                        });
                         markUrlVisited(item.url);
                         window.open(item.url, "_blank", "noopener,noreferrer");
                       }
@@ -883,6 +890,13 @@ const Index = () => {
                     tabIndex={0}
                     onKeyDown={(e) => {
                       if ((e.key === "Enter" || e.key === " ") && item.url) {
+                        addRecent({
+                          title: item.title,
+                          url: item.url,
+                          source: item.sourceName,
+                          summary: item.summary,
+                          category: item.category,
+                        });
                         markUrlVisited(item.url);
                         window.open(item.url, "_blank", "noopener,noreferrer");
                       }
@@ -1052,6 +1066,13 @@ const Index = () => {
                     className="hover-group hover-enabled p-2 rounded transition-colors border-b border-border/60 last:border-b-0 cursor-pointer"
                     onClick={() => {
                       if (item.url) {
+                        addRecent({
+                          title: item.title,
+                          url: item.url,
+                          source: item.sourceName,
+                          summary: item.summary,
+                          category: item.category,
+                        });
                         markUrlVisited(item.url);
                         window.open(item.url, "_blank", "noopener,noreferrer");
                       }
@@ -1060,6 +1081,13 @@ const Index = () => {
                     tabIndex={0}
                     onKeyDown={(e) => {
                       if ((e.key === "Enter" || e.key === " ") && item.url) {
+                        addRecent({
+                          title: item.title,
+                          url: item.url,
+                          source: item.sourceName,
+                          summary: item.summary,
+                          category: item.category,
+                        });
                         markUrlVisited(item.url);
                         window.open(item.url, "_blank", "noopener,noreferrer");
                       }
