@@ -8,6 +8,7 @@ import { ShareMenu } from "@/components/ShareMenu";
 import { sources as sourcesConfig, SourceId, SourceName } from "@/data/sources";
 import { useInfiniteNews } from "@/hooks/useInfiniteNews";
 import { useSavedArticles } from "@/hooks/useSavedArticles";
+import { useRecentArticles } from "@/hooks/useRecentArticles";
 import { useNewsStatus } from "@/hooks/useNewsStatus";
 import { useNewsCategories } from "@/hooks/useNewsCategories";
 import { isUrlVisited, markUrlVisited } from "@/lib/visitedLinks";
@@ -267,6 +268,7 @@ const Index = () => {
     isSavedInput,
     toggleSaved: toggleSaveArticle,
   } = useSavedArticles();
+  const { recentArticles } = useRecentArticles();
   const [showSavedOnly, setShowSavedOnly] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All News');
 
@@ -651,6 +653,12 @@ const Index = () => {
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             savedArticles={savedArticles}
+            recentArticlesCount={recentArticles.length}
+            recentArticles={recentArticles}
+            onNavigateRecents={() => {
+              navigate('/recents');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
             allNews={sidebarNews}
             categories={categoriesQuery.data?.categories ?? []}
             selectedCategory={selectedCategory}
@@ -679,6 +687,13 @@ const Index = () => {
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 savedArticles={savedArticles}
+                recentArticlesCount={recentArticles.length}
+                recentArticles={recentArticles}
+                onNavigateRecents={() => {
+                  setSidebarOpen(false);
+                  navigate('/recents');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
                 allNews={sidebarNews}
                 categories={categoriesQuery.data?.categories ?? []}
                 selectedCategory={selectedCategory}

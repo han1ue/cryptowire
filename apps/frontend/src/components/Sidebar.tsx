@@ -4,6 +4,7 @@ import {
   Newspaper,
   BarChart3,
   Bookmark,
+  Clock,
   Filter,
   ChevronDown,
   ChevronUp,
@@ -14,6 +15,7 @@ import { useMarketOverview } from '@/hooks/useMarketOverview';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import type { SavedArticle } from '@/hooks/useSavedArticles';
+import type { RecentArticle } from '@/hooks/useRecentArticles';
 
 // Helper component for scrollable category list with dynamic gradient
 function CategoryScrollWithDynamicGradient({
@@ -84,6 +86,10 @@ interface SidebarProps {
   showSavedOnly?: boolean;
   onToggleSavedView?: () => void;
   savedArticles?: SavedArticle[];
+  recentArticlesCount?: number;
+  recentArticles?: RecentArticle[];
+  onNavigateRecents?: () => void;
+  isRecentsPage?: boolean;
   allNews?: Array<{ title: string; time: string; sourceName: string; category?: string; url?: string }>;
   categories?: string[];
   selectedCategory?: string;
@@ -95,6 +101,10 @@ export const Sidebar = ({
   showSavedOnly = false,
   onToggleSavedView,
   savedArticles = [],
+  recentArticlesCount = 0,
+  recentArticles = [],
+  onNavigateRecents,
+  isRecentsPage = false,
   allNews = [],
   categories: categoriesProp,
   selectedCategory = 'All News',
@@ -113,6 +123,17 @@ export const Sidebar = ({
         url: a.url,
         sourceName: a.source ?? 'Saved',
         time: formatDistanceToNow(new Date(publishedAt), { addSuffix: true }).replace(/^about /, ''),
+      };
+    });
+
+  const recentArticlesPreviews = recentArticles
+    .slice(0, 3)
+    .map((a) => {
+      return {
+        title: a.title,
+        url: a.url,
+        sourceName: a.source ?? 'Recent',
+        time: formatDistanceToNow(new Date(a.clickedAt), { addSuffix: true }).replace(/^about /, ''),
       };
     });
 
@@ -262,6 +283,77 @@ export const Sidebar = ({
             );
           })()}
         </div>
+      </div>
+
+      {/* Recent Articles */}
+      <div className="p-4 border-b border-border">
+        <button
+          type="button"
+          onClick={onNavigateRecents}
+          className={`w-full text-left p-2 -mx-2 rounded transition-colors ${isRecentsPage ? "bg-primary/10" : "hover:bg-muted/30"}`}
+          title="Recent articles"
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <Clock className="h-4 w-4 text-primary" />
+            <span className="text-xs font-medium uppercase tracking-wider text-foreground">
+              Recent Articles
+            </span>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {recentArticlesCount === 0 ? (
+              "No recent articles yet"
+            ) : (
+              <span>
+                <span className="text-primary font-medium">{recentArticlesCount}</span> recent
+              </span>
+            )}
+          </div>
+        </button>
+
+        {recentArticlesCount > 0 && (
+          <div className="mt-3 space-y-2">
+            {recentArticlesPreviews.map((article, index) => {
+              const url = article.url;
+              return url ? (
+                <a
+                  key={index}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block text-[10px] text-muted-foreground border-l-2 border-primary/30 pl-2 py-1 hover:border-primary transition-colors cursor-pointer"
+                  title={article.title}
+                >
+                  <div className="line-clamp-2 text-foreground mb-1">
+                    {article.title}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-terminal-green">{article.time}</span>
+                    <span>• {article.sourceName}</span>
+                  </div>
+                </a>
+              ) : (
+                <div
+                  key={index}
+                  className="text-[10px] text-muted-foreground border-l-2 border-primary/30 pl-2 py-1 hover:border-primary transition-colors cursor-pointer"
+                  title={article.title}
+                >
+                  <div className="line-clamp-2 text-foreground mb-1">
+                    {article.title}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-terminal-green">{article.time}</span>
+                    <span>• {article.sourceName}</span>
+                  </div>
+                </div>
+              );
+            })}
+            {recentArticlesCount > 3 && (
+              <div className="text-[10px] text-muted-foreground pl-2">
+                +{recentArticlesCount - 3} more
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Categories */}

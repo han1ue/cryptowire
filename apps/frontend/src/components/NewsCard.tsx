@@ -1,6 +1,7 @@
 import { Clock, Bookmark, Share2 } from "lucide-react";
 import { ShareMenu } from "@/components/ShareMenu";
 import { isUrlVisited, markUrlVisited } from "@/lib/visitedLinks";
+import { useRecentArticles } from "@/hooks/useRecentArticles";
 
 interface NewsCardProps {
   title: string;
@@ -36,6 +37,18 @@ export const NewsCard = ({
   onShowSchema,
 }: NewsCardProps) => {
   const visited = url ? isUrlVisited(url) : false;
+  const { addRecent } = useRecentArticles();
+
+  const recordRecent = () => {
+    if (!url) return;
+    addRecent({
+      title,
+      url,
+      source,
+      summary,
+      category,
+    });
+  };
 
   const tags = Array.isArray(categories)
     ? categories.map((c) => (typeof c === "string" ? c.trim() : "")).filter(Boolean)
@@ -49,6 +62,7 @@ export const NewsCard = ({
       onClick={() => {
         if (onOpen) return onOpen();
         if (url) {
+          recordRecent();
           markUrlVisited(url);
           window.open(url, '_blank', 'noopener,noreferrer');
         }
@@ -87,6 +101,7 @@ export const NewsCard = ({
           className="block"
           onClick={(e) => {
             e.stopPropagation();
+            recordRecent();
             markUrlVisited(url);
           }}
         >
