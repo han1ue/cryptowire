@@ -18,6 +18,7 @@ interface NewsCardProps {
   onCategoryClick?: (category: string) => void;
   showSchemaButton?: boolean;
   onShowSchema?: () => void;
+  disableVisitedStyling?: boolean;
 }
 
 export const NewsCard = ({
@@ -35,8 +36,9 @@ export const NewsCard = ({
   onCategoryClick,
   showSchemaButton,
   onShowSchema,
+  disableVisitedStyling,
 }: NewsCardProps) => {
-  const visited = url ? isUrlVisited(url) : false;
+  const visited = !disableVisitedStyling && url ? isUrlVisited(url) : false;
   const { addRecent } = useRecentArticles();
 
   const recordRecent = () => {

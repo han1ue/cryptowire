@@ -910,7 +910,7 @@ const Index = () => {
                           </div>
                           <div className="min-w-0 flex-1 flex items-baseline gap-2">
                             <span
-                              className={`hover-title text-[11px] sm:text-xs leading-snug transition-colors block line-clamp-2 cw-title ${item.url && isUrlVisited(item.url) ? "cw-title--visited" : ""}`}
+                              className={`hover-title text-[11px] sm:text-xs leading-snug transition-colors block line-clamp-2 cw-title ${!showRecentOnly && item.url && isUrlVisited(item.url) ? "cw-title--visited" : ""}`}
                             >
                               <span>{item.title}</span>
                               <span className="text-[10px] text-muted-foreground">&nbsp;·&nbsp;{item.sourceName}</span>
@@ -1096,7 +1096,7 @@ const Index = () => {
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <span
-                          className={`hover-title text-xs sm:text-sm transition-colors block cw-title ${item.url && isUrlVisited(item.url) ? "cw-title--visited" : ""}`}
+                          className={`hover-title text-xs sm:text-sm transition-colors block cw-title ${!showRecentOnly && item.url && isUrlVisited(item.url) ? "cw-title--visited" : ""}`}
                         >
                           {item.title}
                         </span>
@@ -1269,6 +1269,7 @@ const Index = () => {
                   time={item.time}
                   categories={item.categories}
                   url={item.url}
+                  disableVisitedStyling={showRecentOnly}
                   isSaved={savedArticleTitles.includes(item.title)}
                   onCategoryClick={(cat) => {
                     setSelectedCategory((prev) => (prev === cat ? 'All News' : cat));
