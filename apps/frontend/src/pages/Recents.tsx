@@ -10,8 +10,12 @@ import { useNewsStatus } from "@/hooks/useNewsStatus";
 import { useRecentArticles } from "@/hooks/useRecentArticles";
 import { useSavedArticles } from "@/hooks/useSavedArticles";
 import { formatDistanceToNow } from "date-fns";
+import { Clock } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
+const NAVIGATE_CATEGORY_KEY = "cw:navigate:category";
+const NAVIGATE_SAVED_ONLY_KEY = "cw:navigate:savedOnly";
 
 const DEFAULT_SELECTED_SOURCE_IDS: SourceId[] = [
     "coindesk",
@@ -48,15 +52,29 @@ const Recents = () => {
 
     const categoriesQuery = useNewsCategories({ sources: selectedSources });
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [selectedCategory, setSelectedCategory] = useState<string>("All News");
+
+    const goToCategoryOnHome = (cat: string) => {
+        try {
+            localStorage.setItem(NAVIGATE_CATEGORY_KEY, cat);
+            localStorage.removeItem(NAVIGATE_SAVED_ONLY_KEY);
+        } catch {
+            // ignore
+        }
+        navigate("/");
+    };
+
+    const goToSavedOnHome = () => {
+        try {
+            localStorage.setItem(NAVIGATE_SAVED_ONLY_KEY, "1");
+            localStorage.removeItem(NAVIGATE_CATEGORY_KEY);
+        } catch {
+            // ignore
+        }
+        navigate("/");
+    };
 
     const cards = useMemo(() => {
-        const normalizedSelected = selectedCategory.trim().toLowerCase();
-        const filtered = normalizedSelected === "all news"
-            ? recentArticles
-            : recentArticles.filter((a) => (a.category ?? "").trim().toLowerCase() === normalizedSelected);
-
-        return filtered.map((a) => {
+        return recentArticles.map((a) => {
             const time = formatDistanceToNow(new Date(a.clickedAt), { addSuffix: true }).replace(/^about /, "");
             return {
                 key: a.key,
@@ -68,7 +86,7 @@ const Recents = () => {
                 time,
             };
         });
-    }, [recentArticles, selectedCategory]);
+    }, [recentArticles]);
 
     return (
         <div className="min-h-screen bg-background flex flex-col scanlines overflow-x-hidden">
@@ -92,11 +110,15 @@ const Recents = () => {
                 <div className="hidden lg:block self-start">
                     <Sidebar
                         savedArticlesCount={savedArticles.length}
+                        onToggleSavedView={() => {
+                            goToSavedOnHome();
+                            window.scrollTo({ top: 0, behavior: "smooth" });
+                        }}
                         savedArticles={savedArticles}
                         categories={categoriesQuery.data?.categories ?? []}
-                        selectedCategory={selectedCategory}
+                        selectedCategory={"All News"}
                         onCategorySelect={(cat) => {
-                            setSelectedCategory((prev) => (prev === cat ? "All News" : cat));
+                            goToCategoryOnHome(cat);
                             window.scrollTo({ top: 0, behavior: "smooth" });
                         }}
                         recentArticlesCount={recentArticles.length}
@@ -118,12 +140,16 @@ const Recents = () => {
                         <div className="fixed inset-y-0 left-0 w-64 z-50 lg:hidden">
                             <Sidebar
                                 savedArticlesCount={savedArticles.length}
+                                onToggleSavedView={() => {
+                                    setSidebarOpen(false);
+                                    goToSavedOnHome();
+                                }}
                                 savedArticles={savedArticles}
                                 categories={categoriesQuery.data?.categories ?? []}
-                                selectedCategory={selectedCategory}
+                                selectedCategory={"All News"}
                                 onCategorySelect={(cat) => {
-                                    setSelectedCategory((prev) => (prev === cat ? "All News" : cat));
                                     setSidebarOpen(false);
+                                    goToCategoryOnHome(cat);
                                 }}
                                 recentArticlesCount={recentArticles.length}
                                 recentArticles={recentArticles}
@@ -155,7 +181,13 @@ const Recents = () => {
                     </div>
 
                     {cards.length === 0 ? (
-                        <div className="px-2 sm:px-0 text-sm text-muted-foreground">No recent articles yet.</div>
+                        <div className="flex-1 flex items-center justify-center bg-card/30 border border-border rounded p-12 sm:p-20">
+                            <div className="text-center text-muted-foreground">
+                                <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                <p className="text-sm">No recent articles yet</p>
+                                <p className="text-xs mt-2">Open any article and it will appear here</p>
+                            </div>
+                        </div>
                     ) : (
                         <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
                             {cards.map((n) => (

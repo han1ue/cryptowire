@@ -38,6 +38,9 @@ import {
 import { Seo } from "@/components/Seo";
 import { useNavigate } from "react-router-dom";
 
+const NAVIGATE_CATEGORY_KEY = "cw:navigate:category";
+const NAVIGATE_SAVED_ONLY_KEY = "cw:navigate:savedOnly";
+
 const SOURCES_INTRO_DISMISSED_KEY = "sourcesIntroDismissed";
 
 type MobileActionsMenuProps = {
@@ -270,6 +273,30 @@ const Index = () => {
   } = useSavedArticles();
   const { recentArticles } = useRecentArticles();
   const [showSavedOnly, setShowSavedOnly] = useState(false);
+
+  useEffect(() => {
+    try {
+      const savedOnly = localStorage.getItem(NAVIGATE_SAVED_ONLY_KEY) === "1";
+      const category = localStorage.getItem(NAVIGATE_CATEGORY_KEY);
+
+      if (savedOnly) {
+        localStorage.removeItem(NAVIGATE_SAVED_ONLY_KEY);
+        localStorage.removeItem(NAVIGATE_CATEGORY_KEY);
+        setSelectedCategory("All News");
+        setShowSavedOnly(true);
+        return;
+      }
+
+      if (category && category.trim()) {
+        localStorage.removeItem(NAVIGATE_CATEGORY_KEY);
+        localStorage.removeItem(NAVIGATE_SAVED_ONLY_KEY);
+        setSelectedCategory(category);
+        setShowSavedOnly(false);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
   const [selectedCategory, setSelectedCategory] = useState('All News');
 
   const END_OF_LIST_BASE = "You’ve reached the end.";
