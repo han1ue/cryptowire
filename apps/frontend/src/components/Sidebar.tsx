@@ -14,6 +14,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useMarketOverview } from '@/hooks/useMarketOverview';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
+import { useRecentArticles } from '@/hooks/useRecentArticles';
 import type { SavedArticle } from '@/hooks/useSavedArticles';
 import type { RecentArticle } from '@/hooks/useRecentArticles';
 
@@ -111,6 +112,7 @@ export const Sidebar = ({
   onCategorySelect = () => { },
 }: SidebarProps) => {
   const { data: marketData, isLoading: marketLoading } = useMarketOverview();
+  const { addRecent } = useRecentArticles();
   const [categoriesCollapsed, setCategoriesCollapsed] = useState(false);
   const [categorySearch, setCategorySearch] = useState('');
   // Removed showMoreCategories and related logic; always show all filtered categories
@@ -322,6 +324,13 @@ export const Sidebar = ({
                   rel="noopener noreferrer"
                   className="block text-[10px] text-muted-foreground border-l-2 border-primary/30 pl-2 py-1 hover:border-primary transition-colors cursor-pointer"
                   title={article.title}
+                  onClick={() => {
+                    addRecent({
+                      title: article.title,
+                      url,
+                      source: article.sourceName,
+                    });
+                  }}
                 >
                   <div className="line-clamp-2 text-foreground mb-1">
                     {article.title}
@@ -432,6 +441,13 @@ export const Sidebar = ({
                   rel="noopener noreferrer"
                   className="block text-[10px] text-muted-foreground border-l-2 border-primary/30 pl-2 py-1 hover:border-primary transition-colors cursor-pointer"
                   title={article.title}
+                  onClick={() => {
+                    addRecent({
+                      title: article.title,
+                      url,
+                      source: article.sourceName,
+                    });
+                  }}
                 >
                   <div className="line-clamp-2 text-foreground mb-1">
                     {article.title}

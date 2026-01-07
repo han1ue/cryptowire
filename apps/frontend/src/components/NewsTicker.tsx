@@ -1,6 +1,7 @@
 
 import { Zap } from "lucide-react";
 import { useNews } from "@/hooks/useNews";
+import { useRecentArticles } from "@/hooks/useRecentArticles";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -26,6 +27,7 @@ const fallbackHeadlines: Headline[] = [
 
 export const NewsTicker = ({ sources }: NewsTickerProps) => {
   const { data, isLoading } = useNews({ limit: 30, sources });
+  const { addRecent } = useRecentArticles();
 
   const hasData = Boolean(data?.items && data.items.length > 0);
   const showSkeleton = isLoading && !hasData;
@@ -106,6 +108,12 @@ export const NewsTicker = ({ sources }: NewsTickerProps) => {
                   rel="noopener noreferrer"
                   className="text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer"
                   tabIndex={0}
+                  onClick={() => {
+                    addRecent({
+                      title: headline.title,
+                      url: headline.url,
+                    });
+                  }}
                 >
                   {headline.title}
                   <span className="mx-4 text-border">│</span>
