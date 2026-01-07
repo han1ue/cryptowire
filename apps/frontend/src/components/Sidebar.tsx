@@ -295,19 +295,15 @@ export const Sidebar = ({
           className={`w-full text-left p-2 -mx-2 rounded transition-colors ${showRecentOnly ? "bg-primary/10" : "hover:bg-muted/30"}`}
           title="Recently viewed"
         >
-          <div className="flex items-center gap-2 mb-2">
+          <div className={`flex items-center gap-2 ${recentArticlesCount === 0 ? "mb-2" : ""}`}>
             <Clock className="h-4 w-4 text-primary" />
             <span className="text-xs font-medium uppercase tracking-wider text-foreground">
               Recently Viewed
             </span>
           </div>
-          <div className="text-xs text-muted-foreground">
-            {recentArticlesCount === 0 ? (
-              "Nothing viewed yet"
-            ) : (
-              ""
-            )}
-          </div>
+          {recentArticlesCount === 0 ? (
+            <div className="text-xs text-muted-foreground">Nothing viewed yet</div>
+          ) : null}
         </button>
 
         {recentArticlesCount > 0 && (
