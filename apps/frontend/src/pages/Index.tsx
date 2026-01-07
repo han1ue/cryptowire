@@ -1347,7 +1347,7 @@ const Index = () => {
                 className="text-[10px] text-muted-foreground hover:text-primary transition-colors"
                 title="Developer tools"
               >
-                v1.0.0
+                v1.1.0
               </button>
             </PopoverTrigger>
             <PopoverContent align="end" className="w-64">

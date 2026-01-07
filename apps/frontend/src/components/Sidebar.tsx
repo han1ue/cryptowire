@@ -305,9 +305,7 @@ export const Sidebar = ({
             {recentArticlesCount === 0 ? (
               "No recent articles yet"
             ) : (
-              <span>
-                <span className="text-primary font-medium">{recentArticlesCount}</span> recent
-              </span>
+              ""
             )}
           </div>
         </button>
