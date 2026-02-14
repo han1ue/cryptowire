@@ -497,13 +497,24 @@ export const createNewsRouter = (
     };
 
     const normalizeSummaryAiError = (summary: z.infer<typeof NewsSummaryResponseSchema>) => {
-        if (summary.aiError) return summary;
-        if (typeof summary.model !== "string") return summary;
-        if (!summary.model.toLowerCase().startsWith("error-")) return summary;
+        const model = typeof summary.model === "string" && summary.model.trim().length > 0
+            ? summary.model.trim()
+            : "unknown-model";
+
+        if (summary.aiError) {
+            if (model === summary.model) return summary;
+            return { ...summary, model };
+        }
+
+        if (!model.toLowerCase().startsWith("error-")) {
+            if (model === summary.model) return summary;
+            return { ...summary, model };
+        }
+
         return {
             ...summary,
-            model: null,
-            aiError: summary.model,
+            model: "unknown-model",
+            aiError: model,
         };
     };
 

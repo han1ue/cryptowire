@@ -28,11 +28,12 @@ type AiSummarySuccess = {
     summary: string;
     highlights: NewsSummaryHighlight[];
     notes: string[];
-    model: string | null;
+    model: string;
 };
 
 type AiSummaryFailure = {
     ok: false;
+    model: string;
     aiError: string;
 };
 
@@ -213,6 +214,12 @@ export class NewsSummaryService {
         this.openAiModel = options?.openAiModel?.trim() || "gpt-4.1-mini";
     }
 
+    private getPreferredModelLabel(): string {
+        if (this.geminiApiKey) return this.geminiModel;
+        if (this.openAiApiKey) return this.openAiModel;
+        return this.geminiModel || this.openAiModel || "unknown-model";
+    }
+
     async summarize(params: {
         items: NewsItem[];
         sourceIds: string[];
@@ -231,7 +238,7 @@ export class NewsSummaryService {
                 windowEnd: params.windowEnd,
                 windowHours: params.windowHours,
                 articleCount: 0,
-                model: null,
+                model: this.getPreferredModelLabel(),
                 aiError: null,
                 summary: `No matching articles were found in the last ${params.windowHours} hours.`,
                 highlights: [],
@@ -256,6 +263,7 @@ export class NewsSummaryService {
         });
 
         const aiPayload = aiResult && aiResult.ok ? aiResult : null;
+        const aiFailureModel = aiResult && !aiResult.ok ? aiResult.model : null;
         const aiFailureError = aiResult && !aiResult.ok ? aiResult.aiError : null;
 
         const finalHighlights = aiPayload
@@ -268,7 +276,7 @@ export class NewsSummaryService {
             windowEnd: params.windowEnd,
             windowHours: params.windowHours,
             articleCount: ranked.length,
-            model: aiPayload?.model ?? null,
+            model: aiPayload?.model ?? aiFailureModel ?? this.getPreferredModelLabel(),
             aiError: aiPayload ? null : aiFailureError ?? toErrorModel("getting-model"),
             summary: aiPayload?.summary ?? "AI brief unavailable for this refresh. Please try again later.",
             highlights: finalHighlights,
@@ -482,8 +490,20 @@ export class NewsSummaryService {
         windowStart: string;
         windowEnd: string;
     }): Promise<AiSummarySuccess | AiSummaryFailure> {
-        if (params.ranked.length === 0) return { ok: false, aiError: toErrorModel("no-articles") };
-        if (!this.geminiApiKey && !this.openAiApiKey) return { ok: false, aiError: toErrorModel("no-ai-key") };
+        if (params.ranked.length === 0) {
+            return {
+                ok: false,
+                model: this.getPreferredModelLabel(),
+                aiError: toErrorModel("no-articles"),
+            };
+        }
+        if (!this.geminiApiKey && !this.openAiApiKey) {
+            return {
+                ok: false,
+                model: this.getPreferredModelLabel(),
+                aiError: toErrorModel("no-ai-key"),
+            };
+        }
 
         const topRows = params.ranked.slice(0, MAX_ARTICLES_IN_PROMPT);
         const sourceCoverageRows = params.sourceCoverage
@@ -540,8 +560,10 @@ export class NewsSummaryService {
             };
         };
 
-        const requestGemini = async (model: string): Promise<{ ok: true; text: string; model: string } | { ok: false; errorModel: string }> => {
-            if (!this.geminiApiKey) return { ok: false, errorModel: toErrorModel("gemini-no-key") };
+        const requestGemini = async (model: string): Promise<
+            { ok: true; text: string; model: string } | { ok: false; model: string; errorModel: string }
+        > => {
+            if (!this.geminiApiKey) return { ok: false, model, errorModel: toErrorModel("gemini-no-key") };
 
             try {
                 const controller = new AbortController();
@@ -583,13 +605,14 @@ export class NewsSummaryService {
                     }
                     return {
                         ok: false,
+                        model,
                         errorModel: toErrorModel(`gemini-http-${response.status}`, detail),
                     };
                 }
 
                 const raw = (await response.json()) as unknown;
                 const text = extractGeminiText(raw);
-                if (!text) return { ok: false, errorModel: toErrorModel("gemini-empty-response", model) };
+                if (!text) return { ok: false, model, errorModel: toErrorModel("gemini-empty-response", model) };
 
                 return {
                     ok: true,
@@ -598,14 +621,16 @@ export class NewsSummaryService {
                 };
             } catch (error) {
                 if (error instanceof Error && error.name === "AbortError") {
-                    return { ok: false, errorModel: toErrorModel("gemini-timeout", model) };
+                    return { ok: false, model, errorModel: toErrorModel("gemini-timeout", model) };
                 }
-                return { ok: false, errorModel: toErrorModel("gemini-request-failed", model) };
+                return { ok: false, model, errorModel: toErrorModel("gemini-request-failed", model) };
             }
         };
 
-        const requestOpenAi = async (): Promise<{ ok: true; text: string; model: string | null } | { ok: false; errorModel: string }> => {
-            if (!this.openAiApiKey) return { ok: false, errorModel: toErrorModel("openai-no-key") };
+        const requestOpenAi = async (): Promise<
+            { ok: true; text: string; model: string } | { ok: false; model: string; errorModel: string }
+        > => {
+            if (!this.openAiApiKey) return { ok: false, model: this.openAiModel, errorModel: toErrorModel("openai-no-key") };
 
             try {
                 const controller = new AbortController();
@@ -641,13 +666,14 @@ export class NewsSummaryService {
                     }
                     return {
                         ok: false,
+                        model: this.openAiModel,
                         errorModel: toErrorModel(`openai-http-${response.status}`, detail),
                     };
                 }
 
                 const raw = (await response.json()) as unknown;
                 const text = extractMessageText(raw);
-                if (!text) return { ok: false, errorModel: toErrorModel("openai-empty-response", this.openAiModel) };
+                if (!text) return { ok: false, model: this.openAiModel, errorModel: toErrorModel("openai-empty-response", this.openAiModel) };
 
                 const modelRaw =
                     raw && typeof raw === "object" && typeof (raw as Record<string, unknown>).model === "string"
@@ -657,17 +683,17 @@ export class NewsSummaryService {
                 return {
                     ok: true,
                     text,
-                    model: modelRaw,
+                    model: modelRaw ?? this.openAiModel,
                 };
             } catch (error) {
                 if (error instanceof Error && error.name === "AbortError") {
-                    return { ok: false, errorModel: toErrorModel("openai-timeout", this.openAiModel) };
+                    return { ok: false, model: this.openAiModel, errorModel: toErrorModel("openai-timeout", this.openAiModel) };
                 }
-                return { ok: false, errorModel: toErrorModel("openai-request-failed", this.openAiModel) };
+                return { ok: false, model: this.openAiModel, errorModel: toErrorModel("openai-request-failed", this.openAiModel) };
             }
         };
 
-        const failureModels: string[] = [];
+        const failures: Array<{ model: string; error: string }> = [];
 
         if (this.geminiApiKey) {
             const geminiModels = uniqueStrings([this.geminiModel, "gemini-2.0-flash"]);
@@ -676,10 +702,10 @@ export class NewsSummaryService {
                 if (geminiResult.ok) {
                     const parsed = parseAiOutput(geminiResult.text);
                     if (parsed) return { ok: true, ...parsed, model: geminiResult.model };
-                    failureModels.push(toErrorModel("gemini-invalid-json", model));
+                    failures.push({ model, error: toErrorModel("gemini-invalid-json", model) });
                     continue;
                 }
-                failureModels.push(geminiResult.errorModel);
+                failures.push({ model: geminiResult.model, error: geminiResult.errorModel });
             }
         }
 
@@ -688,15 +714,17 @@ export class NewsSummaryService {
             if (openAiResult.ok) {
                 const parsed = parseAiOutput(openAiResult.text);
                 if (parsed) return { ok: true, ...parsed, model: openAiResult.model };
-                failureModels.push(toErrorModel("openai-invalid-json", this.openAiModel));
+                failures.push({ model: this.openAiModel, error: toErrorModel("openai-invalid-json", this.openAiModel) });
             } else {
-                failureModels.push(openAiResult.errorModel);
+                failures.push({ model: openAiResult.model, error: openAiResult.errorModel });
             }
         }
 
+        const firstFailure = failures[0];
         return {
             ok: false,
-            aiError: failureModels[0] ?? toErrorModel("getting-model"),
+            model: firstFailure?.model ?? this.getPreferredModelLabel(),
+            aiError: firstFailure?.error ?? toErrorModel("getting-model"),
         };
     }
 }

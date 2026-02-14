@@ -56,12 +56,8 @@ export const AiSummaryDialog = ({
     const generatedAtLabel = data?.generatedAt
         ? formatDistanceToNowStrict(new Date(data.generatedAt), { addSuffix: true })
         : null;
-    const aiGenerationError = data?.aiError ?? (
-        typeof data?.model === "string" && data.model.toLowerCase().startsWith("error-")
-            ? data.model
-            : null
-    );
-    const modelUsed = aiGenerationError ? null : data?.model ?? null;
+    const aiGenerationError = data?.aiError ?? null;
+    const modelUsed = data?.model ?? "unknown-model";
 
     const hasData = Boolean(data);
     const hasArticles = Boolean(data && data.articleCount > 0);
@@ -94,11 +90,9 @@ export const AiSummaryDialog = ({
                             <Badge className="bg-primary/15 text-primary hover:bg-primary/15">
                                 {data?.articleCount ?? 0} stories
                             </Badge>
-                            {modelUsed ? (
-                                <Badge variant="outline" className="text-[10px] uppercase tracking-wider">
-                                    Model: {modelUsed}
-                                </Badge>
-                            ) : null}
+                            <Badge variant="outline" className="text-[10px] uppercase tracking-wider">
+                                Model: {modelUsed}
+                            </Badge>
                             {generatedAtLabel ? (
                                 <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
                                     Updated every day at {dailyRefreshTimeLabel} ({generatedAtLabel})
