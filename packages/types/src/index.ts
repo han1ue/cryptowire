@@ -69,7 +69,6 @@ export const NewsSummaryResponseSchema = z.object({
     summary: z.string(),
     highlights: z.array(NewsSummaryHighlightSchema),
     sourceCoverage: z.array(NewsSummarySourceCoverageSchema),
-    notes: z.array(z.string()),
 });
 
 export type NewsSummaryResponse = z.infer<typeof NewsSummaryResponseSchema>;

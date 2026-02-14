@@ -172,7 +172,7 @@ export const AiSummaryDialog = ({
 
                             <section className="space-y-2">
                                 <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                                    Key Signals
+                                    Key Articles
                                 </div>
                                 <div className="space-y-2">
                                     {data.highlights.map((highlight, index) => (
@@ -203,7 +203,7 @@ export const AiSummaryDialog = ({
                                                             rel="noopener noreferrer"
                                                             className="mt-2 inline-block text-[10px] uppercase tracking-wider text-primary hover:underline"
                                                         >
-                                                            {highlight.url ? "Open source article" : "Search signal"}
+                                                            {highlight.url ? "Open article" : "Search article"}
                                                         </a>
                                                     </>
                                                 );
@@ -253,18 +253,6 @@ export const AiSummaryDialog = ({
                                 </div>
                             </section>
 
-                            {data.notes.length > 0 ? (
-                                <section className="rounded border border-border bg-card/40 p-4">
-                                    <div className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">
-                                        Notes
-                                    </div>
-                                    <ul className="space-y-1 text-xs text-muted-foreground">
-                                        {data.notes.map((note, index) => (
-                                            <li key={`${note}-${index}`}>- {note}</li>
-                                        ))}
-                                    </ul>
-                                </section>
-                            ) : null}
                         </>
                     ) : null}
                 </div>

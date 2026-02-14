@@ -50,7 +50,6 @@ export const NewsSummaryResponseSchema = z.object({
     summary: z.string(),
     highlights: z.array(NewsSummaryHighlightSchema),
     sourceCoverage: z.array(NewsSummarySourceCoverageSchema),
-    notes: z.array(z.string()),
 });
 export const PriceQuoteSchema = z.object({
     symbol: z.string(),

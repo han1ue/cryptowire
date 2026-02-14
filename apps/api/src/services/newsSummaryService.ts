@@ -28,7 +28,6 @@ type AiSummarySuccess = {
     ok: true;
     summary: string;
     highlights: NewsSummaryHighlight[];
-    notes: string[];
     model: string;
 };
 
@@ -85,7 +84,6 @@ const AiSummaryOutputSchema = z.object({
         )
         .min(1)
         .max(MAX_HIGHLIGHTS),
-    notes: z.array(z.string().min(1)).max(6).optional().default([]),
 });
 
 const sanitizeText = (value: string | undefined, maxChars: number): string => {
@@ -250,9 +248,6 @@ export class NewsSummaryService {
                 summary: `No matching articles were found in the last ${params.windowHours} hours.`,
                 highlights: [],
                 sourceCoverage,
-                notes: [
-                    "Source weighting is configured and will apply as soon as matching articles are available.",
-                ],
             };
             const validated = NewsSummaryResponseSchema.safeParse(payload);
             if (!validated.success) {
@@ -274,7 +269,7 @@ export class NewsSummaryService {
         const aiFailureError = aiResult && !aiResult.ok ? aiResult.aiError : null;
 
         const finalHighlights = aiPayload
-            ? this.ensureSourceCoverage(aiPayload.highlights, ranked, sourceCoverage)
+            ? this.normalizeHighlights(aiPayload.highlights, ranked)
             : [];
 
         const payload: NewsSummaryResponse = {
@@ -288,10 +283,6 @@ export class NewsSummaryService {
             summary: aiPayload?.summary ?? "AI brief unavailable for this refresh. Please try again later.",
             highlights: finalHighlights,
             sourceCoverage,
-            notes: uniqueStrings([
-                ...(aiPayload?.notes ?? []),
-                "Reputation weighting uses a static source score tuned for editorial reliability and signal quality.",
-            ]),
         };
 
         const validated = NewsSummaryResponseSchema.safeParse(payload);
@@ -440,10 +431,9 @@ export class NewsSummaryService {
         return best && best.score > 0 ? best.url : undefined;
     }
 
-    private ensureSourceCoverage(
+    private normalizeHighlights(
         highlights: NewsSummaryHighlight[],
         ranked: RankedNewsItem[],
-        sourceCoverage: NewsSummarySourceCoverage[],
     ): NewsSummaryHighlight[] {
         const out: NewsSummaryHighlight[] = highlights
             .map((highlight) => ({
@@ -464,28 +454,6 @@ export class NewsSummaryService {
                 url: highlight.url ?? this.findBestUrlForHighlight(highlight.title, highlight.sources, ranked),
             }))
             .slice(0, MAX_HIGHLIGHTS);
-
-        const coveredSources = new Set<string>(
-            out.flatMap((highlight) => highlight.sources.map((source) => source.trim().toLowerCase()).filter(Boolean)),
-        );
-
-        for (const source of sourceCoverage) {
-            if (source.articleCount <= 0) continue;
-            const sourceKey = source.source.trim().toLowerCase();
-            if (coveredSources.has(sourceKey)) continue;
-            if (out.length >= MAX_HIGHLIGHTS) break;
-
-            const representative = ranked.find((entry) => entry.sourceName.trim().toLowerCase() === sourceKey);
-            if (!representative) continue;
-
-            out.push({
-                title: sanitizeText(representative.item.title, 120),
-                detail: sanitizeText(representative.item.summary, 320) || "No body summary was available from the source feed.",
-                sources: [source.source],
-                url: representative.item.url,
-            });
-            coveredSources.add(sourceKey);
-        }
 
         return out.slice(0, MAX_HIGHLIGHTS);
     }
@@ -536,15 +504,14 @@ export class NewsSummaryService {
             "Prioritize high-reputation sources when evidence conflicts, but still include breadth from all active sources.";
 
         const userPrompt =
-            `Return strict JSON with keys: summary (string), highlights (array), notes (array). ` +
-            `Each highlight item must be: { "title": string, "detail": string, "sources": string[], "url"?: string }. ` +
+            `Return strict JSON with keys: summary (string), highlights (array). ` +
+            `Each key article item must be: { "title": string, "detail": string, "sources": string[], "url"?: string }. ` +
             `Window: last ${params.windowHours} hours (${params.windowStart} to ${params.windowEnd}). ` +
-            `Keep summary to 2-4 sentences, and generate 4-8 highlights. ` +
-            `Every source with articleCount > 0 should appear at least once in highlights or notes.\n\n` +
+            `Keep summary to 3-5 sentences, and generate 4-8 key articles focused on the most important developments.\n\n` +
             `Source coverage:\n${sourceCoverageRows}\n\n` +
             `Articles:\n${articleRows}`;
 
-        const parseAiOutput = (text: string): { summary: string; highlights: NewsSummaryHighlight[]; notes: string[] } | null => {
+        const parseAiOutput = (text: string): { summary: string; highlights: NewsSummaryHighlight[] } | null => {
             let parsedJson: unknown;
             try {
                 parsedJson = JSON.parse(text);
@@ -563,7 +530,6 @@ export class NewsSummaryService {
                     sources: uniqueStrings(highlight.sources.map((source) => source.trim()).filter(Boolean)),
                     url: highlight.url,
                 })),
-                notes: parsed.data.notes.map((note) => sanitizeText(note, 220)).filter(Boolean),
             };
         };
 

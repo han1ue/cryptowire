@@ -176,7 +176,6 @@ export declare const NewsSummaryResponseSchema: z.ZodObject<{
         articleCount: number;
         reputationWeight: number;
     }>, "many">;
-    notes: z.ZodArray<z.ZodString, "many">;
 }, "strip", z.ZodTypeAny, {
     summary: string;
     articleCount: number;
@@ -198,7 +197,6 @@ export declare const NewsSummaryResponseSchema: z.ZodObject<{
         articleCount: number;
         reputationWeight: number;
     }[];
-    notes: string[];
 }, {
     summary: string;
     articleCount: number;
@@ -218,7 +216,6 @@ export declare const NewsSummaryResponseSchema: z.ZodObject<{
         articleCount: number;
         reputationWeight: number;
     }[];
-    notes: string[];
     model?: string | null | undefined;
     aiError?: string | null | undefined;
 }>;
