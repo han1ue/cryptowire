@@ -31,6 +31,28 @@ export const AiSummaryDialog = ({
     error,
     onRefresh,
 }: AiSummaryDialogProps) => {
+    const formatDailyRefreshLocalTime = (referenceDate: Date): string => {
+        const scheduledUtc = new Date(
+            Date.UTC(
+                referenceDate.getUTCFullYear(),
+                referenceDate.getUTCMonth(),
+                referenceDate.getUTCDate(),
+                0,
+                15,
+                0,
+            ),
+        );
+
+        return new Intl.DateTimeFormat(undefined, {
+            hour: "numeric",
+            minute: "2-digit",
+            timeZoneName: "short",
+        }).format(scheduledUtc);
+    };
+
+    const dailyRefreshTimeLabel = formatDailyRefreshLocalTime(
+        data?.generatedAt ? new Date(data.generatedAt) : new Date(),
+    );
     const generatedAtLabel = data?.generatedAt
         ? formatDistanceToNowStrict(new Date(data.generatedAt), { addSuffix: true })
         : null;
@@ -48,9 +70,6 @@ export const AiSummaryDialog = ({
                                 <Sparkles className="h-4 w-4 text-terminal-cyan" />
                                 AI 24h Brief
                             </DialogTitle>
-                            <p className="mt-1 text-xs text-muted-foreground">
-                                Weighted summary of the last 24h from all tracked crypto sources.
-                            </p>
                         </div>
 
                         <button
@@ -69,15 +88,9 @@ export const AiSummaryDialog = ({
                             <Badge className="bg-primary/15 text-primary hover:bg-primary/15">
                                 {data?.articleCount ?? 0} stories
                             </Badge>
-                            <Badge className="bg-terminal-cyan/15 text-terminal-cyan hover:bg-terminal-cyan/15">
-                                {data?.windowHours ?? 24}h window
-                            </Badge>
-                            <Badge className="bg-muted text-muted-foreground hover:bg-muted">
-                                {data?.usedAi ? `AI: ${data.model ?? "enabled"}` : "Weighted fallback"}
-                            </Badge>
                             {generatedAtLabel ? (
                                 <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                                    Updated {generatedAtLabel}
+                                    Updated every day at {dailyRefreshTimeLabel} ({generatedAtLabel})
                                 </span>
                             ) : null}
                         </div>
