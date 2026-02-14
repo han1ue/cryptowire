@@ -64,7 +64,12 @@ export const AiSummaryDialog = ({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-3xl overflow-hidden p-8 pt-12">
+            <DialogContent
+                className="max-w-3xl overflow-hidden p-8 pt-12"
+                onOpenAutoFocus={(event) => {
+                    event.preventDefault();
+                }}
+            >
                 <DialogHeader className="border-b border-border px-0 pb-4 pt-0">
                     <div className="flex w-full items-center justify-between gap-3">
                         <div>
