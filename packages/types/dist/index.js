@@ -38,7 +38,14 @@ export const NewsSummaryResponseSchema = z.object({
     windowEnd: z.string(),
     windowHours: z.number().int().positive(),
     articleCount: z.number().int().nonnegative(),
-    model: z.string().nullable(),
+    model: z
+        .string()
+        .nullable()
+        .optional()
+        .transform((value) => {
+        const trimmed = typeof value === "string" ? value.trim() : "";
+        return trimmed.length > 0 ? trimmed : "unknown-model";
+    }),
     aiError: z.string().nullable().default(null),
     summary: z.string(),
     highlights: z.array(NewsSummaryHighlightSchema),

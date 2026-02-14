@@ -141,7 +141,7 @@ export declare const NewsSummaryResponseSchema: z.ZodObject<{
     windowEnd: z.ZodString;
     windowHours: z.ZodNumber;
     articleCount: z.ZodNumber;
-    model: z.ZodNullable<z.ZodString>;
+    model: z.ZodEffects<z.ZodOptional<z.ZodNullable<z.ZodString>>, string, string | null | undefined>;
     aiError: z.ZodDefault<z.ZodNullable<z.ZodString>>;
     summary: z.ZodString;
     highlights: z.ZodArray<z.ZodObject<{
@@ -184,7 +184,7 @@ export declare const NewsSummaryResponseSchema: z.ZodObject<{
     windowStart: string;
     windowEnd: string;
     windowHours: number;
-    model: string | null;
+    model: string;
     aiError: string | null;
     highlights: {
         title: string;
@@ -206,7 +206,6 @@ export declare const NewsSummaryResponseSchema: z.ZodObject<{
     windowStart: string;
     windowEnd: string;
     windowHours: number;
-    model: string | null;
     highlights: {
         title: string;
         detail: string;
@@ -220,6 +219,7 @@ export declare const NewsSummaryResponseSchema: z.ZodObject<{
         reputationWeight: number;
     }[];
     notes: string[];
+    model?: string | null | undefined;
     aiError?: string | null | undefined;
 }>;
 export type NewsSummaryResponse = z.infer<typeof NewsSummaryResponseSchema>;
