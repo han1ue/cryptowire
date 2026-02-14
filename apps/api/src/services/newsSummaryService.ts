@@ -59,6 +59,7 @@ const SOURCE_REPUTATION_WEIGHTS: Record<NewsSourceId, number> = {
 const DEFAULT_REPUTATION_WEIGHT = 0.55;
 const MAX_HIGHLIGHTS = 8;
 const MAX_ARTICLES_IN_PROMPT = 140;
+const AI_REQUEST_TIMEOUT_MS = 25_000;
 const SOURCE_ID_SET = new Set<string>(SUPPORTED_NEWS_SOURCES.map((source) => source.id));
 
 const sourceNameById = new Map<NewsSourceId, string>();
@@ -567,7 +568,7 @@ export class NewsSummaryService {
 
             try {
                 const controller = new AbortController();
-                const timeout = setTimeout(() => controller.abort(), 12_000);
+                const timeout = setTimeout(() => controller.abort(), AI_REQUEST_TIMEOUT_MS);
                 const endpoint =
                     `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent` +
                     `?key=${encodeURIComponent(this.geminiApiKey)}`;
@@ -634,7 +635,7 @@ export class NewsSummaryService {
 
             try {
                 const controller = new AbortController();
-                const timeout = setTimeout(() => controller.abort(), 12_000);
+                const timeout = setTimeout(() => controller.abort(), AI_REQUEST_TIMEOUT_MS);
                 const response = await fetch("https://api.openai.com/v1/chat/completions", {
                     method: "POST",
                     headers: {
