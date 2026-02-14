@@ -67,9 +67,9 @@ export const NewsTicker = ({ sources }: NewsTickerProps) => {
     return (
       <div className="bg-muted/30 border-b border-border overflow-hidden">
         <div className="flex items-center">
-          <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-primary/10 border-r border-border shrink-0">
+          <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 border-r border-border shrink-0">
             <Zap className="h-3 w-3 text-terminal-amber pulse-glow" />
-            <span className="text-xs font-medium text-terminal-amber uppercase tracking-wider">
+            <span className="hidden sm:inline text-xs font-medium text-terminal-amber uppercase tracking-wider">
               Breaking
             </span>
           </div>
@@ -88,9 +88,9 @@ export const NewsTicker = ({ sources }: NewsTickerProps) => {
   return (
     <div className="bg-muted/30 border-b border-border overflow-hidden">
       <div className="flex items-center">
-        <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-primary/10 border-r border-border shrink-0">
+        <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 border-r border-border shrink-0">
           <Zap className="h-3 w-3 text-terminal-amber pulse-glow" />
-          <span className="text-xs font-medium text-terminal-amber uppercase tracking-wider">
+          <span className="hidden sm:inline text-xs font-medium text-terminal-amber uppercase tracking-wider">
             Breaking
           </span>
         </div>
