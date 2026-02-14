@@ -241,8 +241,7 @@ export const Header = ({
           >
             <span className="pointer-events-none absolute inset-y-0 -left-1/2 w-1/2 rotate-12 bg-white/30 blur-sm transition-transform duration-700 group-hover:translate-x-[210%]" />
             <Sparkles className={`h-3.5 w-3.5 ${aiSummaryLoading ? "animate-pulse text-primary" : "text-terminal-cyan"}`} />
-            <span className="hidden sm:inline">AI Brief</span>
-            <span className="sm:hidden">AI</span>
+            <span>AI Brief</span>
           </button>
         </div>
 
