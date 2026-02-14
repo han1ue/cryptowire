@@ -286,7 +286,7 @@ export const Header = ({
             aria-label="Manage sources"
           >
             <Newspaper className="h-3.5 w-3.5 text-primary" />
-            <span className="hidden md:inline">Sources</span>
+            <span>Sources</span>
             <span className="text-primary">{activeSourceCount}/{totalSourceCount}</span>
           </button>
         </div>
