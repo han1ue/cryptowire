@@ -13,6 +13,7 @@ type NewsSummaryServiceOptions = {
     geminiModel?: string;
     openAiApiKey?: string;
     openAiModel?: string;
+    requestTimeoutMs?: number;
 };
 
 type RankedNewsItem = {
@@ -59,7 +60,7 @@ const SOURCE_REPUTATION_WEIGHTS: Record<NewsSourceId, number> = {
 const DEFAULT_REPUTATION_WEIGHT = 0.55;
 const MAX_HIGHLIGHTS = 8;
 const MAX_ARTICLES_IN_PROMPT = 140;
-const AI_REQUEST_TIMEOUT_MS = 25_000;
+const DEFAULT_AI_REQUEST_TIMEOUT_MS = 40_000;
 const SOURCE_ID_SET = new Set<string>(SUPPORTED_NEWS_SOURCES.map((source) => source.id));
 
 const sourceNameById = new Map<NewsSourceId, string>();
@@ -207,12 +208,17 @@ export class NewsSummaryService {
     private readonly geminiModel: string;
     private readonly openAiApiKey: string | null;
     private readonly openAiModel: string;
+    private readonly aiRequestTimeoutMs: number;
 
     constructor(options?: NewsSummaryServiceOptions) {
         this.geminiApiKey = options?.geminiApiKey?.trim() ? options.geminiApiKey.trim() : null;
         this.geminiModel = options?.geminiModel?.trim() || "gemini-2.0-flash";
         this.openAiApiKey = options?.openAiApiKey?.trim() ? options.openAiApiKey.trim() : null;
         this.openAiModel = options?.openAiModel?.trim() || "gpt-4.1-mini";
+        const requestedTimeoutMs = options?.requestTimeoutMs;
+        this.aiRequestTimeoutMs = typeof requestedTimeoutMs === "number" && Number.isFinite(requestedTimeoutMs)
+            ? Math.max(5_000, Math.min(55_000, Math.trunc(requestedTimeoutMs)))
+            : DEFAULT_AI_REQUEST_TIMEOUT_MS;
     }
 
     private getPreferredModelLabel(): string {
@@ -568,7 +574,7 @@ export class NewsSummaryService {
 
             try {
                 const controller = new AbortController();
-                const timeout = setTimeout(() => controller.abort(), AI_REQUEST_TIMEOUT_MS);
+                const timeout = setTimeout(() => controller.abort(), this.aiRequestTimeoutMs);
                 const endpoint =
                     `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent` +
                     `?key=${encodeURIComponent(this.geminiApiKey)}`;
@@ -635,7 +641,7 @@ export class NewsSummaryService {
 
             try {
                 const controller = new AbortController();
-                const timeout = setTimeout(() => controller.abort(), AI_REQUEST_TIMEOUT_MS);
+                const timeout = setTimeout(() => controller.abort(), this.aiRequestTimeoutMs);
                 const response = await fetch("https://api.openai.com/v1/chat/completions", {
                     method: "POST",
                     headers: {

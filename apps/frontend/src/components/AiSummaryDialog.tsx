@@ -64,8 +64,8 @@ export const AiSummaryDialog = ({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-3xl overflow-hidden p-0">
-                <DialogHeader className="border-b border-border px-5 pb-4 pt-6 sm:px-6">
+            <DialogContent className="max-w-3xl overflow-hidden p-8 pt-12">
+                <DialogHeader className="border-b border-border px-0 pb-4 pt-0">
                     <div className="flex items-start justify-between gap-3 pr-14 sm:pr-12">
                         <div>
                             <DialogTitle className="flex items-center gap-2 text-left">
@@ -78,7 +78,7 @@ export const AiSummaryDialog = ({
                             type="button"
                             onClick={onRefresh}
                             disabled={isFetching}
-                            className="mr-1 inline-flex items-center gap-1 rounded border border-border bg-muted/40 px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60 sm:mr-0"
+                            className="inline-flex items-center gap-1 rounded border border-border bg-muted/40 px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             <RotateCw className={`h-3 w-3 ${isFetching ? "animate-spin" : ""}`} />
                             Refresh
@@ -102,7 +102,7 @@ export const AiSummaryDialog = ({
                     ) : null}
                 </DialogHeader>
 
-                <div className="max-h-[72vh] space-y-5 overflow-y-auto px-5 pb-6 pt-4 sm:px-6">
+                <div className="max-h-[72vh] space-y-5 overflow-y-auto px-0 pb-0 pt-4">
                     {isLoading ? (
                         <div className="space-y-3">
                             <Skeleton className="h-4 w-11/12" />

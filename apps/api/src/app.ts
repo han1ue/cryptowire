@@ -55,6 +55,7 @@ const newsSummaryService = new NewsSummaryService({
     geminiModel: config.GEMINI_MODEL,
     openAiApiKey: config.OPENAI_API_KEY,
     openAiModel: config.OPENAI_MODEL,
+    requestTimeoutMs: config.AI_REQUEST_TIMEOUT_MS,
 });
 const newsStore = createNewsStore();
 const newsSummaryStore = createNewsSummaryStore({

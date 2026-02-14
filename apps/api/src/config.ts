@@ -20,6 +20,7 @@ const EnvSchema = z.object({
 
     OPENAI_API_KEY: z.string().optional(),
     OPENAI_MODEL: z.string().optional(),
+    AI_REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().max(55_000).default(40_000),
 });
 
 export type AppConfig = z.infer<typeof EnvSchema>;

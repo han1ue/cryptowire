@@ -1,5 +1,8 @@
 {
     "functions": {
+        "api/news/summary/refresh.ts": {
+            "maxDuration": 60
+        },
         "api/[...path].ts": {
             "maxDuration": 10
         }
