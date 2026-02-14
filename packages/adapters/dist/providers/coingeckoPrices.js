@@ -21,12 +21,18 @@ export class CoinGeckoPriceProvider {
         url.searchParams.set("ids", ids.join(","));
         url.searchParams.set("vs_currencies", "usd");
         url.searchParams.set("include_24hr_change", "true");
-        const res = await fetch(url.toString(), {
-            headers: { Accept: "application/json" },
-        });
-        if (!res.ok)
+        let data;
+        try {
+            const res = await fetch(url.toString(), {
+                headers: { Accept: "application/json" },
+            });
+            if (!res.ok)
+                return [];
+            data = (await res.json());
+        }
+        catch {
             return [];
-        const data = (await res.json());
+        }
         const fetchedAt = new Date().toISOString();
         const idToSymbol = Object.fromEntries(Object.entries(SYMBOL_TO_ID).map(([sym, id]) => [id, sym]));
         const quotes = [];

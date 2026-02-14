@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { NewsItem, NewsProvider, FetchHeadlinesParams } from "@cryptowire/types";
+import { SUPPORTED_NEWS_SOURCES } from "@cryptowire/types/sources";
 
 const optionalString = z.string().nullish();
 
@@ -100,6 +101,13 @@ const dedupeCategories = (values: Array<string | null | undefined>): string[] =>
     return out;
 };
 
+const SOURCE_NAME_BY_KEY = new Map<string, string>();
+for (const source of SUPPORTED_NEWS_SOURCES) {
+    SOURCE_NAME_BY_KEY.set(source.id.trim().toLowerCase(), source.name);
+    SOURCE_NAME_BY_KEY.set(source.name.trim().toLowerCase(), source.name);
+}
+SOURCE_NAME_BY_KEY.set("bitcoinmagazine", "Bitcoin Magazine");
+
 export class CoindeskNewsProvider implements NewsProvider {
     public readonly name = "CoinDesk";
 
@@ -125,22 +133,8 @@ export class CoindeskNewsProvider implements NewsProvider {
 
         const normalizeSourceName = (value: string) => {
             const v = value.trim().toLowerCase();
-            if (v === "coindesk") return "CoinDesk";
-            if (v === "decrypt") return "Decrypt";
-            if (v === "cointelegraph") return "Cointelegraph";
-            if (v === "blockworks") return "Blockworks";
-            if (v === "bitcoinmagazine") return "Bitcoin Magazine";
-            if (v === "cryptopotato") return "CryptoPotato";
-            if (v === "forbes") return "Forbes";
-            if (v === "cryptopolitan") return "Cryptopolitan";
-            if (v === "coinpaprika") return "CoinPaprika";
-            if (v === "seekingalpha") return "SeekingAlpha";
-            if (v === "bitcoinist") return "Bitcoinist";
-            if (v === "newsbtc") return "NewsBTC";
-            if (v === "utoday") return "U.Today";
-            if (v === "investing_comcryptonews") return "Investing.com";
-            if (v === "ethereumfoundation") return "Ethereum Foundation";
-            if (v === "bitcoincore") return "Bitcoin Core";
+            const known = SOURCE_NAME_BY_KEY.get(v);
+            if (known) return known;
             return value;
         };
 

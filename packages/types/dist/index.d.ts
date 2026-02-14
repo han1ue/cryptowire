@@ -1,4 +1,5 @@
 import { z } from "zod";
+export * from "./sources.js";
 export declare const NewsItemSchema: z.ZodObject<{
     id: z.ZodString;
     title: z.ZodString;

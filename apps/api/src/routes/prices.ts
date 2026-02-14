@@ -2,11 +2,12 @@ import { Router } from "express";
 import { z } from "zod";
 import { PriceResponseSchema } from "@cryptowire/types";
 import type { PriceService } from "../services/priceService.js";
+import { asyncHandler } from "../lib/asyncHandler.js";
 
 export const createPricesRouter = (priceService: PriceService) => {
     const router = Router();
 
-    router.get("/prices", async (req, res) => {
+    router.get("/prices", asyncHandler(async (req, res) => {
         const querySchema = z.object({
             symbols: z
                 .string()
@@ -28,7 +29,7 @@ export const createPricesRouter = (priceService: PriceService) => {
         }
 
         return res.json(payload);
-    });
+    }));
 
     return router;
 };

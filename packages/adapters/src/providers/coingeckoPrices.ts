@@ -27,13 +27,17 @@ export class CoinGeckoPriceProvider implements PriceProvider {
         url.searchParams.set("vs_currencies", "usd");
         url.searchParams.set("include_24hr_change", "true");
 
-        const res = await fetch(url.toString(), {
-            headers: { Accept: "application/json" },
-        });
+        let data: Record<string, { usd?: number; usd_24h_change?: number }>;
+        try {
+            const res = await fetch(url.toString(), {
+                headers: { Accept: "application/json" },
+            });
+            if (!res.ok) return [];
+            data = (await res.json()) as Record<string, { usd?: number; usd_24h_change?: number }>;
+        } catch {
+            return [];
+        }
 
-        if (!res.ok) return [];
-
-        const data = (await res.json()) as Record<string, { usd?: number; usd_24h_change?: number }>;
         const fetchedAt = new Date().toISOString();
 
         const idToSymbol = Object.fromEntries(

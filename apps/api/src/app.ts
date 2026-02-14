@@ -1,4 +1,4 @@
-import express from "express";
+import express, { type ErrorRequestHandler } from "express";
 import cors from "cors";
 import { getConfig } from "./config.js";
 import { NewsService } from "./services/newsService.js";
@@ -8,11 +8,24 @@ import { createNewsRouter } from "./routes/news.js";
 import { createPricesRouter } from "./routes/prices.js";
 import { createMarketRouter } from "./routes/market.js";
 import { createNewsStore } from "./stores/newsStore.js";
+import { asyncHandler } from "./lib/asyncHandler.js";
 
 export const app = express();
+const config = getConfig();
 
-app.use(cors());
+const corsOrigin = config.CORS_ORIGIN
+    ? config.CORS_ORIGIN.split(",").map((x) => x.trim()).filter(Boolean)
+    : true;
+
+app.use(cors({ origin: corsOrigin }));
 app.use(express.json());
+app.use((_req, res, next) => {
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "DENY");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    next();
+});
 
 app.get("/", (_req, res) => {
     return res.json({
@@ -33,7 +46,6 @@ app.get("/api/health", (_req, res) => {
     res.json({ ok: true });
 });
 
-const config = getConfig();
 const newsService = new NewsService(config);
 const newsStore = createNewsStore();
 const priceService = new PriceService(config);
@@ -53,7 +65,7 @@ const getLastRefreshAt = async (): Promise<string | null> => {
     }
 };
 
-app.get("/api/stats", async (_req, res) => {
+app.get("/api/stats", asyncHandler(async (_req, res) => {
     const now = new Date().toISOString();
     const newsCount = await newsStore.count();
     const newest = (await newsStore.getPage({ limit: 1, offset: 0 }))[0] ?? null;
@@ -83,9 +95,9 @@ app.get("/api/stats", async (_req, res) => {
             market: "/api/market",
         },
     });
-});
+}));
 
-app.get("/api", async (_req, res) => {
+app.get("/api", (_req, res) => {
     return res.json({
         ok: true,
         name: "CryptoWire API",
@@ -108,5 +120,13 @@ app.use(
 );
 app.use("/api", createPricesRouter(priceService));
 app.use("/api", createMarketRouter(marketService));
+
+const errorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
+    console.error("[api] unhandled error", error);
+    if (res.headersSent) return;
+    res.status(500).json({ ok: false, error: "Internal server error" });
+};
+
+app.use(errorHandler);
 
 export default app;

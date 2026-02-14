@@ -1,8 +1,10 @@
 import { Router, type Request } from "express";
 import { z } from "zod";
 import { NewsCategoriesResponseSchema, NewsListResponseSchema, type NewsItem } from "@cryptowire/types";
+import { SUPPORTED_NEWS_SOURCES } from "@cryptowire/types/sources";
 import type { NewsService } from "../services/newsService.js";
 import type { NewsStore } from "../stores/newsStore.js";
+import { asyncHandler } from "../lib/asyncHandler.js";
 
 export const createNewsRouter = (
     newsService: NewsService,
@@ -25,6 +27,13 @@ export const createNewsRouter = (
 
     const normalizeSiteUrl = (raw: string) => raw.replace(/\/+$/, "");
 
+    const SUPPORTED_SOURCES = SUPPORTED_NEWS_SOURCES;
+    const sourceNameByKey = new Map<string, string>();
+    for (const source of SUPPORTED_SOURCES) {
+        sourceNameByKey.set(source.id.trim().toLowerCase(), source.name);
+        sourceNameByKey.set(source.name.trim().toLowerCase(), source.name);
+    }
+
     const getPublicSiteUrl = (req: Request) => {
         const configured = typeof opts?.siteUrl === "string" ? opts.siteUrl : null;
         if (configured && configured.startsWith("http")) return normalizeSiteUrl(configured);
@@ -40,7 +49,7 @@ export const createNewsRouter = (
     };
 
     // RSS feed for discovery/syndication (served at /api/rss.xml; frontend rewrites /rss.xml -> /api/rss.xml).
-    router.get("/rss.xml", async (req, res) => {
+    router.get("/rss.xml", asyncHandler(async (req, res) => {
         const siteUrl = getPublicSiteUrl(req);
         const items = await newsStore.getPage({ limit: 50, offset: 0 });
         const lastBuildDate = new Date(items[0]?.publishedAt ?? Date.now()).toUTCString();
@@ -90,26 +99,12 @@ export const createNewsRouter = (
         res.setHeader("Content-Type", "application/rss+xml; charset=utf-8");
         res.setHeader("Cache-Control", "public, max-age=300, s-maxage=300, stale-while-revalidate=86400");
         return res.status(200).send(xml);
-    });
+    }));
 
     const normalizeSourceName = (value: string) => {
         const v = value.trim().toLowerCase();
-        if (v === "coindesk") return "CoinDesk";
-        if (v === "decrypt") return "Decrypt";
-        if (v === "cointelegraph") return "Cointelegraph";
-        if (v === "blockworks") return "Blockworks";
-        if (v === "bitcoin.com") return "bitcoin.com";
-        if (v === "cryptopotato") return "CryptoPotato";
-        if (v === "forbes") return "Forbes";
-        if (v === "cryptopolitan") return "Cryptopolitan";
-        if (v === "coinpaprika") return "CoinPaprika";
-        if (v === "seekingalpha") return "SeekingAlpha";
-        if (v === "bitcoinist") return "Bitcoinist";
-        if (v === "newsbtc") return "NewsBTC";
-        if (v === "utoday") return "U.Today";
-        if (v === "investing_comcryptonews") return "Investing.com";
-        if (v === "ethereumfoundation") return "Ethereum Foundation";
-        if (v === "bitcoincore") return "Bitcoin Core";
+        const known = sourceNameByKey.get(v);
+        if (known) return known;
         // Best-effort title casing for unknown ids
         return value
             .trim()
@@ -119,35 +114,16 @@ export const createNewsRouter = (
             .join(" ");
     };
 
-    const SUPPORTED_SOURCES = [
-        { id: "coindesk", name: "CoinDesk" },
-        { id: "decrypt", name: "Decrypt" },
-        { id: "cointelegraph", name: "Cointelegraph" },
-        { id: "blockworks", name: "Blockworks" },
-        { id: "bitcoin.com", name: "bitcoin.com" },
-        { id: "cryptopotato", name: "CryptoPotato" },
-        { id: "forbes", name: "Forbes" },
-        { id: "cryptopolitan", name: "Cryptopolitan" },
-        { id: "coinpaprika", name: "CoinPaprika" },
-        { id: "seekingalpha", name: "SeekingAlpha" },
-        { id: "bitcoinist", name: "Bitcoinist" },
-        { id: "newsbtc", name: "NewsBTC" },
-        { id: "utoday", name: "U.Today" },
-        { id: "investing_comcryptonews", name: "Investing.com" },
-        { id: "ethereumfoundation", name: "Ethereum Foundation" },
-        { id: "bitcoincore", name: "Bitcoin Core" },
-    ] as const;
-
     const sourceIdToName = (id: string) => {
         const found = SUPPORTED_SOURCES.find((s) => s.id === id);
         return found?.name ?? normalizeSourceName(id);
     };
 
-    router.get("/news/sources", async (_req, res) => {
+    router.get("/news/sources", asyncHandler(async (_req, res) => {
         return res.json({ sources: SUPPORTED_SOURCES });
-    });
+    }));
 
-    router.get("/news/item/:id", async (req, res) => {
+    router.get("/news/item/:id", asyncHandler(async (req, res) => {
         const paramsSchema = z.object({ id: z.string().min(1) });
         const parsed = paramsSchema.safeParse(req.params);
         if (!parsed.success) return res.status(400).json({ error: parsed.error.message });
@@ -155,9 +131,9 @@ export const createNewsRouter = (
         const item = await newsStore.getById(parsed.data.id);
         if (!item) return res.status(404).json({ error: "Not found" });
         return res.json({ item });
-    });
+    }));
 
-    router.get("/news/categories", async (req, res) => {
+    router.get("/news/categories", asyncHandler(async (req, res) => {
         const querySchema = z.object({
             sources: z.string().optional(),
         });
@@ -235,7 +211,7 @@ export const createNewsRouter = (
             return res.status(500).json({ error: "Invalid response shape" });
         }
         return res.json(payload);
-    });
+    }));
 
     const kvEnabled = Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
     const KV_LAST_REFRESH_KEY = "news:lastRefreshAt";
@@ -398,14 +374,14 @@ export const createNewsRouter = (
         }
     };
 
-    router.get("/news/status", async (_req, res) => {
+    router.get("/news/status", asyncHandler(async (_req, res) => {
         return res.json({
             lastRefreshAt: await getLastRefreshAt(),
             now: new Date().toISOString(),
         });
-    });
+    }));
 
-    router.get("/news/refresh", async (req, res) => {
+    router.get("/news/refresh", asyncHandler(async (req, res) => {
         const querySchema = z.object({
             limit: z.coerce.number().int().positive().max(500).default(30),
             retentionDays: z.coerce.number().int().positive().max(30).optional(),
@@ -473,11 +449,11 @@ export const createNewsRouter = (
                     ? "Upstream returned 0 items. Try /api/news/diagnose?limit=100 to see the CoinDesk response details (status/body)."
                     : null,
         });
-    });
+    }));
 
     // Debug helper to understand why refresh returns 0 items in production.
     // Protected by the same refresh secret as /news/refresh.
-    router.get("/news/diagnose", async (req, res) => {
+    router.get("/news/diagnose", asyncHandler(async (req, res) => {
         const querySchema = z.object({
             limit: z.coerce.number().int().positive().max(200).default(5),
             sources: z.string().optional(),
@@ -569,9 +545,9 @@ export const createNewsRouter = (
                 withoutSources,
             },
         });
-    });
+    }));
 
-    router.get("/news", async (req, res) => {
+    router.get("/news", asyncHandler(async (req, res) => {
         const querySchema = z.object({
             // Accept a larger input range but clamp below to keep providers happy.
             limit: z.coerce.number().int().positive().max(500).default(30),
@@ -714,7 +690,7 @@ export const createNewsRouter = (
         }
 
         return res.json(payload);
-    });
+    }));
 
     return router;
 };

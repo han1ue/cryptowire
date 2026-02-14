@@ -30,7 +30,13 @@ Environment:
 
 - Set `COINDESK_API_KEY` to enable live news
 - News retention defaults to 7 days via `NEWS_RETENTION_DAYS`
-- CoinDesk sources are currently configured in code (not via env)
+- Set `CORS_ORIGIN` (comma-separated) to restrict API CORS origins in production
+- Set `VITE_GA_ID` in frontend env to enable Google Analytics in production builds
+
+Quality checks:
+
+- `npm run lint`
+- `npm run build`
 
 ## Features
 - Real-time crypto news
@@ -68,26 +74,3 @@ To persist cached news on Vercel (recommended), also set KV env vars in the API 
 
 ---
 MIT License
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-

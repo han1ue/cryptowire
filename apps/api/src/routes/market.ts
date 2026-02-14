@@ -1,10 +1,11 @@
 import { Router } from "express";
 import type { MarketService } from "../services/marketService.js";
+import { asyncHandler } from "../lib/asyncHandler.js";
 
 export const createMarketRouter = (marketService: MarketService) => {
     const router = Router();
 
-    router.get("/market", async (_req, res) => {
+    router.get("/market", asyncHandler(async (_req, res) => {
         try {
             const overview = await marketService.getMarketOverview();
             return res.json({ ok: true, overview });
@@ -14,7 +15,7 @@ export const createMarketRouter = (marketService: MarketService) => {
                 error: err instanceof Error ? err.message : String(err),
             });
         }
-    });
+    }));
 
     return router;
 };

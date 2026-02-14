@@ -1,4 +1,5 @@
 import { z } from "zod";
+export * from "./sources.js";
 export const NewsItemSchema = z.object({
     id: z.string(),
     title: z.string(),

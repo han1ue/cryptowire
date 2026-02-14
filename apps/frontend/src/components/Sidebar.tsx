@@ -8,6 +8,7 @@ import {
   Filter,
   ChevronDown,
   ChevronUp,
+  Github,
   Rss
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
@@ -524,6 +525,17 @@ export const Sidebar = ({
               <path d="M17.6 9.48l1.84-3.18c.16-.31.04-.69-.26-.85-.29-.15-.65-.06-.83.22l-1.88 3.24a11.43 11.43 0 0 0-8.94 0L5.65 5.67c-.19-.28-.54-.37-.83-.22-.3.16-.42.54-.26.85l1.84 3.18C4.8 10.92 3.5 12.93 3.34 15.34h17.32c-.16-2.41-1.46-4.42-3.06-5.86zM10.34 12.4c-.43 0-.78-.35-.78-.78s.35-.78.78-.78.78.35.78.78-.35.78-.78.78zm3.32 0c-.43 0-.78-.35-.78-.78s.35-.78.78-.78.78.35.78.78-.35.78-.78.78zM19 16.34c0 .55-.45 1-1 1H6c-.55 0-1-.45-1-1V21c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-4.66z" />
             </svg>
             <span>Android</span>
+          </a>
+
+          <a
+            href="https://github.com/jonyive/cryptowire"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full -mx-2 flex items-center gap-2 px-2 py-2 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors"
+            title="View source on GitHub"
+          >
+            <Github className="h-4 w-4 text-primary" />
+            <span>GitHub</span>
           </a>
         </div>
       </div>

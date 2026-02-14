@@ -118,7 +118,7 @@ export const useSavedArticles = () => {
     const [savedArticles, setSavedArticles] = useState<SavedArticle[]>(() => readSaved());
 
     useEffect(() => {
-        if (!(import.meta as any)?.env?.DEV) return;
+        if (!import.meta.env.DEV) return;
         // Visible in browser DevTools (Console).
         console.debug(`[cryptowi.re] savedArticles in localStorage: ${savedArticles.length}`);
     }, [savedArticles.length]);

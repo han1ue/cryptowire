@@ -16,9 +16,10 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [react()],
   resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-      "@cryptowire/types": path.resolve(__dirname, "../../packages/types/src/index.ts"),
-    },
+    alias: [
+      { find: "@cryptowire/types/sources", replacement: path.resolve(__dirname, "../../packages/types/src/sources.ts") },
+      { find: "@cryptowire/types", replacement: path.resolve(__dirname, "../../packages/types/src/index.ts") },
+      { find: "@", replacement: path.resolve(__dirname, "./src") },
+    ],
   },
 }));

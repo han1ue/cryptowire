@@ -25,8 +25,6 @@ import {
   AlertDialogFooter,
 } from "@/components/ui/alert-dialog";
 import { Switch } from "@/components/ui/switch";
-import { zodToJsonSchema } from "zod-to-json-schema";
-import { NewsItemSchema } from "@cryptowire/types";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -285,8 +283,27 @@ const Index = () => {
   ];
   const [endOfListSuffix, setEndOfListSuffix] = useState<string>("");
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
-    const saved = localStorage.getItem("notifications");
-    return saved ? JSON.parse(saved) : initialNotifications;
+    try {
+      const saved = localStorage.getItem("notifications");
+      if (!saved) return initialNotifications;
+      const parsed = JSON.parse(saved);
+      if (!Array.isArray(parsed)) return initialNotifications;
+      const out: NotificationItem[] = [];
+      for (const row of parsed as unknown[]) {
+        if (!row || typeof row !== "object") continue;
+        const r = row as Record<string, unknown>;
+        const id = typeof r.id === "string" ? r.id : "";
+        const title = typeof r.title === "string" ? r.title : "";
+        const message = typeof r.message === "string" ? r.message : "";
+        const time = typeof r.time === "string" ? r.time : "";
+        const read = typeof r.read === "boolean" ? r.read : false;
+        if (!id || !title || !message || !time) continue;
+        out.push({ id, title, message, time, read });
+      }
+      return out.length > 0 ? out : initialNotifications;
+    } catch {
+      return initialNotifications;
+    }
   });
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -359,9 +376,10 @@ const Index = () => {
   const categoryInfiniteItems = categoryInfinite.data?.pages.flatMap((p) => p.items ?? []) ?? [];
 
   // Reset scroll/end-message state when the list context changes.
+  const selectedSourcesKey = selectedSources.join("|");
   useEffect(() => {
     setEndOfListSuffix("");
-  }, [showSavedOnly, showRecentOnly, selectedCategory, selectedSources.join("|")]);
+  }, [showSavedOnly, showRecentOnly, selectedCategory, selectedSourcesKey]);
 
   const [devToolsOpen, setDevToolsOpen] = useState(false);
   const [devShowSchemaButtons, setDevShowSchemaButtons] = useState(() => {
@@ -375,7 +393,11 @@ const Index = () => {
   const [schemaDialogOpen, setSchemaDialogOpen] = useState(false);
   const [schemaDialogText, setSchemaDialogText] = useState<string>("");
 
-  const showNewsItemSchema = () => {
+  const showNewsItemSchema = async () => {
+    const [{ zodToJsonSchema }, { NewsItemSchema }] = await Promise.all([
+      import("zod-to-json-schema"),
+      import("@cryptowire/types"),
+    ]);
     const jsonSchema = zodToJsonSchema(NewsItemSchema, "NewsItem");
     setSchemaDialogText(JSON.stringify(jsonSchema, null, 2));
     setSchemaDialogOpen(true);

@@ -9,6 +9,7 @@ const EnvSchema = z.object({
     NEWS_RETENTION_DAYS: z.coerce.number().int().positive().default(7),
     NEWS_CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(180),
     NEWS_REFRESH_SECRET: z.string().optional(),
+    CORS_ORIGIN: z.string().optional(),
 
     COINDESK_API_KEY: z.string().optional(),
     COINDESK_BASE_URL: z.string().url().optional(),
