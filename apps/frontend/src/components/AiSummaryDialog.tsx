@@ -56,6 +56,12 @@ export const AiSummaryDialog = ({
     const generatedAtLabel = data?.generatedAt
         ? formatDistanceToNowStrict(new Date(data.generatedAt), { addSuffix: true })
         : null;
+    const aiGenerationError = data?.aiError ?? (
+        typeof data?.model === "string" && data.model.toLowerCase().startsWith("error-")
+            ? data.model
+            : null
+    );
+    const modelUsed = aiGenerationError ? null : data?.model ?? null;
 
     const hasData = Boolean(data);
     const hasArticles = Boolean(data && data.articleCount > 0);
@@ -88,9 +94,9 @@ export const AiSummaryDialog = ({
                             <Badge className="bg-primary/15 text-primary hover:bg-primary/15">
                                 {data?.articleCount ?? 0} stories
                             </Badge>
-                            {data?.model ? (
+                            {modelUsed ? (
                                 <Badge variant="outline" className="text-[10px] uppercase tracking-wider">
-                                    Model: {data.model}
+                                    Model: {modelUsed}
                                 </Badge>
                             ) : null}
                             {generatedAtLabel ? (
@@ -128,7 +134,7 @@ export const AiSummaryDialog = ({
                         </div>
                     ) : null}
 
-                    {!isLoading && !isError && hasData && data.aiError ? (
+                    {!isLoading && !isError && hasData && aiGenerationError ? (
                         <div className="rounded border border-destructive/40 bg-destructive/5 p-4">
                             <div className="flex items-start gap-2">
                                 <AlertTriangle className="mt-0.5 h-4 w-4 text-destructive" />
@@ -137,7 +143,7 @@ export const AiSummaryDialog = ({
                                         AI Generation Failed
                                     </p>
                                     <p className="mt-1 text-xs text-muted-foreground">
-                                        {data.aiError}
+                                        {aiGenerationError}
                                     </p>
                                 </div>
                             </div>
@@ -155,7 +161,7 @@ export const AiSummaryDialog = ({
                         </div>
                     ) : null}
 
-                    {!isLoading && !isError && hasData && hasArticles && !data.aiError ? (
+                    {!isLoading && !isError && hasData && hasArticles && !aiGenerationError ? (
                         <>
                             <section className="rounded border border-border bg-card/40 p-4">
                                 <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground">
