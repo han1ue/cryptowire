@@ -54,24 +54,24 @@ export const SourcesDialog = ({
             </span>
           </div>
 
-          <div className="flex gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={selectAllSources}
-              className="flex-1 px-3 py-2 text-xs font-medium uppercase tracking-wider transition-colors bg-muted text-muted-foreground hover:text-foreground"
+              className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wider transition-colors border border-primary/30 text-primary bg-primary/5 hover:bg-primary/10"
             >
               Select all
             </button>
             <button
               type="button"
               onClick={clearSources}
-              className="flex-1 px-3 py-2 text-xs font-medium uppercase tracking-wider transition-colors bg-muted text-muted-foreground hover:text-foreground"
+              className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wider transition-colors border border-border text-foreground bg-background hover:bg-muted/40"
             >
               Clear
             </button>
           </div>
 
-          <div className="max-h-72 overflow-y-auto pr-2">
+          <div className="max-h-72 overflow-y-auto" style={{ scrollbarGutter: "stable" }}>
             <div className="grid grid-cols-2 gap-2">
               {availableSources.map((source) => {
                 const isSelected = selectedSources.includes(source.id);
