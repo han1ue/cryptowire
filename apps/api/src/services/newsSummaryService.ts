@@ -64,6 +64,7 @@ const AiSummaryOutputSchema = z.object({
                 title: z.string().min(1),
                 detail: z.string().min(1),
                 sources: z.array(z.string().min(1)).min(1),
+                url: z.string().url().optional(),
             }),
         )
         .min(1)
@@ -106,6 +107,14 @@ const uniqueStrings = (values: string[]): string[] => {
         out.push(trimmed);
     }
     return out;
+};
+
+const normalizeComparableText = (value: string): string => {
+    return value
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
 };
 
 const extractMessageText = (raw: unknown): string | null => {
@@ -227,17 +236,7 @@ export class NewsSummaryService {
             sourceCoverage,
         );
 
-        const topSources = sourceCoverage
-            .filter((source) => source.articleCount > 0)
-            .slice(0, 3)
-            .map((source) => `${source.source} (${source.articleCount})`);
-
-        const fallbackSummary =
-            `Analyzed ${ranked.length} crypto news items across ${sourceCoverage.length} tracked sources in the last ${params.windowHours} hours. ` +
-            `Signals are ranked with 70% source-reputation weight and 30% recency weight, with strongest coverage from ` +
-            `${topSources.length > 0 ? topSources.join(", ") : "the active source set"}.`;
-
-        const sourceCoverageNote = sourceCoverage.map((source) => `${source.source}: ${source.articleCount}`).join("; ");
+        const fallbackSummary = this.buildFallbackSummary(ranked, params.windowHours);
 
         const payload: NewsSummaryResponse = {
             generatedAt: new Date().toISOString(),
@@ -253,7 +252,6 @@ export class NewsSummaryService {
             notes: uniqueStrings([
                 ...(aiResult?.notes ?? []),
                 "Reputation weighting uses a static source score tuned for editorial reliability and signal quality.",
-                `Source coverage (${params.windowHours}h): ${sourceCoverageNote}.`,
             ]),
         };
 
@@ -361,6 +359,65 @@ export class NewsSummaryService {
         return list;
     }
 
+    private buildFallbackSummary(ranked: RankedNewsItem[], windowHours: number): string {
+        const top = ranked.slice(0, 3);
+        if (top.length === 0) {
+            return `No meaningful market-moving headlines were detected in the last ${windowHours} hours.`;
+        }
+
+        const formatLead = (entry: RankedNewsItem) => `${sanitizeText(entry.item.title, 120)} (${entry.sourceName})`;
+        if (top.length === 1) {
+            return `In the last ${windowHours} hours, the dominant headline was ${formatLead(top[0]!)}, which led overall source-weighted coverage.`;
+        }
+        if (top.length === 2) {
+            return `In the last ${windowHours} hours, the main developments were ${formatLead(top[0]!)} and ${formatLead(top[1]!)}, based on source reputation and recency weighting.`;
+        }
+
+        return `In the last ${windowHours} hours, key developments included ${formatLead(top[0]!)}, ${formatLead(top[1]!)}, and ${formatLead(top[2]!)}, based on source reputation and recency weighting.`;
+    }
+
+    private findBestUrlForHighlight(
+        title: string,
+        sources: string[],
+        ranked: RankedNewsItem[],
+    ): string | undefined {
+        const titleNorm = normalizeComparableText(title);
+        if (!titleNorm) return undefined;
+
+        const sourceKeys = new Set(sources.map((source) => source.trim().toLowerCase()).filter(Boolean));
+
+        let best: { score: number; url: string } | null = null;
+
+        for (const entry of ranked) {
+            const url = entry.item.url;
+            if (!url) continue;
+
+            const entryTitleNorm = normalizeComparableText(entry.item.title);
+            if (!entryTitleNorm) continue;
+
+            let score = 0;
+            const sourceMatch = sourceKeys.has(entry.sourceName.trim().toLowerCase());
+            if (sourceMatch) score += 3;
+
+            if (entryTitleNorm === titleNorm) score += 8;
+            if (entryTitleNorm.includes(titleNorm) || titleNorm.includes(entryTitleNorm)) score += 5;
+
+            const titleTokens = new Set(titleNorm.split(" ").filter((token) => token.length > 2));
+            const entryTokens = new Set(entryTitleNorm.split(" ").filter((token) => token.length > 2));
+            let tokenOverlap = 0;
+            for (const token of titleTokens) {
+                if (entryTokens.has(token)) tokenOverlap++;
+            }
+            score += Math.min(4, tokenOverlap);
+
+            if (!best || score > best.score) {
+                best = { score, url };
+            }
+        }
+
+        return best && best.score > 0 ? best.url : undefined;
+    }
+
     private buildFallbackHighlights(ranked: RankedNewsItem[]): NewsSummaryHighlight[] {
         const out: NewsSummaryHighlight[] = [];
         const seenTitleKeys = new Set<string>();
@@ -378,6 +435,7 @@ export class NewsSummaryService {
                 title,
                 detail,
                 sources: [entry.sourceName],
+                url: entry.item.url,
             });
         }
 
@@ -400,8 +458,13 @@ export class NewsSummaryService {
                         return source.trim();
                     }),
                 ),
+                url: highlight.url,
             }))
             .filter((highlight) => highlight.title.length > 0 && highlight.detail.length > 0 && highlight.sources.length > 0)
+            .map((highlight) => ({
+                ...highlight,
+                url: highlight.url ?? this.findBestUrlForHighlight(highlight.title, highlight.sources, ranked),
+            }))
             .slice(0, MAX_HIGHLIGHTS);
 
         const coveredSources = new Set<string>(
@@ -418,9 +481,10 @@ export class NewsSummaryService {
             if (!representative) continue;
 
             out.push({
-                title: `${source.source} signal`,
-                detail: sanitizeText(representative.item.title, 320),
+                title: sanitizeText(representative.item.title, 120),
+                detail: sanitizeText(representative.item.summary, 320) || "No body summary was available from the source feed.",
                 sources: [source.source],
+                url: representative.item.url,
             });
             coveredSources.add(sourceKey);
         }
@@ -463,7 +527,7 @@ export class NewsSummaryService {
 
         const userPrompt =
             `Return strict JSON with keys: summary (string), highlights (array), notes (array). ` +
-            `Each highlight item must be: { "title": string, "detail": string, "sources": string[] }. ` +
+            `Each highlight item must be: { "title": string, "detail": string, "sources": string[], "url"?: string }. ` +
             `Window: last ${params.windowHours} hours (${params.windowStart} to ${params.windowEnd}). ` +
             `Keep summary to 2-4 sentences, and generate 4-8 highlights. ` +
             `Every source with articleCount > 0 should appear at least once in highlights or notes.\n\n` +
@@ -487,6 +551,7 @@ export class NewsSummaryService {
                     title: sanitizeText(highlight.title, 120),
                     detail: sanitizeText(highlight.detail, 320),
                     sources: uniqueStrings(highlight.sources.map((source) => source.trim()).filter(Boolean)),
+                    url: highlight.url,
                 })),
                 notes: parsed.data.notes.map((note) => sanitizeText(note, 220)).filter(Boolean),
             };

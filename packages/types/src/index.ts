@@ -37,6 +37,7 @@ export const NewsSummaryHighlightSchema = z.object({
     title: z.string(),
     detail: z.string(),
     sources: z.array(z.string()),
+    url: z.string().url().optional(),
 });
 
 export type NewsSummaryHighlight = z.infer<typeof NewsSummaryHighlightSchema>;

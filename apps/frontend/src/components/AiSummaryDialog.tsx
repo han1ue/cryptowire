@@ -113,10 +113,10 @@ export const AiSummaryDialog = ({
                     {!isLoading && !isError && hasData && !hasArticles ? (
                         <div className="rounded border border-border bg-card/40 p-4">
                             <p className="text-sm text-foreground">
-                                No stories matched your source selection in the last {data.windowHours} hours.
+                                No stories were available across tracked sources in the last {data.windowHours} hours.
                             </p>
                             <p className="mt-1 text-xs text-muted-foreground">
-                                Try enabling more sources or wait for the next refresh cycle.
+                                Wait for the next refresh cycle.
                             </p>
                         </div>
                     ) : null}
@@ -137,17 +137,38 @@ export const AiSummaryDialog = ({
                                 </div>
                                 <div className="space-y-2">
                                     {data.highlights.map((highlight, index) => (
-                                        <article
-                                            key={`${highlight.title}-${index}`}
-                                            className="rounded border border-border bg-card/40 p-3"
-                                        >
-                                            <div className="flex items-start justify-between gap-3">
-                                                <h3 className="text-sm font-medium text-foreground">{highlight.title}</h3>
-                                                <span className="text-[10px] text-muted-foreground">#{index + 1}</span>
-                                            </div>
-                                            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                                                {highlight.detail}
-                                            </p>
+                                        <article key={`${highlight.title}-${index}`} className="rounded border border-border bg-card/40 p-3">
+                                            {(() => {
+                                                const signalUrl =
+                                                    highlight.url ??
+                                                    `https://www.google.com/search?q=${encodeURIComponent(`${highlight.title} crypto`)}`;
+                                                return (
+                                                    <>
+                                                        <div className="flex items-start justify-between gap-3">
+                                                            <a
+                                                                href={signalUrl}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-sm font-medium text-foreground underline-offset-4 hover:text-primary hover:underline"
+                                                            >
+                                                                {highlight.title}
+                                                            </a>
+                                                            <span className="text-[10px] text-muted-foreground">#{index + 1}</span>
+                                                        </div>
+                                                        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                                                            {highlight.detail}
+                                                        </p>
+                                                        <a
+                                                            href={signalUrl}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="mt-2 inline-block text-[10px] uppercase tracking-wider text-primary hover:underline"
+                                                        >
+                                                            {highlight.url ? "Open source article" : "Search signal"}
+                                                        </a>
+                                                    </>
+                                                );
+                                            })()}
                                             <div className="mt-2 flex flex-wrap gap-1.5">
                                                 {highlight.sources.map((source) => (
                                                     <span
@@ -165,7 +186,7 @@ export const AiSummaryDialog = ({
 
                             <section>
                                 <div className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">
-                                    Source Coverage
+                                    Sources Reputation
                                 </div>
                                 <div className="space-y-1.5">
                                     {data.sourceCoverage.map((source) => {

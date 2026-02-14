@@ -105,14 +105,17 @@ export declare const NewsSummaryHighlightSchema: z.ZodObject<{
     title: z.ZodString;
     detail: z.ZodString;
     sources: z.ZodArray<z.ZodString, "many">;
+    url: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
     title: string;
     detail: string;
     sources: string[];
+    url?: string | undefined;
 }, {
     title: string;
     detail: string;
     sources: string[];
+    url?: string | undefined;
 }>;
 export type NewsSummaryHighlight = z.infer<typeof NewsSummaryHighlightSchema>;
 export declare const NewsSummarySourceCoverageSchema: z.ZodObject<{
@@ -145,14 +148,17 @@ export declare const NewsSummaryResponseSchema: z.ZodObject<{
         title: z.ZodString;
         detail: z.ZodString;
         sources: z.ZodArray<z.ZodString, "many">;
+        url: z.ZodOptional<z.ZodString>;
     }, "strip", z.ZodTypeAny, {
         title: string;
         detail: string;
         sources: string[];
+        url?: string | undefined;
     }, {
         title: string;
         detail: string;
         sources: string[];
+        url?: string | undefined;
     }>, "many">;
     sourceCoverage: z.ZodArray<z.ZodObject<{
         sourceId: z.ZodString;
@@ -184,6 +190,7 @@ export declare const NewsSummaryResponseSchema: z.ZodObject<{
         title: string;
         detail: string;
         sources: string[];
+        url?: string | undefined;
     }[];
     sourceCoverage: {
         source: string;
@@ -205,6 +212,7 @@ export declare const NewsSummaryResponseSchema: z.ZodObject<{
         title: string;
         detail: string;
         sources: string[];
+        url?: string | undefined;
     }[];
     sourceCoverage: {
         source: string;
