@@ -23,6 +23,19 @@ type RankedNewsItem = {
     score: number;
 };
 
+type AiSummarySuccess = {
+    ok: true;
+    summary: string;
+    highlights: NewsSummaryHighlight[];
+    notes: string[];
+    model: string | null;
+};
+
+type AiSummaryFailure = {
+    ok: false;
+    model: string;
+};
+
 const SOURCE_REPUTATION_WEIGHTS: Record<NewsSourceId, number> = {
     coindesk: 0.95,
     decrypt: 0.89,
@@ -115,6 +128,18 @@ const normalizeComparableText = (value: string): string => {
         .replace(/[^a-z0-9\s]/g, " ")
         .replace(/\s+/g, " ")
         .trim();
+};
+
+const toErrorModel = (label: string, detail?: string): string => {
+    const base = `error-${label}`;
+    if (!detail || !detail.trim()) return base;
+    const normalized = detail
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+    if (!normalized) return base;
+    return `${base}:${normalized.slice(0, 48)}`;
 };
 
 const extractMessageText = (raw: unknown): string | null => {
@@ -230,8 +255,11 @@ export class NewsSummaryService {
             windowEnd: params.windowEnd,
         });
 
+        const aiPayload = aiResult && aiResult.ok ? aiResult : null;
+        const aiFailureModel = aiResult && !aiResult.ok ? aiResult.model : null;
+
         const finalHighlights = this.ensureSourceCoverage(
-            aiResult?.highlights ?? this.buildFallbackHighlights(ranked),
+            aiPayload?.highlights ?? this.buildFallbackHighlights(ranked),
             ranked,
             sourceCoverage,
         );
@@ -244,13 +272,13 @@ export class NewsSummaryService {
             windowEnd: params.windowEnd,
             windowHours: params.windowHours,
             articleCount: ranked.length,
-            usedAi: Boolean(aiResult),
-            model: aiResult?.model ?? "error-getting-model",
-            summary: aiResult?.summary ?? fallbackSummary,
+            usedAi: Boolean(aiPayload),
+            model: aiPayload?.model ?? aiFailureModel ?? "error-getting-model",
+            summary: aiPayload?.summary ?? fallbackSummary,
             highlights: finalHighlights,
             sourceCoverage,
             notes: uniqueStrings([
-                ...(aiResult?.notes ?? []),
+                ...(aiPayload?.notes ?? []),
                 "Reputation weighting uses a static source score tuned for editorial reliability and signal quality.",
             ]),
         };
@@ -498,9 +526,9 @@ export class NewsSummaryService {
         windowHours: number;
         windowStart: string;
         windowEnd: string;
-    }): Promise<{ summary: string; highlights: NewsSummaryHighlight[]; notes: string[]; model: string | null } | null> {
-        if (params.ranked.length === 0) return null;
-        if (!this.geminiApiKey && !this.openAiApiKey) return null;
+    }): Promise<AiSummarySuccess | AiSummaryFailure> {
+        if (params.ranked.length === 0) return { ok: false, model: toErrorModel("no-articles") };
+        if (!this.geminiApiKey && !this.openAiApiKey) return { ok: false, model: toErrorModel("no-ai-key") };
 
         const topRows = params.ranked.slice(0, MAX_ARTICLES_IN_PROMPT);
         const sourceCoverageRows = params.sourceCoverage
@@ -557,14 +585,14 @@ export class NewsSummaryService {
             };
         };
 
-        const requestGemini = async (): Promise<{ text: string; model: string } | null> => {
-            if (!this.geminiApiKey) return null;
+        const requestGemini = async (model: string): Promise<{ ok: true; text: string; model: string } | { ok: false; errorModel: string }> => {
+            if (!this.geminiApiKey) return { ok: false, errorModel: toErrorModel("gemini-no-key") };
 
             try {
                 const controller = new AbortController();
                 const timeout = setTimeout(() => controller.abort(), 12_000);
                 const endpoint =
-                    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(this.geminiModel)}:generateContent` +
+                    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent` +
                     `?key=${encodeURIComponent(this.geminiApiKey)}`;
 
                 const response = await fetch(endpoint, {
@@ -588,22 +616,41 @@ export class NewsSummaryService {
                 });
                 clearTimeout(timeout);
 
-                if (!response.ok) return null;
+                if (!response.ok) {
+                    let detail = "";
+                    try {
+                        const raw = (await response.json()) as Record<string, unknown>;
+                        const errorBlock =
+                            raw.error && typeof raw.error === "object" ? (raw.error as Record<string, unknown>) : null;
+                        if (typeof errorBlock?.message === "string") detail = errorBlock.message;
+                    } catch {
+                        // ignore parsing errors
+                    }
+                    return {
+                        ok: false,
+                        errorModel: toErrorModel(`gemini-http-${response.status}`, detail),
+                    };
+                }
+
                 const raw = (await response.json()) as unknown;
                 const text = extractGeminiText(raw);
-                if (!text) return null;
+                if (!text) return { ok: false, errorModel: toErrorModel("gemini-empty-response", model) };
 
                 return {
+                    ok: true,
                     text,
-                    model: this.geminiModel,
+                    model,
                 };
-            } catch {
-                return null;
+            } catch (error) {
+                if (error instanceof Error && error.name === "AbortError") {
+                    return { ok: false, errorModel: toErrorModel("gemini-timeout", model) };
+                }
+                return { ok: false, errorModel: toErrorModel("gemini-request-failed", model) };
             }
         };
 
-        const requestOpenAi = async (): Promise<{ text: string; model: string | null } | null> => {
-            if (!this.openAiApiKey) return null;
+        const requestOpenAi = async (): Promise<{ ok: true; text: string; model: string | null } | { ok: false; errorModel: string }> => {
+            if (!this.openAiApiKey) return { ok: false, errorModel: toErrorModel("openai-no-key") };
 
             try {
                 const controller = new AbortController();
@@ -627,10 +674,25 @@ export class NewsSummaryService {
                 });
                 clearTimeout(timeout);
 
-                if (!response.ok) return null;
+                if (!response.ok) {
+                    let detail = "";
+                    try {
+                        const raw = (await response.json()) as Record<string, unknown>;
+                        const errorBlock =
+                            raw.error && typeof raw.error === "object" ? (raw.error as Record<string, unknown>) : null;
+                        if (typeof errorBlock?.message === "string") detail = errorBlock.message;
+                    } catch {
+                        // ignore parsing errors
+                    }
+                    return {
+                        ok: false,
+                        errorModel: toErrorModel(`openai-http-${response.status}`, detail),
+                    };
+                }
+
                 const raw = (await response.json()) as unknown;
                 const text = extractMessageText(raw);
-                if (!text) return null;
+                if (!text) return { ok: false, errorModel: toErrorModel("openai-empty-response", this.openAiModel) };
 
                 const modelRaw =
                     raw && typeof raw === "object" && typeof (raw as Record<string, unknown>).model === "string"
@@ -638,26 +700,48 @@ export class NewsSummaryService {
                         : null;
 
                 return {
+                    ok: true,
                     text,
                     model: modelRaw,
                 };
-            } catch {
-                return null;
+            } catch (error) {
+                if (error instanceof Error && error.name === "AbortError") {
+                    return { ok: false, errorModel: toErrorModel("openai-timeout", this.openAiModel) };
+                }
+                return { ok: false, errorModel: toErrorModel("openai-request-failed", this.openAiModel) };
             }
         };
 
-        const geminiResult = await requestGemini();
-        if (geminiResult) {
-            const parsed = parseAiOutput(geminiResult.text);
-            if (parsed) return { ...parsed, model: geminiResult.model };
+        const failureModels: string[] = [];
+
+        if (this.geminiApiKey) {
+            const geminiModels = uniqueStrings([this.geminiModel, "gemini-2.0-flash"]);
+            for (const model of geminiModels) {
+                const geminiResult = await requestGemini(model);
+                if (geminiResult.ok) {
+                    const parsed = parseAiOutput(geminiResult.text);
+                    if (parsed) return { ok: true, ...parsed, model: geminiResult.model };
+                    failureModels.push(toErrorModel("gemini-invalid-json", model));
+                    continue;
+                }
+                failureModels.push(geminiResult.errorModel);
+            }
         }
 
-        const openAiResult = await requestOpenAi();
-        if (openAiResult) {
-            const parsed = parseAiOutput(openAiResult.text);
-            if (parsed) return { ...parsed, model: openAiResult.model };
+        if (this.openAiApiKey) {
+            const openAiResult = await requestOpenAi();
+            if (openAiResult.ok) {
+                const parsed = parseAiOutput(openAiResult.text);
+                if (parsed) return { ok: true, ...parsed, model: openAiResult.model };
+                failureModels.push(toErrorModel("openai-invalid-json", this.openAiModel));
+            } else {
+                failureModels.push(openAiResult.errorModel);
+            }
         }
 
-        return null;
+        return {
+            ok: false,
+            model: failureModels[0] ?? toErrorModel("getting-model"),
+        };
     }
 }
