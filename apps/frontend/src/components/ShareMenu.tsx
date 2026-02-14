@@ -34,11 +34,12 @@ export const ShareMenu = ({ url, title, children, align = "end" }: ShareMenuProp
     const strippedUrl = useMemo(() => stripQueryParams(url), [url]);
     const encodedUrl = useMemo(() => encodeURIComponent(strippedUrl), [strippedUrl]);
     const xShareText = useMemo(() => encodeURIComponent(buildShareText(title, 'x')), [title]);
+    const telegramShareText = useMemo(() => encodeURIComponent(buildShareText(title, 'telegram')), [title]);
     const redditShareText = useMemo(() => encodeURIComponent(buildShareText(title, 'reddit')), [title]);
 
     const xShareUrl = `https://twitter.com/intent/tweet?text=${xShareText}&url=${encodedUrl}`;
+    const telegramShareUrl = `https://t.me/share/url?url=${encodedUrl}&text=${telegramShareText}`;
     const redditShareUrl = `https://www.reddit.com/submit?url=${encodedUrl}&title=${redditShareText}`;
-    const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
 
     const copyLink = async () => {
         await navigator.clipboard.writeText(strippedUrl);
@@ -92,17 +93,17 @@ export const ShareMenu = ({ url, title, children, align = "end" }: ShareMenuProp
                 </DropdownMenuItem>
                 <DropdownMenuItem
                     onSelect={() => {
+                        openNewWindow(telegramShareUrl);
+                    }}
+                >
+                    Share on Telegram
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                    onSelect={() => {
                         openNewWindow(redditShareUrl);
                     }}
                 >
                     Share on Reddit
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                    onSelect={() => {
-                        openNewWindow(facebookShareUrl);
-                    }}
-                >
-                    Share on Facebook
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>

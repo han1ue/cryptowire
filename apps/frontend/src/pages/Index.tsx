@@ -15,7 +15,7 @@ import { useNewsCategories } from "@/hooks/useNewsCategories";
 import { isUrlVisited, markUrlVisited } from "@/lib/visitedLinks";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { toast } from "@/components/ui/sonner";
-import { Bookmark, Clock, MoreVertical, Share2 } from "lucide-react";
+import { Bookmark, Clock, Share2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -78,13 +78,15 @@ const MobileActionsMenu = ({ shareUrl, shareTitle, onToggleSave, isSaved }: Mobi
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            className="transition-colors"
-            title="Actions"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-border bg-background/90 px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+            title="Share"
             onClick={(e) => e.stopPropagation()}
             aria-expanded={open}
             aria-haspopup="menu"
+            aria-label="Open share menu"
           >
-            <MoreVertical className="h-4 w-4 text-muted-foreground hover:text-primary" />
+            <Share2 className="h-4 w-4" />
+            <span>Share</span>
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
@@ -139,20 +141,21 @@ const MobileActionsMenu = ({ shareUrl, shareTitle, onToggleSave, isSaved }: Mobi
                 onSelect={() => {
                   const encodedUrl = encodeURIComponent(shareUrl);
                   const encodedTitle = encodeURIComponent(buildShareText(shareTitle));
+                  openShareWindow(`https://t.me/share/url?url=${encodedUrl}&text=${encodedTitle}`);
+                  setOpen(false);
+                }}
+              >
+                Share on Telegram
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => {
+                  const encodedUrl = encodeURIComponent(shareUrl);
+                  const encodedTitle = encodeURIComponent(buildShareText(shareTitle));
                   openShareWindow(`https://www.reddit.com/submit?url=${encodedUrl}&title=${encodedTitle}`);
                   setOpen(false);
                 }}
               >
                 Share on Reddit
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() => {
-                  const encodedUrl = encodeURIComponent(shareUrl);
-                  openShareWindow(`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`);
-                  setOpen(false);
-                }}
-              >
-                Share on Facebook
               </DropdownMenuItem>
             </>
           ) : null}
