@@ -66,7 +66,7 @@ export const AiSummaryDialog = ({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-3xl overflow-hidden p-8 pt-12">
                 <DialogHeader className="border-b border-border px-0 pb-4 pt-0">
-                    <div className="flex w-full items-center justify-between gap-3 pr-14 sm:pr-12">
+                    <div className="flex w-full items-center justify-between gap-3">
                         <div>
                             <DialogTitle className="flex items-center gap-2 text-left">
                                 <Sparkles className="h-4 w-4 text-terminal-cyan" />
