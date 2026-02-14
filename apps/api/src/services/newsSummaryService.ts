@@ -233,7 +233,7 @@ export class NewsSummaryService {
             .map((source) => `${source.source} (${source.articleCount})`);
 
         const fallbackSummary =
-            `Analyzed ${ranked.length} crypto news items across ${sourceCoverage.length} selected sources in the last ${params.windowHours} hours. ` +
+            `Analyzed ${ranked.length} crypto news items across ${sourceCoverage.length} tracked sources in the last ${params.windowHours} hours. ` +
             `Signals are ranked with 70% source-reputation weight and 30% recency weight, with strongest coverage from ` +
             `${topSources.length > 0 ? topSources.join(", ") : "the active source set"}.`;
 

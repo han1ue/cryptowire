@@ -49,7 +49,7 @@ export const AiSummaryDialog = ({
                                 AI 24h Brief
                             </DialogTitle>
                             <p className="mt-1 text-xs text-muted-foreground">
-                                Weighted summary of the last 24h from your selected crypto sources.
+                                Weighted summary of the last 24h from all tracked crypto sources.
                             </p>
                         </div>
 

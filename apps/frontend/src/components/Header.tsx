@@ -234,14 +234,15 @@ export const Header = ({
         <div className="absolute left-1/2 -translate-x-1/2">
           <button
             type="button"
-            onClick={onSourcesClick}
-            className="inline-flex items-center gap-2 rounded border border-border bg-muted/30 px-3 py-1.5 text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-            title="Manage sources"
-            aria-label="Manage sources"
+            onClick={onAiSummaryClick}
+            className="group relative inline-flex items-center gap-1.5 overflow-hidden rounded border border-terminal-cyan/50 bg-gradient-to-r from-terminal-cyan/20 via-primary/20 to-terminal-cyan/20 px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-foreground shadow-[0_0_14px_hsl(var(--terminal-cyan)/0.28)] transition-all hover:shadow-[0_0_20px_hsl(var(--primary)/0.35)]"
+            title="Open AI brief"
+            aria-label="Open AI brief"
           >
-            <Newspaper className="h-4 w-4 text-primary" />
-            <span>Sources</span>
-            <span className="text-primary">{activeSourceCount}/{totalSourceCount}</span>
+            <span className="pointer-events-none absolute inset-y-0 -left-1/2 w-1/2 rotate-12 bg-white/30 blur-sm transition-transform duration-700 group-hover:translate-x-[210%]" />
+            <Sparkles className={`h-3.5 w-3.5 ${aiSummaryLoading ? "animate-pulse text-primary" : "text-terminal-cyan"}`} />
+            <span className="hidden sm:inline">AI Brief</span>
+            <span className="sm:hidden">AI</span>
           </button>
         </div>
 
@@ -258,15 +259,14 @@ export const Header = ({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={onAiSummaryClick}
-              className="group relative inline-flex items-center gap-1.5 overflow-hidden rounded border border-terminal-cyan/50 bg-gradient-to-r from-terminal-cyan/20 via-primary/20 to-terminal-cyan/20 px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-foreground shadow-[0_0_14px_hsl(var(--terminal-cyan)/0.28)] transition-all hover:shadow-[0_0_20px_hsl(var(--primary)/0.35)]"
-              title="Open AI brief"
-              aria-label="Open AI brief"
+              onClick={onSourcesClick}
+              className="inline-flex items-center gap-1.5 rounded border border-border bg-muted/30 px-2.5 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+              title="Manage sources"
+              aria-label="Manage sources"
             >
-              <span className="pointer-events-none absolute inset-y-0 -left-1/2 w-1/2 rotate-12 bg-white/30 blur-sm transition-transform duration-700 group-hover:translate-x-[210%]" />
-              <Sparkles className={`h-3.5 w-3.5 ${aiSummaryLoading ? "animate-pulse text-primary" : "text-terminal-cyan"}`} />
-              <span className="hidden sm:inline">AI Brief</span>
-              <span className="sm:hidden">AI</span>
+              <Newspaper className="h-3.5 w-3.5 text-primary" />
+              <span className="hidden sm:inline">Sources</span>
+              <span className="text-primary">{activeSourceCount}/{totalSourceCount}</span>
             </button>
             <button
               className="p-2 hover:bg-muted rounded transition-colors"
