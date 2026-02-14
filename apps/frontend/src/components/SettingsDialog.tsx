@@ -1,44 +1,26 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Newspaper, LayoutList, Sun, Moon } from "lucide-react";
-import { SourceId, SourceName } from "@/data/sources";
+import { LayoutList, Sun, Moon, Wrench } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
 interface SettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  availableSources: ReadonlyArray<{ id: SourceId; name: SourceName; icon?: string }>;
-  selectedSources: SourceId[]; // source ids
-  onSelectedSourcesChange: (sources: SourceId[]) => void; // source ids
   displayMode: "compact" | "line" | "cards";
   onDisplayModeChange: (mode: "compact" | "line" | "cards") => void;
   theme: "light" | "dark";
   onThemeChange: (theme: "light" | "dark") => void;
   onClearLocalStorage?: () => void;
-  appVersion?: string;
 }
 
 export const SettingsDialog = ({
   open,
   onOpenChange,
-  availableSources,
-  selectedSources,
-  onSelectedSourcesChange,
   displayMode,
   onDisplayModeChange,
   theme,
   onThemeChange,
   onClearLocalStorage = () => { },
-  appVersion = "1.2.0",
 }: SettingsDialogProps) => {
-  const toggleSource = (sourceId: SourceId) => {
-    const isSelected = selectedSources.includes(sourceId);
-    if (isSelected) {
-      onSelectedSourcesChange(selectedSources.filter((s) => s !== sourceId));
-    } else {
-      onSelectedSourcesChange([...selectedSources, sourceId]);
-    }
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm p-8">
@@ -110,40 +92,10 @@ export const SettingsDialog = ({
             </div>
           </div>
 
-          {/* Sources */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Newspaper className="h-4 w-4 text-primary" />
-              <span className="text-xs font-medium uppercase tracking-wider text-foreground">
-                Sources
-              </span>
-            </div>
-            <div className="max-h-56 overflow-y-auto pr-2">
-              <div className="grid grid-cols-2 gap-2">
-                {availableSources.map((source) => {
-                  const isSelected = selectedSources.includes(source.id);
-                  return (
-                    <button
-                      key={source.id}
-                      type="button"
-                      aria-pressed={isSelected}
-                      onClick={() => toggleSource(source.id)}
-                      className={`px-2 py-1 text-[10px] font-medium uppercase tracking-wider transition-colors ${isSelected
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground hover:text-foreground"
-                        }`}
-                    >
-                      {source.name}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
           {/* Dev */}
           <div>
             <div className="flex items-center gap-2 mb-3">
+              <Wrench className="h-4 w-4 text-primary" />
               <span className="text-xs font-medium uppercase tracking-wider text-foreground">
                 Dev
               </span>
@@ -155,7 +107,6 @@ export const SettingsDialog = ({
             >
               Clear local storage
             </button>
-            <div className="mt-2 text-[10px] text-muted-foreground text-right">v{appVersion}</div>
           </div>
         </div>
       </DialogContent>
