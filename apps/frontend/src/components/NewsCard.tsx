@@ -17,8 +17,6 @@ interface NewsCardProps {
   onToggleSave?: () => void;
   onOpen?: () => void;
   onCategoryClick?: (category: string) => void;
-  showSchemaButton?: boolean;
-  onShowSchema?: () => void;
   disableVisitedStyling?: boolean;
 }
 
@@ -35,8 +33,6 @@ export const NewsCard = ({
   onToggleSave,
   onOpen,
   onCategoryClick,
-  showSchemaButton,
-  onShowSchema,
   disableVisitedStyling,
 }: NewsCardProps) => {
   const EXCLUDED_CATEGORY = "cryptocurrency";
@@ -155,18 +151,6 @@ export const NewsCard = ({
           <span className="text-news-time">{time}</span>
         </div>
         <div className="flex items-center gap-3">
-          {showSchemaButton && onShowSchema && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onShowSchema();
-              }}
-              className="transition-colors"
-              title="Show news item schema"
-            >
-              <span className="text-[10px] text-muted-foreground hover:text-primary">schema</span>
-            </button>
-          )}
           {url && (
             <ShareMenu url={url} title={title}>
               <button

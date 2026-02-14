@@ -14,7 +14,6 @@ import {
 import { useState, useRef, useEffect } from 'react';
 import { useMarketOverview } from '@/hooks/useMarketOverview';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Switch } from '@/components/ui/switch';
 import { formatDistanceToNow } from 'date-fns';
 import { useRecentArticles } from '@/hooks/useRecentArticles';
 import type { SavedArticle } from '@/hooks/useSavedArticles';
@@ -102,9 +101,6 @@ interface SidebarProps {
   totalSourceCount?: number;
   loadedArticlesCount?: number;
   appVersion?: string;
-  devShowSchemaButtons?: boolean;
-  onDevShowSchemaButtonsChange?: (checked: boolean) => void;
-  onClearLocalStorage?: () => void;
 }
 
 export const Sidebar = ({
@@ -125,9 +121,6 @@ export const Sidebar = ({
   totalSourceCount = 0,
   loadedArticlesCount = 0,
   appVersion = "1.2.0",
-  devShowSchemaButtons = false,
-  onDevShowSchemaButtonsChange = () => { },
-  onClearLocalStorage = () => { },
 }: SidebarProps) => {
   const EXCLUDED_CATEGORY = "cryptocurrency";
   const { data: marketData, isLoading: marketLoading } = useMarketOverview();
@@ -578,17 +571,6 @@ export const Sidebar = ({
 
         <div className="mt-3 space-y-3">
           <div className="text-[10px] text-muted-foreground">Articles loaded: {loadedArticlesCount}</div>
-          <button
-            type="button"
-            className="w-full text-left text-[10px] text-muted-foreground hover:text-foreground transition-colors"
-            onClick={onClearLocalStorage}
-          >
-            Clear local storage
-          </button>
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-[10px] text-muted-foreground">Schema buttons</span>
-            <Switch checked={devShowSchemaButtons} onCheckedChange={onDevShowSchemaButtonsChange} />
-          </div>
           <div className="flex items-center justify-between gap-3">
             <span className="text-[10px] text-muted-foreground">© {new Date().getFullYear()} cryptowi.re</span>
             <span className="text-[10px] text-muted-foreground">v{appVersion}</span>

@@ -16,14 +16,6 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { toast } from "@/components/ui/sonner";
 import { Bookmark, Clock, MoreVertical, Share2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogCancel,
-  AlertDialogFooter,
-} from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
@@ -400,27 +392,6 @@ const Index = () => {
     setExpandedLineCategoriesById({});
   }, [showSavedOnly, showRecentOnly, selectedCategory, selectedSourcesKey]);
 
-  const [devShowSchemaButtons, setDevShowSchemaButtons] = useState(() => {
-    const saved = localStorage.getItem("devShowSchemaButtons");
-    return saved === "true";
-  });
-  useEffect(() => {
-    localStorage.setItem("devShowSchemaButtons", String(devShowSchemaButtons));
-  }, [devShowSchemaButtons]);
-
-  const [schemaDialogOpen, setSchemaDialogOpen] = useState(false);
-  const [schemaDialogText, setSchemaDialogText] = useState<string>("");
-
-  const showNewsItemSchema = async () => {
-    const [{ zodToJsonSchema }, { NewsItemSchema }] = await Promise.all([
-      import("zod-to-json-schema"),
-      import("@cryptowire/types"),
-    ]);
-    const jsonSchema = zodToJsonSchema(NewsItemSchema, "NewsItem");
-    setSchemaDialogText(JSON.stringify(jsonSchema, null, 2));
-    setSchemaDialogOpen(true);
-  };
-
   useEffect(() => {
     localStorage.setItem("selectedSources", JSON.stringify(selectedSources));
   }, [selectedSources]);
@@ -645,6 +616,11 @@ const Index = () => {
   const totalSourceCount = availableSources.length;
   const loadedArticlesCount = allNews.length;
 
+  const clearLocalStorage = () => {
+    localStorage.clear();
+    window.location.reload();
+  };
+
   const isFetchingNext = selectedCategory === 'All News'
     ? infinite.isFetchingNextPage
     : categoryInfinite.isFetchingNextPage;
@@ -752,12 +728,6 @@ const Index = () => {
             totalSourceCount={totalSourceCount}
             loadedArticlesCount={loadedArticlesCount}
             appVersion="1.2.0"
-            devShowSchemaButtons={devShowSchemaButtons}
-            onDevShowSchemaButtonsChange={setDevShowSchemaButtons}
-            onClearLocalStorage={() => {
-              localStorage.clear();
-              window.location.reload();
-            }}
           />
         </div>
 
@@ -802,12 +772,6 @@ const Index = () => {
                 totalSourceCount={totalSourceCount}
                 loadedArticlesCount={loadedArticlesCount}
                 appVersion="1.2.0"
-                devShowSchemaButtons={devShowSchemaButtons}
-                onDevShowSchemaButtonsChange={setDevShowSchemaButtons}
-                onClearLocalStorage={() => {
-                  localStorage.clear();
-                  window.location.reload();
-                }}
               />
             </div>
           </>
@@ -1386,8 +1350,6 @@ const Index = () => {
                       category: item.category,
                     })
                   }
-                  showSchemaButton={devShowSchemaButtons}
-                  onShowSchema={showNewsItemSchema}
                 />
               ))}
 
@@ -1412,22 +1374,6 @@ const Index = () => {
         </main>
       </div>
 
-      <AlertDialog open={schemaDialogOpen} onOpenChange={setSchemaDialogOpen}>
-        <AlertDialogContent className="max-w-2xl">
-          <AlertDialogHeader>
-            <AlertDialogTitle>News item JSON schema</AlertDialogTitle>
-          </AlertDialogHeader>
-          <div className="max-h-[60vh] overflow-auto rounded border border-border bg-muted/30 p-3">
-            <pre className="text-[11px] leading-snug text-muted-foreground whitespace-pre-wrap break-words">
-              {schemaDialogText}
-            </pre>
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Close</AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
       <SettingsDialog
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
@@ -1440,6 +1386,8 @@ const Index = () => {
         onDisplayModeChange={setDisplayMode}
         theme={theme}
         onThemeChange={handleThemeChange}
+        onClearLocalStorage={clearLocalStorage}
+        appVersion="1.2.0"
       />
     </div>
   );

@@ -13,6 +13,8 @@ interface SettingsDialogProps {
   onDisplayModeChange: (mode: "compact" | "line" | "cards") => void;
   theme: "light" | "dark";
   onThemeChange: (theme: "light" | "dark") => void;
+  onClearLocalStorage?: () => void;
+  appVersion?: string;
 }
 
 export const SettingsDialog = ({
@@ -25,6 +27,8 @@ export const SettingsDialog = ({
   onDisplayModeChange,
   theme,
   onThemeChange,
+  onClearLocalStorage = () => { },
+  appVersion = "1.2.0",
 }: SettingsDialogProps) => {
   const toggleSource = (sourceId: SourceId) => {
     const isSelected = selectedSources.includes(sourceId);
@@ -135,6 +139,23 @@ export const SettingsDialog = ({
                 })}
               </div>
             </div>
+          </div>
+
+          {/* Dev */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-xs font-medium uppercase tracking-wider text-foreground">
+                Dev
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={onClearLocalStorage}
+              className="w-full text-left px-3 py-2 text-xs font-medium uppercase tracking-wider bg-muted text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Clear local storage
+            </button>
+            <div className="mt-2 text-[10px] text-muted-foreground text-right">v{appVersion}</div>
           </div>
         </div>
       </DialogContent>
