@@ -14,6 +14,7 @@ import {
 import { useState, useRef, useEffect } from 'react';
 import { useMarketOverview } from '@/hooks/useMarketOverview';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Switch } from '@/components/ui/switch';
 import { formatDistanceToNow } from 'date-fns';
 import { useRecentArticles } from '@/hooks/useRecentArticles';
 import type { SavedArticle } from '@/hooks/useSavedArticles';
@@ -96,6 +97,14 @@ interface SidebarProps {
   categories?: string[];
   selectedCategory?: string;
   onCategorySelect?: (cat: string) => void;
+  onSettingsClick?: () => void;
+  activeSourceCount?: number;
+  totalSourceCount?: number;
+  loadedArticlesCount?: number;
+  appVersion?: string;
+  devShowSchemaButtons?: boolean;
+  onDevShowSchemaButtonsChange?: (checked: boolean) => void;
+  onClearLocalStorage?: () => void;
 }
 
 export const Sidebar = ({
@@ -111,7 +120,16 @@ export const Sidebar = ({
   categories: categoriesProp,
   selectedCategory = 'All News',
   onCategorySelect = () => { },
+  onSettingsClick = () => { },
+  activeSourceCount = 0,
+  totalSourceCount = 0,
+  loadedArticlesCount = 0,
+  appVersion = "1.2.0",
+  devShowSchemaButtons = false,
+  onDevShowSchemaButtonsChange = () => { },
+  onClearLocalStorage = () => { },
 }: SidebarProps) => {
+  const EXCLUDED_CATEGORY = "cryptocurrency";
   const { data: marketData, isLoading: marketLoading } = useMarketOverview();
   const { addRecent } = useRecentArticles();
   const [categoriesCollapsed, setCategoriesCollapsed] = useState(false);
@@ -141,7 +159,9 @@ export const Sidebar = ({
     });
 
   const providedCategories = Array.isArray(categoriesProp)
-    ? categoriesProp.map((c) => String(c).trim()).filter(Boolean)
+    ? categoriesProp
+      .map((c) => String(c).trim())
+      .filter((c) => c.length > 0 && c.toLowerCase() !== EXCLUDED_CATEGORY)
     : [];
 
   const categories = [
@@ -537,6 +557,42 @@ export const Sidebar = ({
             <Github className="h-4 w-4 text-primary" />
             <span>GitHub</span>
           </a>
+        </div>
+      </div>
+
+      {/* Status */}
+      <div className="p-4 border-t border-border">
+        <button
+          type="button"
+          onClick={onSettingsClick}
+          className="w-full text-left text-[10px] text-muted-foreground flex items-center gap-2 hover:text-primary transition-colors"
+          title="Open settings"
+        >
+          <span className={activeSourceCount === totalSourceCount ? "text-terminal-green" : "text-terminal-amber"}>
+            <span className="inline-block -translate-y-[1px]">●</span>
+          </span>
+          <span className={activeSourceCount === totalSourceCount ? "text-terminal-green" : "text-muted-foreground"}>
+            {activeSourceCount}/{totalSourceCount} Sources Active
+          </span>
+        </button>
+
+        <div className="mt-3 space-y-3">
+          <div className="text-[10px] text-muted-foreground">Articles loaded: {loadedArticlesCount}</div>
+          <button
+            type="button"
+            className="w-full text-left text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+            onClick={onClearLocalStorage}
+          >
+            Clear local storage
+          </button>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-[10px] text-muted-foreground">Schema buttons</span>
+            <Switch checked={devShowSchemaButtons} onCheckedChange={onDevShowSchemaButtonsChange} />
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-[10px] text-muted-foreground">© {new Date().getFullYear()} cryptowi.re</span>
+            <span className="text-[10px] text-muted-foreground">v{appVersion}</span>
+          </div>
         </div>
       </div>
     </aside>

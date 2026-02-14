@@ -78,6 +78,8 @@ const toIso = (value) => {
 const nowMinusDaysIso = (days) => new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 const normalizeCategoryValue = (raw) => {
     const v = typeof raw === "string" ? raw.trim() : "";
+    if (v.toLowerCase() === "cryptocurrency")
+        return null;
     return v.length > 0 ? v : null;
 };
 const dedupeCategories = (values) => {

@@ -2,6 +2,7 @@ import { Clock, Bookmark, Share2 } from "lucide-react";
 import { ShareMenu } from "@/components/ShareMenu";
 import { isUrlVisited, markUrlVisited } from "@/lib/visitedLinks";
 import { useRecentArticles } from "@/hooks/useRecentArticles";
+import { useMemo, useState } from "react";
 
 interface NewsCardProps {
   title: string;
@@ -38,8 +39,10 @@ export const NewsCard = ({
   onShowSchema,
   disableVisitedStyling,
 }: NewsCardProps) => {
+  const EXCLUDED_CATEGORY = "cryptocurrency";
   const visited = !disableVisitedStyling && url ? isUrlVisited(url) : false;
   const { addRecent } = useRecentArticles();
+  const [showAllCategories, setShowAllCategories] = useState(false);
 
   const recordRecent = () => {
     if (!url) return;
@@ -52,11 +55,21 @@ export const NewsCard = ({
     });
   };
 
-  const tags = Array.isArray(categories)
-    ? categories.map((c) => (typeof c === "string" ? c.trim() : "")).filter(Boolean)
-    : [];
-
-  const effectiveTags = tags.length > 0 ? tags : category ? [category] : ["News"];
+  const effectiveTags = useMemo(() => {
+    const tags = Array.isArray(categories)
+      ? categories
+        .map((c) => (typeof c === "string" ? c.trim() : ""))
+        .filter((c) => c.length > 0 && c.toLowerCase() !== EXCLUDED_CATEGORY)
+      : [];
+    const deduped = Array.from(new Set(tags));
+    if (deduped.length > 0) return deduped;
+    if (category && category.trim().length > 0 && category.trim().toLowerCase() !== EXCLUDED_CATEGORY) {
+      return [category.trim()];
+    }
+    return ["News"];
+  }, [categories, category]);
+  const visibleTags = showAllCategories ? effectiveTags : effectiveTags.slice(0, 3);
+  const hiddenTagCount = Math.max(0, effectiveTags.length - visibleTags.length);
 
   return (
     <article
@@ -76,7 +89,7 @@ export const NewsCard = ({
             Breaking
           </span>
         )}
-        {effectiveTags.map((tag) => (
+        {visibleTags.map((tag) => (
           <button
             key={tag}
             type="button"
@@ -90,6 +103,19 @@ export const NewsCard = ({
             {tag}
           </button>
         ))}
+        {hiddenTagCount > 0 ? (
+          <button
+            type="button"
+            className="px-1.5 py-0.5 text-[10px] font-medium bg-primary/10 text-primary uppercase tracking-wider"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowAllCategories(true);
+            }}
+            title={`Show ${hiddenTagCount} more categories`}
+          >
+            +{hiddenTagCount}
+          </button>
+        ) : null}
         <span className="text-[10px] text-muted-foreground uppercase">
           {source}
         </span>

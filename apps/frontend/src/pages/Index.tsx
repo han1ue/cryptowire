@@ -12,7 +12,7 @@ import { useRecentArticles } from "@/hooks/useRecentArticles";
 import { useNewsStatus } from "@/hooks/useNewsStatus";
 import { useNewsCategories } from "@/hooks/useNewsCategories";
 import { isUrlVisited, markUrlVisited } from "@/lib/visitedLinks";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { toast } from "@/components/ui/sonner";
 import { Bookmark, Clock, MoreVertical, Share2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -24,8 +24,6 @@ import {
   AlertDialogCancel,
   AlertDialogFooter,
 } from "@/components/ui/alert-dialog";
-import { Switch } from "@/components/ui/switch";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
@@ -37,6 +35,16 @@ import { Seo } from "@/components/Seo";
 import { useNavigate } from "react-router-dom";
 
 const SOURCES_INTRO_DISMISSED_KEY = "sourcesIntroDismissed";
+const EXCLUDED_CATEGORY_KEY = "cryptocurrency";
+
+const normalizeCategoriesForUi = (raw: unknown, fallback = "News"): string[] => {
+  const arr = Array.isArray(raw) ? raw : [];
+  const normalized = arr
+    .map((c) => (typeof c === "string" ? c.trim() : ""))
+    .filter((c) => c.length > 0 && c.toLowerCase() !== EXCLUDED_CATEGORY_KEY);
+  const deduped = Array.from(new Set(normalized));
+  return deduped.length > 0 ? deduped : [fallback];
+};
 
 type MobileActionsMenuProps = {
   shareUrl?: string;
@@ -306,6 +314,7 @@ const Index = () => {
     }
   });
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [expandedLineCategoriesById, setExpandedLineCategoriesById] = useState<Record<string, boolean>>({});
 
   const [showSourcesIntro, setShowSourcesIntro] = useState(() => {
     try {
@@ -329,9 +338,7 @@ const Index = () => {
   const selectedCategoryKeyLower = selectedCategoryKey ? selectedCategoryKey.trim().toLowerCase() : null;
 
   const getCategoryForDisplay = (item: { categories?: string[] }): string => {
-    const cats = Array.isArray(item.categories)
-      ? item.categories.map((c) => (typeof c === "string" ? c.trim() : "")).filter(Boolean)
-      : [];
+    const cats = normalizeCategoriesForUi(item.categories);
 
     if (selectedCategoryKeyLower) {
       const match = cats.find((c) => c.toLowerCase() === selectedCategoryKeyLower);
@@ -341,13 +348,24 @@ const Index = () => {
     return cats[0] ?? "News";
   };
 
+  const filteredCategoryOptions = useMemo(
+    () =>
+      (categoriesQuery.data?.categories ?? [])
+        .map((c) => c.trim())
+        .filter((c) => c.length > 0 && c.toLowerCase() !== EXCLUDED_CATEGORY_KEY),
+    [categoriesQuery.data?.categories],
+  );
+
   useEffect(() => {
     if (!selectedCategoryKey) return;
-    const cats = categoriesQuery.data?.categories;
-    if (!cats || cats.length === 0) return;
-    const exists = cats.some((c) => c.trim().toLowerCase() === selectedCategoryKey.trim().toLowerCase());
+    if (selectedCategoryKey.trim().toLowerCase() === EXCLUDED_CATEGORY_KEY) {
+      setSelectedCategory("All News");
+      return;
+    }
+    if (filteredCategoryOptions.length === 0) return;
+    const exists = filteredCategoryOptions.some((c) => c.toLowerCase() === selectedCategoryKey.trim().toLowerCase());
     if (!exists) setSelectedCategory("All News");
-  }, [selectedCategoryKey, categoriesQuery.data?.categories]);
+  }, [selectedCategoryKey, filteredCategoryOptions]);
 
   const availableSources = sourcesConfig;
 
@@ -379,9 +397,9 @@ const Index = () => {
   const selectedSourcesKey = selectedSources.join("|");
   useEffect(() => {
     setEndOfListSuffix("");
+    setExpandedLineCategoriesById({});
   }, [showSavedOnly, showRecentOnly, selectedCategory, selectedSourcesKey]);
 
-  const [devToolsOpen, setDevToolsOpen] = useState(false);
   const [devShowSchemaButtons, setDevShowSchemaButtons] = useState(() => {
     const saved = localStorage.getItem("devShowSchemaButtons");
     return saved === "true";
@@ -533,13 +551,14 @@ const Index = () => {
     })
     .map((a) => {
       const publishedAt = a.publishedAt ?? a.savedAt;
+      const normalizedCategories = normalizeCategoriesForUi([a.category ?? "News"]);
       return {
         id: a.key,
         title: a.title,
         summary: a.summary || "",
         time: formatDistanceToNow(new Date(publishedAt), { addSuffix: true }).replace(/^about /, ""),
-        category: a.category || "News",
-        categories: [a.category || "News"],
+        category: normalizedCategories[0],
+        categories: normalizedCategories,
         url: a.url,
         isBreaking: false,
         publishedAt,
@@ -558,13 +577,14 @@ const Index = () => {
     .map((a) => {
       const publishedAt = a.clickedAt;
       const category = (a.category ?? "News") || "News";
+      const normalizedCategories = normalizeCategoriesForUi([category]);
       return {
         id: a.key,
         title: a.title,
         summary: a.summary || "",
         time: formatDistanceToNow(new Date(publishedAt), { addSuffix: true }).replace(/^about /, ""),
-        category,
-        categories: [category],
+        category: normalizedCategories[0],
+        categories: normalizedCategories,
         url: a.url,
         isBreaking: false,
         publishedAt,
@@ -575,13 +595,16 @@ const Index = () => {
   const allNews = (showSavedOnly ? savedOnlyNews : showRecentOnly ? recentOnlyNews : filteredBySource)
     .map((n) => {
       if (showSavedOnly || showRecentOnly) return n;
+      const normalizedCategories = normalizeCategoriesForUi(
+        Array.isArray(n.categories) && n.categories.length > 0 ? n.categories : [getCategoryForDisplay(n)],
+      );
       return {
         id: n.id,
         title: n.title,
         summary: n.summary || "",
         time: formatDistanceToNow(new Date(n.publishedAt), { addSuffix: true }).replace(/^about /, ""),
-        category: getCategoryForDisplay(n),
-        categories: Array.isArray(n.categories) && n.categories.length > 0 ? n.categories : [getCategoryForDisplay(n)],
+        category: normalizedCategories[0] ?? getCategoryForDisplay(n),
+        categories: normalizedCategories,
         url: n.url,
         isBreaking: false,
         publishedAt: n.publishedAt,
@@ -596,13 +619,16 @@ const Index = () => {
 
   const sidebarNews = sidebarFilteredBySource
     .map((n) => {
+      const normalizedCategories = normalizeCategoriesForUi(
+        Array.isArray(n.categories) && n.categories.length > 0 ? n.categories : [getCategoryForDisplay(n)],
+      );
       return {
         id: n.id,
         title: n.title,
         summary: n.summary || "",
         time: formatDistanceToNow(new Date(n.publishedAt), { addSuffix: true }).replace(/^about /, ""),
-        category: getCategoryForDisplay(n),
-        categories: Array.isArray(n.categories) && n.categories.length > 0 ? n.categories : [getCategoryForDisplay(n)],
+        category: normalizedCategories[0] ?? getCategoryForDisplay(n),
+        categories: normalizedCategories,
         url: n.url,
         isBreaking: false,
         publishedAt: n.publishedAt,
@@ -713,13 +739,24 @@ const Index = () => {
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             allNews={sidebarNews}
-            categories={categoriesQuery.data?.categories ?? []}
+            categories={filteredCategoryOptions}
             selectedCategory={selectedCategory}
             onCategorySelect={cat => {
               setSelectedCategory((prev) => (prev === cat ? 'All News' : cat));
               setShowSavedOnly(false);
               setShowRecentOnly(false);
               window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onSettingsClick={() => setSettingsOpen(true)}
+            activeSourceCount={activeSourceCount}
+            totalSourceCount={totalSourceCount}
+            loadedArticlesCount={loadedArticlesCount}
+            appVersion="1.2.0"
+            devShowSchemaButtons={devShowSchemaButtons}
+            onDevShowSchemaButtonsChange={setDevShowSchemaButtons}
+            onClearLocalStorage={() => {
+              localStorage.clear();
+              window.location.reload();
             }}
           />
         </div>
@@ -752,13 +789,24 @@ const Index = () => {
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 allNews={sidebarNews}
-                categories={categoriesQuery.data?.categories ?? []}
+                categories={filteredCategoryOptions}
                 selectedCategory={selectedCategory}
                 onCategorySelect={cat => {
                   setSelectedCategory((prev) => (prev === cat ? 'All News' : cat));
                   setShowSavedOnly(false);
                   setShowRecentOnly(false);
                   setSidebarOpen(false);
+                }}
+                onSettingsClick={() => setSettingsOpen(true)}
+                activeSourceCount={activeSourceCount}
+                totalSourceCount={totalSourceCount}
+                loadedArticlesCount={loadedArticlesCount}
+                appVersion="1.2.0"
+                devShowSchemaButtons={devShowSchemaButtons}
+                onDevShowSchemaButtonsChange={setDevShowSchemaButtons}
+                onClearLocalStorage={() => {
+                  localStorage.clear();
+                  window.location.reload();
                 }}
               />
             </div>
@@ -1124,22 +1172,47 @@ const Index = () => {
                         </span>
                         <div className="flex flex-wrap items-center gap-2 mt-1 text-[10px] text-muted-foreground">
                           <span className="text-news-time tabular-nums">{item.time}</span>
-                          {(Array.isArray(item.categories) ? item.categories : [item.category]).map((cat) => (
-                            <button
-                              key={cat}
-                              type="button"
-                              className="px-1.5 py-0.5 rounded bg-primary/10 text-primary uppercase tracking-wider font-medium"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedCategory((prev) => (prev === cat ? 'All News' : cat));
-                                setShowSavedOnly(false);
-                                window.scrollTo({ top: 0, behavior: 'smooth' });
-                              }}
-                              title={`Filter by ${cat}`}
-                            >
-                              {cat}
-                            </button>
-                          ))}
+                          {(() => {
+                            const lineCategories = normalizeCategoriesForUi(
+                              Array.isArray(item.categories) ? item.categories : [item.category ?? "News"],
+                            );
+                            const expanded = Boolean(expandedLineCategoriesById[item.id]);
+                            const visibleCategories = expanded ? lineCategories : lineCategories.slice(0, 3);
+                            const hiddenCount = Math.max(0, lineCategories.length - visibleCategories.length);
+                            return (
+                              <>
+                                {visibleCategories.map((cat) => (
+                                  <button
+                                    key={cat}
+                                    type="button"
+                                    className="px-1.5 py-0.5 rounded bg-primary/10 text-primary uppercase tracking-wider font-medium"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedCategory((prev) => (prev === cat ? 'All News' : cat));
+                                      setShowSavedOnly(false);
+                                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                                    }}
+                                    title={`Filter by ${cat}`}
+                                  >
+                                    {cat}
+                                  </button>
+                                ))}
+                                {hiddenCount > 0 ? (
+                                  <button
+                                    type="button"
+                                    className="px-1.5 py-0.5 rounded bg-primary/10 text-primary uppercase tracking-wider font-medium"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setExpandedLineCategoriesById((prev) => ({ ...prev, [item.id]: true }));
+                                    }}
+                                    title={`Show ${hiddenCount} more categories`}
+                                  >
+                                    +{hiddenCount}
+                                  </button>
+                                ) : null}
+                              </>
+                            );
+                          })()}
                           <span>{item.sourceName}</span>
                         </div>
                       </div>
@@ -1338,66 +1411,6 @@ const Index = () => {
           )}
         </main>
       </div>
-
-      {/* Status Bar */}
-      <footer className="border-t border-border bg-card/50 px-4 py-2 flex items-center justify-between">
-        <div className="flex gap-4">
-          <button
-            type="button"
-            onClick={() => setSettingsOpen(true)}
-            className="text-[10px] text-muted-foreground flex items-center gap-2 hover:text-primary transition-colors"
-            title="Open settings"
-          >
-            <span
-              className={
-                activeSourceCount === totalSourceCount ? "text-terminal-green" : "text-terminal-amber"
-              }
-            >
-              {/* Slight upward shift keeps the dot optically centered with the text */}
-              <span className="inline-block -translate-y-[1px]">●</span>
-            </span>
-            <span className={activeSourceCount === totalSourceCount ? "text-terminal-green" : "text-muted-foreground"}>
-              {activeSourceCount}/{totalSourceCount} Sources Active
-            </span>
-          </button>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-[10px] text-muted-foreground">© {new Date().getFullYear()} cryptowi.re</span>
-          <Popover open={devToolsOpen} onOpenChange={setDevToolsOpen}>
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                className="text-[10px] text-muted-foreground hover:text-primary transition-colors"
-                title="Developer tools"
-              >
-                v1.1.0
-              </button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-64">
-              <div className="space-y-3">
-                <div className="text-xs font-medium uppercase tracking-wider text-foreground">Dev tools</div>
-                <div className="text-xs text-muted-foreground">
-                  Articles loaded: {loadedArticlesCount}
-                </div>
-                <button
-                  type="button"
-                  className="w-full text-left text-xs text-muted-foreground hover:text-foreground transition-colors"
-                  onClick={() => {
-                    localStorage.clear();
-                    window.location.reload();
-                  }}
-                >
-                  Clear local storage
-                </button>
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-xs text-muted-foreground">Schema buttons</span>
-                  <Switch checked={devShowSchemaButtons} onCheckedChange={setDevShowSchemaButtons} />
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
-        </div>
-      </footer>
 
       <AlertDialog open={schemaDialogOpen} onOpenChange={setSchemaDialogOpen}>
         <AlertDialogContent className="max-w-2xl">

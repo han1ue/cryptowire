@@ -74,10 +74,7 @@ export const createNewsRouter = (
                     const pubDate = new Date(item.publishedAt).toUTCString();
                     const guid = item.id;
                     const description = item.summary?.trim() ? item.summary.trim() : item.title;
-                    const categories =
-                        Array.isArray(item.categories) && item.categories.length > 0
-                            ? item.categories.map((c) => (typeof c === "string" ? c.trim() : "")).filter(Boolean)
-                            : ["News"];
+                    const categories = sanitizeCategories(item.categories);
                     const source = item.source?.trim() ? item.source.trim() : "cryptowi.re";
 
                     return `
@@ -222,7 +219,28 @@ export const createNewsRouter = (
 
     const normalizeCategory = (raw: unknown): string => {
         const v = typeof raw === "string" ? raw.trim() : "";
+        if (v.toLowerCase() === "cryptocurrency") return "News";
         return v.length > 0 ? v : "News";
+    };
+
+    const sanitizeCategories = (raw: unknown): string[] => {
+        const arr = Array.isArray(raw) ? raw : [];
+        const normalized = arr.map((c) => normalizeCategory(c));
+        const filtered = normalized.filter((c) => c.trim().toLowerCase() !== "cryptocurrency");
+        const deduped = Array.from(new Set(filtered.map((c) => c.trim()).filter(Boolean)));
+        return deduped.length > 0 ? deduped : ["News"];
+    };
+
+    const sanitizeItemCategories = (item: NewsItem): NewsItem => {
+        const categories = sanitizeCategories(item.categories);
+        if (
+            Array.isArray(item.categories) &&
+            item.categories.length === categories.length &&
+            item.categories.every((c, idx) => c === categories[idx])
+        ) {
+            return item;
+        }
+        return { ...item, categories };
     };
 
     const sortCategories = (cats: string[]) =>
@@ -282,7 +300,7 @@ export const createNewsRouter = (
         };
 
         const arr = Array.isArray(raw) ? raw : typeof raw === "string" ? parseStringToArray(raw) : [];
-        return sortCategories(arr.map((c) => (typeof c === "string" ? normalizeCategory(c) : "")).filter(Boolean));
+        return sortCategories(sanitizeCategories(arr));
     };
 
     const sourceKeyToId = (() => {
@@ -659,7 +677,7 @@ export const createNewsRouter = (
                     if (requestedSourceKeys && !requestedSourceKeys.has(srcKey)) continue;
 
                     if (requestedCategoryKey) {
-                        const cats = Array.isArray(item.categories) ? item.categories : [];
+                        const cats = sanitizeCategories(item.categories);
                         const matches = cats.some((c) => (typeof c === "string" ? c.trim().toLowerCase() : "") === requestedCategoryKey);
                         if (!matches) continue;
                     }
@@ -669,7 +687,7 @@ export const createNewsRouter = (
                         continue;
                     }
 
-                    out.push(item);
+                    out.push(sanitizeItemCategories(item));
                     if (out.length >= limit) return out;
                 }
             }

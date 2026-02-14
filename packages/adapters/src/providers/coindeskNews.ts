@@ -84,6 +84,7 @@ const nowMinusDaysIso = (days: number) => new Date(Date.now() - days * 24 * 60 *
 
 const normalizeCategoryValue = (raw: unknown): string | null => {
     const v = typeof raw === "string" ? raw.trim() : "";
+    if (v.toLowerCase() === "cryptocurrency") return null;
     return v.length > 0 ? v : null;
 };
 
