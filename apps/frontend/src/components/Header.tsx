@@ -281,11 +281,11 @@ export const Header = ({
           <button
             type="button"
             onClick={onSourcesClick}
-            className="inline-flex items-center gap-1.5 rounded border border-border bg-muted/30 px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors lg:gap-2 lg:px-3 lg:py-1.5 lg:text-xs"
+            className="inline-flex items-center gap-2 rounded border border-border bg-muted/30 px-2.5 py-1.5 text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors lg:px-3"
             title="Manage sources"
             aria-label="Manage sources"
           >
-            <Newspaper className="h-3.5 w-3.5 text-primary" />
+            <Newspaper className="h-4 w-4 text-primary" />
             <span>Sources</span>
             <span className="text-primary">{activeSourceCount}/{totalSourceCount}</span>
           </button>
