@@ -214,17 +214,6 @@ export const Header = ({
           >
             <Menu className="h-5 w-5 text-muted-foreground" />
           </button>
-          <button
-            type="button"
-            className="lg:hidden inline-flex items-center gap-2 rounded border border-border bg-muted/30 px-2.5 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-            onClick={onSourcesClick}
-            title="Manage sources"
-            aria-label="Manage sources"
-          >
-            <Newspaper className="h-3.5 w-3.5 text-primary" />
-            <span>Sources</span>
-            <span className="text-primary">{activeSourceCount}/{totalSourceCount}</span>
-          </button>
 
           <a href="/" className="hidden lg:flex items-center gap-2 group cursor-pointer select-none">
             <img
@@ -288,15 +277,16 @@ export const Header = ({
           </div>
         </div>
 
-        <div className="absolute left-1/2 -translate-x-1/2 hidden lg:block">
+        <div className="absolute left-1/2 -translate-x-1/2">
           <button
             type="button"
             onClick={onSourcesClick}
-            className="inline-flex items-center gap-2 rounded border border-border bg-muted/30 px-3 py-1.5 text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded border border-border bg-muted/30 px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors lg:gap-2 lg:px-3 lg:py-1.5 lg:text-xs"
             title="Manage sources"
+            aria-label="Manage sources"
           >
             <Newspaper className="h-3.5 w-3.5 text-primary" />
-            <span>Sources</span>
+            <span className="hidden md:inline">Sources</span>
             <span className="text-primary">{activeSourceCount}/{totalSourceCount}</span>
           </button>
         </div>
