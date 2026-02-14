@@ -39,13 +39,13 @@ export const SourcesDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md p-8">
+      <DialogContent className="max-w-md p-8 pt-12">
         <DialogHeader className="sr-only">
           <DialogTitle>Sources</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="flex items-center justify-between pt-1 pr-10 sm:pr-8">
+          <div className="flex items-center justify-between pr-14 sm:pr-12">
             <div className="flex items-center gap-2">
               <Newspaper className="h-4 w-4 text-primary" />
               <span className="text-xs font-medium uppercase tracking-wider text-foreground">
