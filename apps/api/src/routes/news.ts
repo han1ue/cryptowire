@@ -557,8 +557,8 @@ export const createNewsRouter = (
                 generatedAt: existing.generatedAt,
                 articleCount: existing.articleCount,
                 windowHours: existing.windowHours,
-                usedAi: existing.usedAi,
                 model: existing.model,
+                aiError: existing.aiError,
             });
         }
 
@@ -574,8 +574,8 @@ export const createNewsRouter = (
             generatedAt: summary.generatedAt,
             articleCount: summary.articleCount,
             windowHours: summary.windowHours,
-            usedAi: summary.usedAi,
             model: summary.model,
+            aiError: summary.aiError,
         });
     }));
 

@@ -33,7 +33,7 @@ type AiSummarySuccess = {
 
 type AiSummaryFailure = {
     ok: false;
-    model: string;
+    aiError: string;
 };
 
 const SOURCE_REPUTATION_WEIGHTS: Record<NewsSourceId, number> = {
@@ -231,8 +231,8 @@ export class NewsSummaryService {
                 windowEnd: params.windowEnd,
                 windowHours: params.windowHours,
                 articleCount: 0,
-                usedAi: false,
-                model: "error-getting-model",
+                model: null,
+                aiError: null,
                 summary: `No matching articles were found in the last ${params.windowHours} hours.`,
                 highlights: [],
                 sourceCoverage,
@@ -256,15 +256,11 @@ export class NewsSummaryService {
         });
 
         const aiPayload = aiResult && aiResult.ok ? aiResult : null;
-        const aiFailureModel = aiResult && !aiResult.ok ? aiResult.model : null;
+        const aiFailureError = aiResult && !aiResult.ok ? aiResult.aiError : null;
 
-        const finalHighlights = this.ensureSourceCoverage(
-            aiPayload?.highlights ?? this.buildFallbackHighlights(ranked),
-            ranked,
-            sourceCoverage,
-        );
-
-        const fallbackSummary = this.buildFallbackSummary(ranked, params.windowHours);
+        const finalHighlights = aiPayload
+            ? this.ensureSourceCoverage(aiPayload.highlights, ranked, sourceCoverage)
+            : [];
 
         const payload: NewsSummaryResponse = {
             generatedAt: new Date().toISOString(),
@@ -272,9 +268,9 @@ export class NewsSummaryService {
             windowEnd: params.windowEnd,
             windowHours: params.windowHours,
             articleCount: ranked.length,
-            usedAi: Boolean(aiPayload),
-            model: aiPayload?.model ?? aiFailureModel ?? "error-getting-model",
-            summary: aiPayload?.summary ?? fallbackSummary,
+            model: aiPayload?.model ?? null,
+            aiError: aiPayload ? null : aiFailureError ?? toErrorModel("getting-model"),
+            summary: aiPayload?.summary ?? "AI brief unavailable for this refresh. Please try again later.",
             highlights: finalHighlights,
             sourceCoverage,
             notes: uniqueStrings([
@@ -387,23 +383,6 @@ export class NewsSummaryService {
         return list;
     }
 
-    private buildFallbackSummary(ranked: RankedNewsItem[], windowHours: number): string {
-        const top = ranked.slice(0, 3);
-        if (top.length === 0) {
-            return `No meaningful market-moving headlines were detected in the last ${windowHours} hours.`;
-        }
-
-        const formatLead = (entry: RankedNewsItem) => `${sanitizeText(entry.item.title, 120)} (${entry.sourceName})`;
-        if (top.length === 1) {
-            return `In the last ${windowHours} hours, the dominant headline was ${formatLead(top[0]!)}, which led overall source-weighted coverage.`;
-        }
-        if (top.length === 2) {
-            return `In the last ${windowHours} hours, the main developments were ${formatLead(top[0]!)} and ${formatLead(top[1]!)}, based on source reputation and recency weighting.`;
-        }
-
-        return `In the last ${windowHours} hours, key developments included ${formatLead(top[0]!)}, ${formatLead(top[1]!)}, and ${formatLead(top[2]!)}, based on source reputation and recency weighting.`;
-    }
-
     private findBestUrlForHighlight(
         title: string,
         sources: string[],
@@ -444,30 +423,6 @@ export class NewsSummaryService {
         }
 
         return best && best.score > 0 ? best.url : undefined;
-    }
-
-    private buildFallbackHighlights(ranked: RankedNewsItem[]): NewsSummaryHighlight[] {
-        const out: NewsSummaryHighlight[] = [];
-        const seenTitleKeys = new Set<string>();
-
-        for (const entry of ranked) {
-            if (out.length >= 6) break;
-            const title = sanitizeText(entry.item.title, 110);
-            if (!title) continue;
-            const titleKey = title.toLowerCase();
-            if (seenTitleKeys.has(titleKey)) continue;
-            seenTitleKeys.add(titleKey);
-
-            const detail = sanitizeText(entry.item.summary, 260) || "No body summary was available from the source feed.";
-            out.push({
-                title,
-                detail,
-                sources: [entry.sourceName],
-                url: entry.item.url,
-            });
-        }
-
-        return out;
     }
 
     private ensureSourceCoverage(
@@ -527,8 +482,8 @@ export class NewsSummaryService {
         windowStart: string;
         windowEnd: string;
     }): Promise<AiSummarySuccess | AiSummaryFailure> {
-        if (params.ranked.length === 0) return { ok: false, model: toErrorModel("no-articles") };
-        if (!this.geminiApiKey && !this.openAiApiKey) return { ok: false, model: toErrorModel("no-ai-key") };
+        if (params.ranked.length === 0) return { ok: false, aiError: toErrorModel("no-articles") };
+        if (!this.geminiApiKey && !this.openAiApiKey) return { ok: false, aiError: toErrorModel("no-ai-key") };
 
         const topRows = params.ranked.slice(0, MAX_ARTICLES_IN_PROMPT);
         const sourceCoverageRows = params.sourceCoverage
@@ -741,7 +696,7 @@ export class NewsSummaryService {
 
         return {
             ok: false,
-            model: failureModels[0] ?? toErrorModel("getting-model"),
+            aiError: failureModels[0] ?? toErrorModel("getting-model"),
         };
     }
 }

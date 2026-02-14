@@ -88,6 +88,11 @@ export const AiSummaryDialog = ({
                             <Badge className="bg-primary/15 text-primary hover:bg-primary/15">
                                 {data?.articleCount ?? 0} stories
                             </Badge>
+                            {data?.model ? (
+                                <Badge variant="outline" className="text-[10px] uppercase tracking-wider">
+                                    Model: {data.model}
+                                </Badge>
+                            ) : null}
                             {generatedAtLabel ? (
                                 <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
                                     Updated every day at {dailyRefreshTimeLabel} ({generatedAtLabel})
@@ -123,6 +128,22 @@ export const AiSummaryDialog = ({
                         </div>
                     ) : null}
 
+                    {!isLoading && !isError && hasData && data.aiError ? (
+                        <div className="rounded border border-destructive/40 bg-destructive/5 p-4">
+                            <div className="flex items-start gap-2">
+                                <AlertTriangle className="mt-0.5 h-4 w-4 text-destructive" />
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wider text-destructive">
+                                        AI Generation Failed
+                                    </p>
+                                    <p className="mt-1 text-xs text-muted-foreground">
+                                        {data.aiError}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    ) : null}
+
                     {!isLoading && !isError && hasData && !hasArticles ? (
                         <div className="rounded border border-border bg-card/40 p-4">
                             <p className="text-sm text-foreground">
@@ -134,7 +155,7 @@ export const AiSummaryDialog = ({
                         </div>
                     ) : null}
 
-                    {!isLoading && !isError && hasData && hasArticles ? (
+                    {!isLoading && !isError && hasData && hasArticles && !data.aiError ? (
                         <>
                             <section className="rounded border border-border bg-card/40 p-4">
                                 <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground">
