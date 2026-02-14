@@ -27,7 +27,6 @@ import {
 import { Seo } from "@/components/Seo";
 import { useNavigate } from "react-router-dom";
 
-const SOURCES_INTRO_DISMISSED_KEY = "sourcesIntroDismissed";
 const EXCLUDED_CATEGORY_KEY = "cryptocurrency";
 
 const normalizeCategoriesForUi = (raw: unknown, fallback = "News"): string[] => {
@@ -309,23 +308,6 @@ const Index = () => {
   });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedLineCategoriesById, setExpandedLineCategoriesById] = useState<Record<string, boolean>>({});
-
-  const [showSourcesIntro, setShowSourcesIntro] = useState(() => {
-    try {
-      return localStorage.getItem(SOURCES_INTRO_DISMISSED_KEY) !== "true";
-    } catch {
-      return true;
-    }
-  });
-
-  const dismissSourcesIntro = () => {
-    setShowSourcesIntro(false);
-    try {
-      localStorage.setItem(SOURCES_INTRO_DISMISSED_KEY, "true");
-    } catch {
-      // ignore
-    }
-  };
 
   const selectedCategoryKey = selectedCategory && selectedCategory !== "All News" ? selectedCategory : null;
 
@@ -813,33 +795,6 @@ const Index = () => {
               >
                 <span className="text-[12px] leading-none relative -top-px">‹</span>
                 <span className="ml-1">Back</span>
-              </button>
-            </div>
-          ) : null}
-
-          {!showSavedOnly && !showRecentOnly && showSourcesIntro ? (
-            <div className="mb-2 sm:mb-4 relative">
-              <button
-                type="button"
-                className="w-full text-left bg-muted/20 hover:bg-muted/30 border border-border rounded px-3 py-2.5 pr-10 transition-colors"
-                onClick={openSourcesDialog}
-              >
-                <div className="text-xs text-muted-foreground">
-                  News sources: <span className="text-foreground">{selectedSources.length}/{availableSources.length}</span> active.
-                  <span className="text-primary"> Manage sources</span>.
-                </div>
-              </button>
-              <button
-                type="button"
-                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 flex items-center justify-center rounded text-lg leading-none text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  dismissSourcesIntro();
-                }}
-                aria-label="Dismiss"
-                title="Dismiss"
-              >
-                ×
               </button>
             </div>
           ) : null}
