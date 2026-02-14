@@ -38,7 +38,7 @@ export const AiSummaryDialog = ({
                 referenceDate.getUTCMonth(),
                 referenceDate.getUTCDate(),
                 0,
-                15,
+                0,
                 0,
             ),
         );
