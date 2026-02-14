@@ -66,7 +66,7 @@ export const AiSummaryDialog = ({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-3xl overflow-hidden p-8 pt-12">
                 <DialogHeader className="border-b border-border px-0 pb-4 pt-0">
-                    <div className="flex items-start justify-between gap-3 pr-14 sm:pr-12">
+                    <div className="flex items-start gap-3 pr-14 sm:pr-12">
                         <div>
                             <DialogTitle className="flex items-center gap-2 text-left">
                                 <Sparkles className="h-4 w-4 text-terminal-cyan" />
@@ -78,7 +78,7 @@ export const AiSummaryDialog = ({
                             type="button"
                             onClick={onRefresh}
                             disabled={isFetching}
-                            className="inline-flex items-center gap-1 rounded border border-border bg-muted/40 px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+                            className="ml-auto inline-flex items-center gap-1 rounded border border-border bg-muted/40 px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             <RotateCw className={`h-3 w-3 ${isFetching ? "animate-spin" : ""}`} />
                             Refresh
