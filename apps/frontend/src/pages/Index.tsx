@@ -78,15 +78,14 @@ const MobileActionsMenu = ({ shareUrl, shareTitle, onToggleSave, isSaved }: Mobi
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-border bg-background/90 px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted"
-            title="Share"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background/90 text-foreground transition-colors hover:bg-muted"
+            title="Article actions"
             onClick={(e) => e.stopPropagation()}
             aria-expanded={open}
             aria-haspopup="menu"
-            aria-label="Open share menu"
+            aria-label="Open article actions"
           >
-            <Share2 className="h-4 w-4" />
-            <span>Share</span>
+            <Share2 className="h-3.5 w-3.5" />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
