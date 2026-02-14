@@ -1,4 +1,4 @@
-import { Activity, Settings, Bell, Menu } from "lucide-react";
+import { Activity, Settings, Bell, Menu, Newspaper } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 type NotificationItem = {
@@ -11,6 +11,9 @@ type NotificationItem = {
 
 interface HeaderProps {
   onSettingsClick?: () => void;
+  onSourcesClick?: () => void;
+  activeSourceCount?: number;
+  totalSourceCount?: number;
   notifications?: NotificationItem[];
   onNotificationsViewed?: () => void;
   onMenuClick?: () => void;
@@ -19,6 +22,9 @@ interface HeaderProps {
 
 export const Header = ({
   onSettingsClick,
+  onSourcesClick = () => { },
+  activeSourceCount = 0,
+  totalSourceCount = 0,
   notifications = [],
   onNotificationsViewed = () => { },
   onMenuClick = () => { },
@@ -198,7 +204,7 @@ export const Header = ({
 
   return (
     <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
-      <div className="flex items-center justify-between px-4 py-3">
+      <div className="relative flex items-center justify-between px-4 py-3">
         {/* Logo */}
         <div className="flex items-center gap-3">
           <button
@@ -270,22 +276,18 @@ export const Header = ({
           </div>
         </div>
 
-        {/* Center - Navigation */}
-        {/*
-        <nav className="hidden md:flex items-center gap-1">
-          {["Markets", "News", "Analysis", "Data"].map((item, i) => (
-            <button
-              key={item}
-              className={`px-3 py-1.5 text-xs uppercase tracking-wider transition-colors ${i === 1
-                  ? "text-primary bg-primary/10 border border-primary/20"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                }`}
-            >
-              {item}
-            </button>
-          ))}
-        </nav>
-        */}
+        <div className="absolute left-1/2 -translate-x-1/2 hidden lg:block">
+          <button
+            type="button"
+            onClick={onSourcesClick}
+            className="inline-flex items-center gap-2 rounded border border-border bg-muted/30 px-3 py-1.5 text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+            title="Manage sources"
+          >
+            <Newspaper className="h-3.5 w-3.5 text-primary" />
+            <span>Sources</span>
+            <span className="text-primary">{activeSourceCount}/{totalSourceCount}</span>
+          </button>
+        </div>
 
         {/* Right - Time & Actions */}
         <div className="flex items-center gap-4">
@@ -298,6 +300,15 @@ export const Header = ({
             </span>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="p-2 hover:bg-muted rounded transition-colors lg:hidden"
+              onClick={onSourcesClick}
+              title="Manage sources"
+              aria-label="Manage sources"
+            >
+              <Newspaper className="h-4 w-4 text-muted-foreground" />
+            </button>
             <div className="relative" ref={notificationsRef}>
               <button
                 className="p-2 hover:bg-muted rounded transition-colors relative"

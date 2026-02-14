@@ -1,0 +1,99 @@
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Newspaper } from "lucide-react";
+import { SourceId, SourceName } from "@/data/sources";
+
+interface SourcesDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  availableSources: ReadonlyArray<{ id: SourceId; name: SourceName; icon?: string }>;
+  selectedSources: SourceId[];
+  onSelectedSourcesChange: (sources: SourceId[]) => void;
+}
+
+export const SourcesDialog = ({
+  open,
+  onOpenChange,
+  availableSources,
+  selectedSources,
+  onSelectedSourcesChange,
+}: SourcesDialogProps) => {
+  const toggleSource = (sourceId: SourceId) => {
+    const isSelected = selectedSources.includes(sourceId);
+    if (isSelected) {
+      onSelectedSourcesChange(selectedSources.filter((s) => s !== sourceId));
+      return;
+    }
+    onSelectedSourcesChange([...selectedSources, sourceId]);
+  };
+
+  const selectAllSources = () => {
+    onSelectedSourcesChange(availableSources.map((source) => source.id));
+  };
+
+  const clearSources = () => {
+    onSelectedSourcesChange([]);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md p-8">
+        <DialogHeader>
+          <DialogTitle className="mb-4 text-center">Sources</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Newspaper className="h-4 w-4 text-primary" />
+              <span className="text-xs font-medium uppercase tracking-wider text-foreground">
+                Source Selection
+              </span>
+            </div>
+            <span className="text-[10px] text-muted-foreground">
+              {selectedSources.length}/{availableSources.length} active
+            </span>
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={selectAllSources}
+              className="flex-1 px-3 py-2 text-xs font-medium uppercase tracking-wider transition-colors bg-muted text-muted-foreground hover:text-foreground"
+            >
+              Select all
+            </button>
+            <button
+              type="button"
+              onClick={clearSources}
+              className="flex-1 px-3 py-2 text-xs font-medium uppercase tracking-wider transition-colors bg-muted text-muted-foreground hover:text-foreground"
+            >
+              Clear
+            </button>
+          </div>
+
+          <div className="max-h-72 overflow-y-auto pr-2">
+            <div className="grid grid-cols-2 gap-2">
+              {availableSources.map((source) => {
+                const isSelected = selectedSources.includes(source.id);
+                return (
+                  <button
+                    key={source.id}
+                    type="button"
+                    aria-pressed={isSelected}
+                    onClick={() => toggleSource(source.id)}
+                    className={`px-2 py-1.5 text-[10px] font-medium uppercase tracking-wider transition-colors ${isSelected
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:text-foreground"
+                      }`}
+                  >
+                    {source.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};

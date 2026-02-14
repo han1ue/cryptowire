@@ -1,7 +1,5 @@
 
 import {
-  TrendingUp,
-  Newspaper,
   BarChart3,
   Bookmark,
   Clock,
@@ -96,7 +94,7 @@ interface SidebarProps {
   categories?: string[];
   selectedCategory?: string;
   onCategorySelect?: (cat: string) => void;
-  onSettingsClick?: () => void;
+  onSourcesClick?: () => void;
   activeSourceCount?: number;
   totalSourceCount?: number;
   loadedArticlesCount?: number;
@@ -116,7 +114,7 @@ export const Sidebar = ({
   categories: categoriesProp,
   selectedCategory = 'All News',
   onCategorySelect = () => { },
-  onSettingsClick = () => { },
+  onSourcesClick = () => { },
   activeSourceCount = 0,
   totalSourceCount = 0,
   loadedArticlesCount = 0,
@@ -557,9 +555,9 @@ export const Sidebar = ({
       <div className="p-4 border-t border-border">
         <button
           type="button"
-          onClick={onSettingsClick}
+          onClick={onSourcesClick}
           className="w-full text-left text-[10px] text-muted-foreground flex items-center gap-2 hover:text-primary transition-colors"
-          title="Open settings"
+          title="Manage sources"
         >
           <span className={activeSourceCount === totalSourceCount ? "text-terminal-green" : "text-terminal-amber"}>
             <span className="inline-block -translate-y-[1px]">●</span>

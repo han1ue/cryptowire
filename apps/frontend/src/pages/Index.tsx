@@ -3,9 +3,10 @@ import { PriceBar } from "@/components/PriceBar";
 import { NewsTicker } from "@/components/NewsTicker";
 import { Sidebar } from "@/components/Sidebar";
 import { SettingsDialog } from "@/components/SettingsDialog";
+import { SourcesDialog } from "@/components/SourcesDialog";
 import { NewsCard } from "@/components/NewsCard";
 import { ShareMenu } from "@/components/ShareMenu";
-import { sources as sourcesConfig, SourceId, SourceName } from "@/data/sources";
+import { sources as sourcesConfig, SourceId } from "@/data/sources";
 import { useInfiniteNews } from "@/hooks/useInfiniteNews";
 import { useSavedArticles } from "@/hooks/useSavedArticles";
 import { useRecentArticles } from "@/hooks/useRecentArticles";
@@ -232,6 +233,7 @@ const Index = () => {
   const newsStatus = useNewsStatus();
   const categoriesQuery = useNewsCategories({ sources: selectedSources });
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [sourcesOpen, setSourcesOpen] = useState(false);
   const getSavedTheme = (): "light" | "dark" | null => {
     try {
       const saved = localStorage.getItem("theme");
@@ -616,6 +618,16 @@ const Index = () => {
   const totalSourceCount = availableSources.length;
   const loadedArticlesCount = allNews.length;
 
+  const openSourcesDialog = () => {
+    setSettingsOpen(false);
+    setSourcesOpen(true);
+  };
+
+  const openSettingsDialog = () => {
+    setSourcesOpen(false);
+    setSettingsOpen(true);
+  };
+
   const clearLocalStorage = () => {
     localStorage.clear();
     window.location.reload();
@@ -685,7 +697,10 @@ const Index = () => {
 
       <h1 className="sr-only">cryptowi.re — Crypto news aggregator</h1>
       <Header
-        onSettingsClick={() => setSettingsOpen(true)}
+        onSettingsClick={openSettingsDialog}
+        onSourcesClick={openSourcesDialog}
+        activeSourceCount={activeSourceCount}
+        totalSourceCount={totalSourceCount}
         notifications={notifications}
         onNotificationsViewed={markAllNotificationsRead}
         onMenuClick={() => setSidebarOpen(true)}
@@ -723,7 +738,7 @@ const Index = () => {
               setShowRecentOnly(false);
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
-            onSettingsClick={() => setSettingsOpen(true)}
+            onSourcesClick={openSourcesDialog}
             activeSourceCount={activeSourceCount}
             totalSourceCount={totalSourceCount}
             loadedArticlesCount={loadedArticlesCount}
@@ -767,7 +782,10 @@ const Index = () => {
                   setShowRecentOnly(false);
                   setSidebarOpen(false);
                 }}
-                onSettingsClick={() => setSettingsOpen(true)}
+                onSourcesClick={() => {
+                  setSidebarOpen(false);
+                  openSourcesDialog();
+                }}
                 activeSourceCount={activeSourceCount}
                 totalSourceCount={totalSourceCount}
                 loadedArticlesCount={loadedArticlesCount}
@@ -802,11 +820,11 @@ const Index = () => {
               <button
                 type="button"
                 className="w-full text-left bg-muted/20 hover:bg-muted/30 border border-border rounded px-3 py-2.5 pr-10 transition-colors"
-                onClick={() => setSettingsOpen(true)}
+                onClick={openSourcesDialog}
               >
                 <div className="text-xs text-muted-foreground">
                   News sources: <span className="text-foreground">{selectedSources.length}/{availableSources.length}</span> active.
-                  <span className="text-primary"> Customize in Settings</span>.
+                  <span className="text-primary"> Manage sources</span>.
                 </div>
               </button>
               <button
@@ -849,7 +867,7 @@ const Index = () => {
                 <p className="text-sm">Please select some sources to get the latest news</p>
                 <button
                   type="button"
-                  onClick={() => setSettingsOpen(true)}
+                  onClick={openSourcesDialog}
                   className="mt-4 px-3 py-2 text-xs font-medium uppercase tracking-wider transition-colors bg-primary text-primary-foreground"
                 >
                   Select sources
@@ -867,7 +885,7 @@ const Index = () => {
                 <p className="text-xs mt-2">Try selecting more sources and check back</p>
                 <button
                   type="button"
-                  onClick={() => setSettingsOpen(true)}
+                  onClick={openSourcesDialog}
                   className="mt-4 px-3 py-2 text-xs font-medium uppercase tracking-wider transition-colors bg-primary text-primary-foreground"
                 >
                   Edit sources
@@ -1374,20 +1392,22 @@ const Index = () => {
         </main>
       </div>
 
+      <SourcesDialog
+        open={sourcesOpen}
+        onOpenChange={setSourcesOpen}
+        availableSources={availableSources}
+        selectedSources={selectedSources}
+        onSelectedSourcesChange={setSelectedSources}
+      />
+
       <SettingsDialog
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
-        availableSources={availableSources}
-        selectedSources={selectedSources}
-        onSelectedSourcesChange={(next: SourceId[]) => {
-          setSelectedSources(next);
-        }}
         displayMode={displayMode}
         onDisplayModeChange={setDisplayMode}
         theme={theme}
         onThemeChange={handleThemeChange}
         onClearLocalStorage={clearLocalStorage}
-        appVersion="1.2.0"
       />
     </div>
   );
