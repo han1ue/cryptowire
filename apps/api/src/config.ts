@@ -9,11 +9,17 @@ const EnvSchema = z.object({
     NEWS_RETENTION_DAYS: z.coerce.number().int().positive().default(7),
     NEWS_CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(180),
     NEWS_REFRESH_SECRET: z.string().optional(),
+    NEWS_SUMMARY_FILE_PATH: z.string().optional(),
     CORS_ORIGIN: z.string().optional(),
 
+    GEMINI_API_KEY: z.string().optional(),
+    GEMINI_MODEL: z.string().optional(),
     COINDESK_API_KEY: z.string().optional(),
     COINDESK_BASE_URL: z.string().url().optional(),
     COINDESK_NEWS_ENDPOINT_PATH: z.string().optional(),
+
+    OPENAI_API_KEY: z.string().optional(),
+    OPENAI_MODEL: z.string().optional(),
 });
 
 export type AppConfig = z.infer<typeof EnvSchema>;

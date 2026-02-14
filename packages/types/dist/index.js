@@ -20,6 +20,30 @@ export const NewsListResponseSchema = z.object({
 export const NewsCategoriesResponseSchema = z.object({
     categories: z.array(z.string()),
 });
+export const NewsSummaryHighlightSchema = z.object({
+    title: z.string(),
+    detail: z.string(),
+    sources: z.array(z.string()),
+});
+export const NewsSummarySourceCoverageSchema = z.object({
+    sourceId: z.string(),
+    source: z.string(),
+    articleCount: z.number().int().nonnegative(),
+    reputationWeight: z.number().min(0).max(1),
+});
+export const NewsSummaryResponseSchema = z.object({
+    generatedAt: z.string(),
+    windowStart: z.string(),
+    windowEnd: z.string(),
+    windowHours: z.number().int().positive(),
+    articleCount: z.number().int().nonnegative(),
+    usedAi: z.boolean(),
+    model: z.string().nullable(),
+    summary: z.string(),
+    highlights: z.array(NewsSummaryHighlightSchema),
+    sourceCoverage: z.array(NewsSummarySourceCoverageSchema),
+    notes: z.array(z.string()),
+});
 export const PriceQuoteSchema = z.object({
     symbol: z.string(),
     usd: z.number(),

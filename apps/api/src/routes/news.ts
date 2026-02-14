@@ -1,14 +1,18 @@
 import { Router, type Request } from "express";
 import { z } from "zod";
-import { NewsCategoriesResponseSchema, NewsListResponseSchema, type NewsItem } from "@cryptowire/types";
+import { NewsCategoriesResponseSchema, NewsListResponseSchema, NewsSummaryResponseSchema, type NewsItem } from "@cryptowire/types";
 import { SUPPORTED_NEWS_SOURCES } from "@cryptowire/types/sources";
 import type { NewsService } from "../services/newsService.js";
+import type { NewsSummaryService } from "../services/newsSummaryService.js";
 import type { NewsStore } from "../stores/newsStore.js";
+import type { NewsSummaryStore } from "../stores/newsSummaryStore.js";
 import { asyncHandler } from "../lib/asyncHandler.js";
 
 export const createNewsRouter = (
     newsService: NewsService,
     newsStore: NewsStore,
+    newsSummaryService: NewsSummaryService,
+    newsSummaryStore: NewsSummaryStore,
     opts?: { refreshSecret?: string; siteUrl?: string },
 ) => {
     const router = Router();
@@ -396,6 +400,182 @@ export const createNewsRouter = (
         return res.json({
             lastRefreshAt: await getLastRefreshAt(),
             now: new Date().toISOString(),
+        });
+    }));
+
+    const SUMMARY_DEFAULT_HOURS = 24;
+    const SUMMARY_DEFAULT_LIMIT = 180;
+    const SUMMARY_MAX_AGE_HOURS = 24;
+
+    const getRequestedSourceIds = (raw: string | undefined): string[] => {
+        const requestedSourceIds = (raw ?? "")
+            .split(",")
+            .map((x) => x.trim().toLowerCase())
+            .filter(Boolean);
+        const supportedIds = new Set<string>(SUPPORTED_SOURCES.map((s) => s.id));
+        const requested = requestedSourceIds.filter((id) => supportedIds.has(id));
+        return Array.from(new Set(requested.length > 0 ? requested : SUPPORTED_SOURCES.map((s) => s.id)));
+    };
+
+    const collectSummaryItems = async (params: {
+        windowHours: number;
+        limit: number;
+        sourceIds: string[];
+    }): Promise<NewsItem[]> => {
+        const now = Date.now();
+        const windowStartMs = now - params.windowHours * 60 * 60 * 1000;
+
+        const requestedSourceKeys = new Set(
+            params.sourceIds
+                .flatMap((id) => [id, sourceIdToName(id)])
+                .map((s) => s.trim().toLowerCase())
+                .filter(Boolean),
+        );
+
+        const items: NewsItem[] = [];
+        const chunkSize = 200;
+        const maxChunks = 40;
+
+        let rawOffset = 0;
+        let reachedOlderItems = false;
+
+        for (let i = 0; i < maxChunks; i++) {
+            const chunk = await newsStore.getPage({ limit: chunkSize, offset: rawOffset });
+            if (chunk.length === 0) break;
+
+            rawOffset += chunk.length;
+
+            for (const item of chunk) {
+                const publishedMs = Date.parse(item.publishedAt);
+                if (!Number.isFinite(publishedMs)) continue;
+                if (publishedMs < windowStartMs) {
+                    reachedOlderItems = true;
+                    break;
+                }
+
+                const sourceKey = item.source.trim().toLowerCase();
+                if (!requestedSourceKeys.has(sourceKey)) continue;
+
+                items.push(sanitizeItemCategories(item));
+                if (items.length >= params.limit) break;
+            }
+
+            if (items.length >= params.limit || reachedOlderItems) break;
+        }
+
+        return items;
+    };
+
+    const generateAndStoreSummary = async (params: {
+        windowHours: number;
+        limit: number;
+        sourceIds: string[];
+    }) => {
+        const now = new Date();
+        const windowStart = new Date(now.getTime() - params.windowHours * 60 * 60 * 1000);
+        const items = await collectSummaryItems({
+            windowHours: params.windowHours,
+            limit: params.limit,
+            sourceIds: params.sourceIds,
+        });
+
+        const summary = await newsSummaryService.summarize({
+            items,
+            sourceIds: params.sourceIds,
+            windowHours: params.windowHours,
+            windowStart: windowStart.toISOString(),
+            windowEnd: now.toISOString(),
+        });
+        await newsSummaryStore.putLatest(summary);
+        return summary;
+    };
+
+    const isSummaryFresh = (iso: string, maxAgeHours: number): boolean => {
+        const generatedAtMs = Date.parse(iso);
+        if (!Number.isFinite(generatedAtMs)) return false;
+        return Date.now() - generatedAtMs <= maxAgeHours * 60 * 60 * 1000;
+    };
+
+    router.get("/news/summary", asyncHandler(async (_req, res) => {
+        const cached = await newsSummaryStore.getLatest();
+        if (cached) {
+            const validated = NewsSummaryResponseSchema.safeParse(cached);
+            if (!validated.success) return res.status(500).json({ error: "Invalid response shape" });
+            return res.json(validated.data);
+        }
+
+        // Local dev convenience: auto-generate once when no daily file/cache exists.
+        if (!isProd) {
+            const generated = await generateAndStoreSummary({
+                windowHours: SUMMARY_DEFAULT_HOURS,
+                limit: SUMMARY_DEFAULT_LIMIT,
+                sourceIds: SUPPORTED_SOURCES.map((s) => s.id),
+            });
+            return res.json(generated);
+        }
+
+        return res.status(503).json({
+            error: "Daily summary is not ready yet",
+            hint: "Run /api/news/summary/refresh from your scheduled job first.",
+        });
+    }));
+
+    router.get("/news/summary/refresh", asyncHandler(async (req, res) => {
+        const querySchema = z.object({
+            hours: z.coerce.number().int().positive().max(72).default(SUMMARY_DEFAULT_HOURS),
+            limit: z.coerce.number().int().positive().max(500).default(SUMMARY_DEFAULT_LIMIT),
+            sources: z.string().optional(),
+            force: z
+                .union([z.literal("1"), z.literal("true"), z.literal("0"), z.literal("false")])
+                .optional()
+                .transform((v) => v === "1" || v === "true"),
+            secret: z.string().optional(),
+        });
+
+        const parsed = querySchema.safeParse(req.query);
+        if (!parsed.success) {
+            return res.status(400).json({ error: parsed.error.message });
+        }
+
+        const expected = opts?.refreshSecret;
+        const isVercelCron = req.header("x-vercel-cron") === "1";
+        if (!isVercelCron && expected && parsed.data.secret !== expected && req.header("x-refresh-secret") !== expected) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+
+        const existing = await newsSummaryStore.getLatest();
+        if (
+            existing &&
+            !parsed.data.force &&
+            existing.windowHours === parsed.data.hours &&
+            isSummaryFresh(existing.generatedAt, SUMMARY_MAX_AGE_HOURS)
+        ) {
+            return res.json({
+                ok: true,
+                skipped: true,
+                reason: "Summary is still fresh",
+                generatedAt: existing.generatedAt,
+                articleCount: existing.articleCount,
+                windowHours: existing.windowHours,
+                usedAi: existing.usedAi,
+                model: existing.model,
+            });
+        }
+
+        const summary = await generateAndStoreSummary({
+            windowHours: parsed.data.hours,
+            limit: Math.min(parsed.data.limit, 250),
+            sourceIds: getRequestedSourceIds(parsed.data.sources),
+        });
+
+        return res.json({
+            ok: true,
+            skipped: false,
+            generatedAt: summary.generatedAt,
+            articleCount: summary.articleCount,
+            windowHours: summary.windowHours,
+            usedAi: summary.usedAi,
+            model: summary.model,
         });
     }));
 

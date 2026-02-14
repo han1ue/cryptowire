@@ -2,12 +2,14 @@ import express, { type ErrorRequestHandler } from "express";
 import cors from "cors";
 import { getConfig } from "./config.js";
 import { NewsService } from "./services/newsService.js";
+import { NewsSummaryService } from "./services/newsSummaryService.js";
 import { PriceService } from "./services/priceService.js";
 import { MarketService } from "./services/marketService.js";
 import { createNewsRouter } from "./routes/news.js";
 import { createPricesRouter } from "./routes/prices.js";
 import { createMarketRouter } from "./routes/market.js";
 import { createNewsStore } from "./stores/newsStore.js";
+import { createNewsSummaryStore } from "./stores/newsSummaryStore.js";
 import { asyncHandler } from "./lib/asyncHandler.js";
 
 export const app = express();
@@ -36,6 +38,7 @@ app.get("/", (_req, res) => {
             stats: "/api/stats",
             health: "/api/health",
             news: "/api/news?limit=40&offset=0",
+            summary: "/api/news/summary",
             sources: "/api/news/sources",
             prices: "/api/prices?symbols=BTC,ETH,SOL",
         },
@@ -47,7 +50,16 @@ app.get("/api/health", (_req, res) => {
 });
 
 const newsService = new NewsService(config);
+const newsSummaryService = new NewsSummaryService({
+    geminiApiKey: config.GEMINI_API_KEY,
+    geminiModel: config.GEMINI_MODEL,
+    openAiApiKey: config.OPENAI_API_KEY,
+    openAiModel: config.OPENAI_MODEL,
+});
 const newsStore = createNewsStore();
+const newsSummaryStore = createNewsSummaryStore({
+    filePath: config.NEWS_SUMMARY_FILE_PATH,
+});
 const priceService = new PriceService(config);
 const marketService = new MarketService();
 
@@ -89,6 +101,7 @@ app.get("/api/stats", asyncHandler(async (_req, res) => {
         endpoints: {
             health: "/api/health",
             news: "/api/news?limit=40&offset=0",
+            summary: "/api/news/summary",
             sources: "/api/news/sources",
             refresh: "/api/news/refresh?limit=30",
             prices: "/api/prices?symbols=BTC,ETH,SOL",
@@ -106,6 +119,7 @@ app.get("/api", (_req, res) => {
             stats: "/api/stats",
             health: "/api/health",
             news: "/api/news?limit=40&offset=0",
+            summary: "/api/news/summary",
             sources: "/api/news/sources",
             refresh: "/api/news/refresh?limit=30",
             prices: "/api/prices?symbols=BTC,ETH,SOL",
@@ -116,7 +130,10 @@ app.get("/api", (_req, res) => {
 
 app.use(
     "/api",
-    createNewsRouter(newsService, newsStore, { refreshSecret: config.NEWS_REFRESH_SECRET, siteUrl: config.SITE_URL }),
+    createNewsRouter(newsService, newsStore, newsSummaryService, newsSummaryStore, {
+        refreshSecret: config.NEWS_REFRESH_SECRET,
+        siteUrl: config.SITE_URL,
+    }),
 );
 app.use("/api", createPricesRouter(priceService));
 app.use("/api", createMarketRouter(marketService));

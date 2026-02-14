@@ -31,6 +31,10 @@ Environment:
 - Set `COINDESK_API_KEY` to enable live news
 - News retention defaults to 7 days via `NEWS_RETENTION_DAYS`
 - Set `CORS_ORIGIN` (comma-separated) to restrict API CORS origins in production
+- Set `GEMINI_API_KEY` to enable AI summary generation with Gemini
+- Optional: set `GEMINI_MODEL` (default: `gemini-2.0-flash`)
+- Optional fallback: set `OPENAI_API_KEY` (and `OPENAI_MODEL`) if you prefer OpenAI
+- Optional: set `NEWS_SUMMARY_FILE_PATH` (default: `data/news-summary-latest.json`) for daily summary file storage
 - Set `VITE_GA_ID` in frontend env to enable Google Analytics in production builds
 
 Quality checks:
@@ -47,6 +51,8 @@ Quality checks:
 ## API
 
 - `GET /api/news?limit=30&retentionDays=7`
+- `GET /api/news/summary` (returns last generated daily summary from file/cache)
+- `GET /api/news/summary/refresh?hours=24&limit=180` (scheduled/manual summary generation)
 - `GET /api/prices?symbols=BTC,ETH,SOL`
 
 ## Vercel deploy (one repo, two projects)
@@ -66,7 +72,9 @@ Vercel Hobby cron jobs are limited; this repo uses GitHub Actions to periodicall
 - Add GitHub repo secrets:
 	- `CRYPTOWIRE_API_BASE_URL` = your API deployment root URL (no trailing `/api`), e.g. `https://your-api.vercel.app`
 	- `CRYPTOWIRE_REFRESH_SECRET` = same value as `NEWS_REFRESH_SECRET`
-- The workflow is in `.github/workflows/refresh-news.yml`
+- Workflows:
+	- `.github/workflows/refresh-news.yml` (keeps raw news cache warm)
+	- `.github/workflows/refresh-summary.yml` (generates one AI summary daily)
 
 To persist cached news on Vercel (recommended), also set KV env vars in the API project:
 - `KV_REST_API_URL`

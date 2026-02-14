@@ -4,6 +4,7 @@ import { NewsTicker } from "@/components/NewsTicker";
 import { Sidebar } from "@/components/Sidebar";
 import { SettingsDialog } from "@/components/SettingsDialog";
 import { SourcesDialog } from "@/components/SourcesDialog";
+import { AiSummaryDialog } from "@/components/AiSummaryDialog";
 import { NewsCard } from "@/components/NewsCard";
 import { ShareMenu } from "@/components/ShareMenu";
 import { sources as sourcesConfig, SourceId } from "@/data/sources";
@@ -12,8 +13,9 @@ import { useSavedArticles } from "@/hooks/useSavedArticles";
 import { useRecentArticles } from "@/hooks/useRecentArticles";
 import { useNewsStatus } from "@/hooks/useNewsStatus";
 import { useNewsCategories } from "@/hooks/useNewsCategories";
+import { useNewsSummary } from "@/hooks/useNewsSummary";
 import { isUrlVisited, markUrlVisited } from "@/lib/visitedLinks";
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { toast } from "@/components/ui/sonner";
 import { Bookmark, Clock, Share2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -25,7 +27,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Seo } from "@/components/Seo";
-import { useNavigate } from "react-router-dom";
 
 const EXCLUDED_CATEGORY_KEY = "cryptocurrency";
 
@@ -172,27 +173,7 @@ const MobileActionsMenu = ({ shareUrl, shareTitle, onToggleSave, isSaved }: Mobi
   );
 };
 
-type NotificationItem = {
-  id: string;
-  title: string;
-  message: string;
-  time: string;
-  read: boolean;
-};
-
-const initialNotifications: NotificationItem[] = [
-  {
-    id: "welcome",
-    title: "Welcome to cryptowi.re",
-    message:
-      "Thanks for joining us. We'll drop feature updates and platform alerts here so you never miss a release.",
-    time: "Just now",
-    read: false,
-  },
-];
-
 const Index = () => {
-  const navigate = useNavigate();
   const [_visitedVersion, setVisitedVersion] = useState(0);
 
   useEffect(() => {
@@ -285,29 +266,7 @@ const Index = () => {
     "That’s all, folks. Until the next candle.",
   ];
   const [endOfListSuffix, setEndOfListSuffix] = useState<string>("");
-  const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
-    try {
-      const saved = localStorage.getItem("notifications");
-      if (!saved) return initialNotifications;
-      const parsed = JSON.parse(saved);
-      if (!Array.isArray(parsed)) return initialNotifications;
-      const out: NotificationItem[] = [];
-      for (const row of parsed as unknown[]) {
-        if (!row || typeof row !== "object") continue;
-        const r = row as Record<string, unknown>;
-        const id = typeof r.id === "string" ? r.id : "";
-        const title = typeof r.title === "string" ? r.title : "";
-        const message = typeof r.message === "string" ? r.message : "";
-        const time = typeof r.time === "string" ? r.time : "";
-        const read = typeof r.read === "boolean" ? r.read : false;
-        if (!id || !title || !message || !time) continue;
-        out.push({ id, title, message, time, read });
-      }
-      return out.length > 0 ? out : initialNotifications;
-    } catch {
-      return initialNotifications;
-    }
-  });
+  const [aiSummaryOpen, setAiSummaryOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedLineCategoriesById, setExpandedLineCategoriesById] = useState<Record<string, boolean>>({});
 
@@ -371,6 +330,10 @@ const Index = () => {
   });
   const categoryInfiniteItems = categoryInfinite.data?.pages.flatMap((p) => p.items ?? []) ?? [];
 
+  const aiSummaryQuery = useNewsSummary({
+    enabled: aiSummaryOpen,
+  });
+
   // Reset scroll/end-message state when the list context changes.
   const selectedSourcesKey = selectedSources.join("|");
   useEffect(() => {
@@ -418,9 +381,6 @@ const Index = () => {
   useEffect(() => {
     localStorage.setItem("displayMode", displayMode);
   }, [displayMode]);
-  useEffect(() => {
-    localStorage.setItem("notifications", JSON.stringify(notifications));
-  }, [notifications]);
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -431,12 +391,6 @@ const Index = () => {
     window.addEventListener('show-toast', handler);
     return () => window.removeEventListener('show-toast', handler);
   }, []);
-
-  const markAllNotificationsRead = () => {
-    setNotifications(prev =>
-      prev.map(notification => ({ ...notification, read: true }))
-    );
-  };
 
   const sourceNameToId = new Map<string, SourceId>(
     availableSources.map((s) => [s.name.toLowerCase(), s.id])
@@ -685,8 +639,8 @@ const Index = () => {
         onSourcesClick={openSourcesDialog}
         activeSourceCount={activeSourceCount}
         totalSourceCount={totalSourceCount}
-        notifications={notifications}
-        onNotificationsViewed={markAllNotificationsRead}
+        onAiSummaryClick={() => setAiSummaryOpen(true)}
+        aiSummaryLoading={aiSummaryOpen && aiSummaryQuery.isFetching}
         onMenuClick={() => setSidebarOpen(true)}
         lastRefreshAt={newsStatus.data?.lastRefreshAt ?? null}
       />
@@ -1350,6 +1304,17 @@ const Index = () => {
           )}
         </main>
       </div>
+
+      <AiSummaryDialog
+        open={aiSummaryOpen}
+        onOpenChange={setAiSummaryOpen}
+        data={aiSummaryQuery.data}
+        isLoading={aiSummaryQuery.isLoading}
+        isFetching={aiSummaryQuery.isFetching}
+        isError={aiSummaryQuery.isError}
+        error={aiSummaryQuery.error}
+        onRefresh={() => void aiSummaryQuery.refetch()}
+      />
 
       <SourcesDialog
         open={sourcesOpen}

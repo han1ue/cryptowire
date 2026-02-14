@@ -101,6 +101,120 @@ export declare const NewsCategoriesResponseSchema: z.ZodObject<{
     categories: string[];
 }>;
 export type NewsCategoriesResponse = z.infer<typeof NewsCategoriesResponseSchema>;
+export declare const NewsSummaryHighlightSchema: z.ZodObject<{
+    title: z.ZodString;
+    detail: z.ZodString;
+    sources: z.ZodArray<z.ZodString, "many">;
+}, "strip", z.ZodTypeAny, {
+    title: string;
+    detail: string;
+    sources: string[];
+}, {
+    title: string;
+    detail: string;
+    sources: string[];
+}>;
+export type NewsSummaryHighlight = z.infer<typeof NewsSummaryHighlightSchema>;
+export declare const NewsSummarySourceCoverageSchema: z.ZodObject<{
+    sourceId: z.ZodString;
+    source: z.ZodString;
+    articleCount: z.ZodNumber;
+    reputationWeight: z.ZodNumber;
+}, "strip", z.ZodTypeAny, {
+    source: string;
+    sourceId: string;
+    articleCount: number;
+    reputationWeight: number;
+}, {
+    source: string;
+    sourceId: string;
+    articleCount: number;
+    reputationWeight: number;
+}>;
+export type NewsSummarySourceCoverage = z.infer<typeof NewsSummarySourceCoverageSchema>;
+export declare const NewsSummaryResponseSchema: z.ZodObject<{
+    generatedAt: z.ZodString;
+    windowStart: z.ZodString;
+    windowEnd: z.ZodString;
+    windowHours: z.ZodNumber;
+    articleCount: z.ZodNumber;
+    usedAi: z.ZodBoolean;
+    model: z.ZodNullable<z.ZodString>;
+    summary: z.ZodString;
+    highlights: z.ZodArray<z.ZodObject<{
+        title: z.ZodString;
+        detail: z.ZodString;
+        sources: z.ZodArray<z.ZodString, "many">;
+    }, "strip", z.ZodTypeAny, {
+        title: string;
+        detail: string;
+        sources: string[];
+    }, {
+        title: string;
+        detail: string;
+        sources: string[];
+    }>, "many">;
+    sourceCoverage: z.ZodArray<z.ZodObject<{
+        sourceId: z.ZodString;
+        source: z.ZodString;
+        articleCount: z.ZodNumber;
+        reputationWeight: z.ZodNumber;
+    }, "strip", z.ZodTypeAny, {
+        source: string;
+        sourceId: string;
+        articleCount: number;
+        reputationWeight: number;
+    }, {
+        source: string;
+        sourceId: string;
+        articleCount: number;
+        reputationWeight: number;
+    }>, "many">;
+    notes: z.ZodArray<z.ZodString, "many">;
+}, "strip", z.ZodTypeAny, {
+    summary: string;
+    articleCount: number;
+    generatedAt: string;
+    windowStart: string;
+    windowEnd: string;
+    windowHours: number;
+    usedAi: boolean;
+    model: string | null;
+    highlights: {
+        title: string;
+        detail: string;
+        sources: string[];
+    }[];
+    sourceCoverage: {
+        source: string;
+        sourceId: string;
+        articleCount: number;
+        reputationWeight: number;
+    }[];
+    notes: string[];
+}, {
+    summary: string;
+    articleCount: number;
+    generatedAt: string;
+    windowStart: string;
+    windowEnd: string;
+    windowHours: number;
+    usedAi: boolean;
+    model: string | null;
+    highlights: {
+        title: string;
+        detail: string;
+        sources: string[];
+    }[];
+    sourceCoverage: {
+        source: string;
+        sourceId: string;
+        articleCount: number;
+        reputationWeight: number;
+    }[];
+    notes: string[];
+}>;
+export type NewsSummaryResponse = z.infer<typeof NewsSummaryResponseSchema>;
 export declare const PriceQuoteSchema: z.ZodObject<{
     symbol: z.ZodString;
     usd: z.ZodNumber;

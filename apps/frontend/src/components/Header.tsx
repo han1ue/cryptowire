@@ -1,21 +1,13 @@
-import { Activity, Settings, Bell, Menu, Newspaper } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
-
-type NotificationItem = {
-  id: string;
-  title: string;
-  message: string;
-  time: string;
-  read: boolean;
-};
+import { Activity, Settings, Menu, Newspaper, Sparkles } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 interface HeaderProps {
   onSettingsClick?: () => void;
   onSourcesClick?: () => void;
   activeSourceCount?: number;
   totalSourceCount?: number;
-  notifications?: NotificationItem[];
-  onNotificationsViewed?: () => void;
+  onAiSummaryClick?: () => void;
+  aiSummaryLoading?: boolean;
   onMenuClick?: () => void;
   lastRefreshAt?: string | null;
 }
@@ -25,8 +17,8 @@ export const Header = ({
   onSourcesClick = () => { },
   activeSourceCount = 0,
   totalSourceCount = 0,
-  notifications = [],
-  onNotificationsViewed = () => { },
+  onAiSummaryClick = () => { },
+  aiSummaryLoading = false,
   onMenuClick = () => { },
   lastRefreshAt = null,
 }: HeaderProps) => {
@@ -51,9 +43,6 @@ export const Header = ({
       year: "numeric",
     })
   );
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const notificationsRef = useRef<HTMLDivElement>(null);
-  const hasUnread = notifications.some(notification => !notification.read);
   const [statusOpen, setStatusOpen] = useState(false);
   const statusRef = useRef<HTMLDivElement>(null);
   const [hoverCapable, setHoverCapable] = useState(() => {
@@ -167,41 +156,6 @@ export const Header = ({
     };
   }, []);
 
-  const closeNotifications = useCallback(() => {
-    setNotificationsOpen(open => {
-      if (open && hasUnread) {
-        onNotificationsViewed();
-      }
-      return false;
-    });
-  }, [hasUnread, onNotificationsViewed]);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        notificationsOpen &&
-        notificationsRef.current &&
-        !notificationsRef.current.contains(event.target as Node)
-      ) {
-        closeNotifications();
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [notificationsOpen, closeNotifications]);
-
-  const handleToggleNotifications = () => {
-    setNotificationsOpen(open => {
-      if (open) {
-        if (hasUnread) {
-          onNotificationsViewed();
-        }
-        return false;
-      }
-      return true;
-    });
-  };
-
   return (
     <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
       <div className="relative flex items-center justify-between px-4 py-3">
@@ -302,57 +256,18 @@ export const Header = ({
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="relative" ref={notificationsRef}>
-              <button
-                className="p-2 hover:bg-muted rounded transition-colors relative"
-                onClick={handleToggleNotifications}
-              >
-                <Bell className="h-4 w-4 text-muted-foreground" />
-                {hasUnread && (
-                  <span className="absolute top-1 right-1 h-2 w-2 bg-terminal-amber rounded-full" />
-                )}
-              </button>
-              {notificationsOpen && (
-                <div className="absolute right-0 mt-2 w-72 bg-card border border-border rounded shadow-xl p-3 text-left z-50">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                      Notifications
-                    </span>
-                    {hasUnread && (
-                      <span className="text-[10px] text-terminal-amber">
-                        {notifications.filter(notification => !notification.read).length} new
-                      </span>
-                    )}
-                  </div>
-                  {notifications.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">No notifications yet.</p>
-                  ) : (
-                    <div className="space-y-2 max-h-64 overflow-y-auto">
-                      {notifications.map(notification => (
-                        <div
-                          key={notification.id}
-                          className={`border border-border/60 rounded p-2 bg-muted/20 ${notification.read ? "opacity-70" : ""
-                            }`}
-                        >
-                          <p className="text-xs font-semibold text-foreground">
-                            {notification.title}
-                          </p>
-                          <p className="text-[11px] text-muted-foreground mt-1">
-                            {notification.message}
-                          </p>
-                          <div className="flex items-center justify-between mt-2 text-[10px] text-muted-foreground">
-                            <span>{notification.time}</span>
-                            <span className={notification.read ? "text-terminal-green" : "text-primary"}>
-                              {notification.read ? "Viewed" : "New"}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            <button
+              type="button"
+              onClick={onAiSummaryClick}
+              className="group relative inline-flex items-center gap-1.5 overflow-hidden rounded border border-terminal-cyan/50 bg-gradient-to-r from-terminal-cyan/20 via-primary/20 to-terminal-cyan/20 px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-foreground shadow-[0_0_14px_hsl(var(--terminal-cyan)/0.28)] transition-all hover:shadow-[0_0_20px_hsl(var(--primary)/0.35)]"
+              title="Open AI brief"
+              aria-label="Open AI brief"
+            >
+              <span className="pointer-events-none absolute inset-y-0 -left-1/2 w-1/2 rotate-12 bg-white/30 blur-sm transition-transform duration-700 group-hover:translate-x-[210%]" />
+              <Sparkles className={`h-3.5 w-3.5 ${aiSummaryLoading ? "animate-pulse text-primary" : "text-terminal-cyan"}`} />
+              <span className="hidden sm:inline">AI Brief</span>
+              <span className="sm:hidden">AI</span>
+            </button>
             <button
               className="p-2 hover:bg-muted rounded transition-colors"
               onClick={onSettingsClick}

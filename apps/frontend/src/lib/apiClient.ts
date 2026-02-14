@@ -1,4 +1,4 @@
-import type { NewsCategoriesResponse, NewsListResponse, PriceResponse } from "@cryptowire/types";
+import type { NewsCategoriesResponse, NewsListResponse, NewsSummaryResponse, PriceResponse } from "@cryptowire/types";
 
 const getApiBaseUrl = (): string => {
     const configured = import.meta.env.VITE_API_BASE_URL as string | undefined;
@@ -46,6 +46,14 @@ export const fetchNewsStatus = async (): Promise<{ lastRefreshAt: string | null;
         lastRefreshAt: typeof record?.lastRefreshAt === "string" ? (record.lastRefreshAt as string) : null,
         now: typeof record?.now === "string" ? (record.now as string) : new Date().toISOString(),
     };
+};
+
+export const fetchNewsSummary = async (): Promise<NewsSummaryResponse> => {
+    const url = new URL("/api/news/summary", getApiBaseUrl());
+
+    const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });
+    if (!res.ok) throw new Error("Failed to fetch AI summary");
+    return (await res.json()) as NewsSummaryResponse;
 };
 
 export const fetchPrices = async (symbols?: string[]): Promise<PriceResponse> => {
