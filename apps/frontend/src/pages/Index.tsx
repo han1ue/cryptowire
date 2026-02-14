@@ -743,6 +743,7 @@ const Index = () => {
             totalSourceCount={totalSourceCount}
             loadedArticlesCount={loadedArticlesCount}
             appVersion="1.2.0"
+            lastRefreshAt={newsStatus.data?.lastRefreshAt ?? null}
           />
         </div>
 
@@ -790,6 +791,7 @@ const Index = () => {
                 totalSourceCount={totalSourceCount}
                 loadedArticlesCount={loadedArticlesCount}
                 appVersion="1.2.0"
+                lastRefreshAt={newsStatus.data?.lastRefreshAt ?? null}
               />
             </div>
           </>

@@ -1,5 +1,6 @@
 
 import {
+  Activity,
   BarChart3,
   Bookmark,
   Clock,
@@ -99,6 +100,7 @@ interface SidebarProps {
   totalSourceCount?: number;
   loadedArticlesCount?: number;
   appVersion?: string;
+  lastRefreshAt?: string | null;
 }
 
 export const Sidebar = ({
@@ -119,12 +121,17 @@ export const Sidebar = ({
   totalSourceCount = 0,
   loadedArticlesCount = 0,
   appVersion = "1.2.0",
+  lastRefreshAt = null,
 }: SidebarProps) => {
   const EXCLUDED_CATEGORY = "cryptocurrency";
   const { data: marketData, isLoading: marketLoading } = useMarketOverview();
   const { addRecent } = useRecentArticles();
   const [categoriesCollapsed, setCategoriesCollapsed] = useState(false);
   const [categorySearch, setCategorySearch] = useState('');
+  const [isOnline, setIsOnline] = useState<boolean>(() => {
+    if (typeof navigator === 'undefined') return true;
+    return navigator.onLine;
+  });
   // Removed showMoreCategories and related logic; always show all filtered categories
   const savedArticlesPreviews = savedArticles
     .slice(0, 3)
@@ -164,8 +171,67 @@ export const Sidebar = ({
     return a.localeCompare(b);
   });
 
+  const formatAgeShort = (iso: string): string => {
+    const t = new Date(iso).getTime();
+    if (!Number.isFinite(t)) return "";
+    const diffMs = Date.now() - t;
+    if (diffMs < 0) return "0m";
+    const diffMin = Math.floor(diffMs / 60_000);
+    if (diffMin < 1) return "<1m";
+    if (diffMin < 60) return `${diffMin}m`;
+    const diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24) return `${diffHr}h`;
+    const diffDay = Math.floor(diffHr / 24);
+    return `${diffDay}d`;
+  };
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   return (
     <aside className="w-64 border-r border-border bg-card flex flex-col h-full overflow-y-auto">
+      {/* Mobile identity/status */}
+      <div className="p-4 border-b border-border lg:hidden">
+        <a href="/" className="flex items-center gap-2 group cursor-pointer select-none">
+          <img
+            src="/favicon.svg"
+            alt=""
+            aria-hidden="true"
+            className="h-5 w-5"
+          />
+          <span className="text-lg font-bold text-foreground tracking-tight group-hover:text-primary transition-colors">
+            CRYPTO<span className="text-primary">WI</span>
+            <span className="text-primary">.</span>
+            <span className="text-primary">RE</span>
+          </span>
+        </a>
+
+        <div className="mt-3 flex items-center justify-between gap-2">
+          <span className="inline-flex items-center gap-1 rounded bg-muted/50 px-2 py-1">
+            <Activity className={`h-3 w-3 ${isOnline ? "text-terminal-green pulse-glow" : "text-terminal-red"}`} />
+            <span className={`text-[10px] uppercase ${isOnline ? "text-terminal-green" : "text-terminal-red"}`}>
+              {isOnline ? "Connected" : "Disconnected"}
+            </span>
+          </span>
+          {isOnline ? (
+            <span className="text-[10px] text-muted-foreground">
+              {lastRefreshAt ? `Updated ${formatAgeShort(lastRefreshAt)} ago` : "Updated —"}
+            </span>
+          ) : null}
+        </div>
+      </div>
+
       {/* Quick Stats */}
       <div className="p-4 border-b border-border">
         <div className="flex items-center gap-2 mb-3">
@@ -539,7 +605,7 @@ export const Sidebar = ({
           </a>
 
           <a
-            href="https://github.com/jonyive/cryptowire"
+            href="https://github.com/han1ue/cryptowire"
             target="_blank"
             rel="noopener noreferrer"
             className="w-full -mx-2 flex items-center gap-2 px-2 py-2 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors"

@@ -205,7 +205,7 @@ export const Header = ({
   return (
     <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
       <div className="relative flex items-center justify-between px-4 py-3">
-        {/* Logo */}
+        {/* Left controls */}
         <div className="flex items-center gap-3">
           <button
             className="lg:hidden p-2 hover:bg-muted rounded transition-colors"
@@ -214,7 +214,19 @@ export const Header = ({
           >
             <Menu className="h-5 w-5 text-muted-foreground" />
           </button>
-          <a href="/" className="flex items-center gap-2 group cursor-pointer select-none">
+          <button
+            type="button"
+            className="lg:hidden inline-flex items-center gap-2 rounded border border-border bg-muted/30 px-2.5 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+            onClick={onSourcesClick}
+            title="Manage sources"
+            aria-label="Manage sources"
+          >
+            <Newspaper className="h-3.5 w-3.5 text-primary" />
+            <span>Sources</span>
+            <span className="text-primary">{activeSourceCount}/{totalSourceCount}</span>
+          </button>
+
+          <a href="/" className="hidden lg:flex items-center gap-2 group cursor-pointer select-none">
             <img
               src="/favicon.svg"
               alt=""
@@ -230,7 +242,7 @@ export const Header = ({
 
           <div
             ref={statusRef}
-            className="relative"
+            className="relative hidden lg:block"
             onMouseEnter={() => {
               if (hoverCapable) setStatusOpen(true);
             }}
@@ -300,15 +312,6 @@ export const Header = ({
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="p-2 hover:bg-muted rounded transition-colors lg:hidden"
-              onClick={onSourcesClick}
-              title="Manage sources"
-              aria-label="Manage sources"
-            >
-              <Newspaper className="h-4 w-4 text-muted-foreground" />
-            </button>
             <div className="relative" ref={notificationsRef}>
               <button
                 className="p-2 hover:bg-muted rounded transition-colors relative"
