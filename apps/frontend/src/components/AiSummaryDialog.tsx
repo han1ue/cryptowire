@@ -1,6 +1,6 @@
 import type { NewsSummaryResponse } from "@cryptowire/types";
 import { formatDistanceToNowStrict } from "date-fns";
-import { AlertTriangle, BrainCircuit, RotateCw, Sparkles } from "lucide-react";
+import { AlertTriangle, Lightbulb, PenSquare, RotateCw, Sparkles } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -164,15 +164,16 @@ export const AiSummaryDialog = ({
                         <>
                             <section className="rounded border border-border bg-card/40 p-4">
                                 <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground">
-                                    <BrainCircuit className="h-3.5 w-3.5 text-primary" />
+                                    <PenSquare className="h-3.5 w-3.5 text-primary" />
                                     Summary
                                 </div>
                                 <p className="text-sm leading-relaxed text-foreground">{data.summary}</p>
                             </section>
 
                             <section className="space-y-2">
-                                <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                                    Key Articles
+                                <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground">
+                                    <Lightbulb className="h-3.5 w-3.5 text-primary" />
+                                    Highlights
                                 </div>
                                 <div className="space-y-2">
                                     {data.highlights.map((highlight, index) => (
