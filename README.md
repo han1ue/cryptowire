@@ -35,6 +35,7 @@ Environment:
 - Optional: set `GEMINI_MODEL` (default: `gemini-2.0-flash`)
 - Optional fallback: set `OPENAI_API_KEY` (and `OPENAI_MODEL`) if you prefer OpenAI
 - Optional: set `NEWS_SUMMARY_FILE_PATH` (default: `data/news-summary-latest.json`) for daily summary file storage
+- Optional rate limits: `RATE_LIMIT_WINDOW_SECONDS` (default `60`), `RATE_LIMIT_MAX_REQUESTS` (default `60`), `RATE_LIMIT_SUMMARY_MAX_REQUESTS` (default `20`), `RATE_LIMIT_ADMIN_MAX_REQUESTS` (default `8`)
 - Set `VITE_GA_ID` in frontend env to enable Google Analytics in production builds
 
 Quality checks:
