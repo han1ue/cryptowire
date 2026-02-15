@@ -29,7 +29,7 @@ export const AiSummaryPanel = ({
 
     return (
         <section className="space-y-4 rounded border border-border bg-card/30 p-3 sm:p-4">
-            <header className="space-y-2 border-b border-border pb-4">
+            <header className="space-y-2 border-border pb-4">
                 <div className="flex w-full items-center justify-between gap-3">
                     <h2 className="flex items-center gap-2 text-left text-lg font-semibold leading-none tracking-tight">
                         <Sparkles className="h-4 w-4 text-terminal-cyan" />
