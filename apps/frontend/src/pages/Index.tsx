@@ -16,6 +16,7 @@ import { useNewsCategories } from "@/hooks/useNewsCategories";
 import { useNewsSummary } from "@/hooks/useNewsSummary";
 import { isUrlVisited, markUrlVisited } from "@/lib/visitedLinks";
 import { useState, useEffect, useMemo } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "@/components/ui/sonner";
 import { Bookmark, Clock, Share2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -174,6 +175,10 @@ const MobileActionsMenu = ({ shareUrl, shareTitle, onToggleSave, isSaved }: Mobi
 };
 
 const Index = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const showAiRecapOnly = location.pathname === "/recap";
+
   const [_visitedVersion, setVisitedVersion] = useState(0);
 
   useEffect(() => {
@@ -266,7 +271,6 @@ const Index = () => {
     "That’s all, folks. Until the next candle.",
   ];
   const [endOfListSuffix, setEndOfListSuffix] = useState<string>("");
-  const [showAiRecapOnly, setShowAiRecapOnly] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedLineCategoriesById, setExpandedLineCategoriesById] = useState<Record<string, boolean>>({});
 
@@ -601,6 +605,8 @@ const Index = () => {
 
   const siteUrl = (import.meta.env.VITE_SITE_URL as string | undefined) ?? "https://cryptowi.re";
   const normalizedSiteUrl = siteUrl.replace(/\/+$/, "");
+  const seoTitle = showAiRecapOnly ? "cryptowi.re | AI 24h Recap" : "cryptowi.re | Real-Time Crypto News Aggregator";
+  const seoCanonicalPath = showAiRecapOnly ? "/recap" : "/";
 
   const jsonLd = [
     {
@@ -629,9 +635,9 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col scanlines overflow-x-hidden">
       <Seo
-        title="cryptowi.re | Real-Time Crypto News Aggregator"
+        title={seoTitle}
         description="Real-time crypto news aggregator. Live headlines from CoinDesk, Decrypt, Cointelegraph, Blockworks, and more."
-        canonicalPath="/"
+        canonicalPath={seoCanonicalPath}
         jsonLd={jsonLd}
       />
 
@@ -642,9 +648,9 @@ const Index = () => {
         activeSourceCount={activeSourceCount}
         totalSourceCount={totalSourceCount}
         onAiSummaryClick={() => {
-          setShowAiRecapOnly(true);
           setShowSavedOnly(false);
           setShowRecentOnly(false);
+          navigate("/recap");
           window.scrollTo({ top: 0, behavior: "smooth" });
         }}
         aiSummaryLoading={showAiRecapOnly && aiSummaryQuery.isFetching}
@@ -663,7 +669,7 @@ const Index = () => {
                 onToggleSavedView={() => {
                   setShowSavedOnly((prev) => !prev);
                   setShowRecentOnly(false);
-                  setShowAiRecapOnly(false);
+                  if (showAiRecapOnly) navigate("/");
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
             savedArticles={savedArticles}
@@ -673,7 +679,7 @@ const Index = () => {
                 onToggleRecentView={() => {
                   setShowRecentOnly((prev) => !prev);
                   setShowSavedOnly(false);
-                  setShowAiRecapOnly(false);
+                  if (showAiRecapOnly) navigate("/");
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
             allNews={sidebarNews}
@@ -683,7 +689,7 @@ const Index = () => {
                   setSelectedCategory((prev) => (prev === cat ? 'All News' : cat));
                   setShowSavedOnly(false);
                   setShowRecentOnly(false);
-                  setShowAiRecapOnly(false);
+                  if (showAiRecapOnly) navigate("/");
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
             onSourcesClick={openSourcesDialog}
@@ -709,7 +715,7 @@ const Index = () => {
                 onToggleSavedView={() => {
                   setShowSavedOnly((prev) => !prev);
                   setShowRecentOnly(false);
-                  setShowAiRecapOnly(false);
+                  if (showAiRecapOnly) navigate("/");
                   setSidebarOpen(false);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
@@ -720,7 +726,7 @@ const Index = () => {
                 onToggleRecentView={() => {
                   setShowRecentOnly((prev) => !prev);
                   setShowSavedOnly(false);
-                  setShowAiRecapOnly(false);
+                  if (showAiRecapOnly) navigate("/");
                   setSidebarOpen(false);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
@@ -731,7 +737,7 @@ const Index = () => {
                   setSelectedCategory((prev) => (prev === cat ? 'All News' : cat));
                   setShowSavedOnly(false);
                   setShowRecentOnly(false);
-                  setShowAiRecapOnly(false);
+                  if (showAiRecapOnly) navigate("/");
                   setSidebarOpen(false);
                 }}
                 onSourcesClick={() => {
@@ -756,9 +762,12 @@ const Index = () => {
               <button
                 type="button"
                 onClick={() => {
-                  setShowSavedOnly(false);
-                  setShowRecentOnly(false);
-                  setShowAiRecapOnly(false);
+                  if (showAiRecapOnly) {
+                    navigate("/");
+                  } else {
+                    setShowSavedOnly(false);
+                    setShowRecentOnly(false);
+                  }
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 className="inline-flex items-center border border-border rounded px-2.5 py-1.5 text-[12px] font-medium uppercase tracking-wider text-muted-foreground bg-card/30 hover:bg-card/40 hover:text-foreground transition-colors"
