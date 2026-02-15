@@ -40,7 +40,7 @@ export const AiSummaryDialog = ({
                     event.preventDefault();
                 }}
             >
-                <DialogHeader className="gap-2 border-b border-border px-0 pb-4 pt-0">
+                <DialogHeader className="gap-2 px-0 pb-4 pt-0">
                     <div className="flex w-full items-center justify-between gap-3">
                         <DialogTitle className="flex items-center gap-2 text-left">
                             <Sparkles className="h-4 w-4 text-terminal-cyan" />
