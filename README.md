@@ -51,7 +51,7 @@ Quality checks:
 ## API
 
 - `GET /api/news?limit=30&retentionDays=7`
-- `GET /api/news/summary` (returns last generated daily summary from file/cache)
+- `GET /api/news/summary` (returns last generated summary from file/cache)
 - `GET /api/news/summary/refresh?hours=24&limit=180` (scheduled/manual summary generation)
 - `GET /api/prices?symbols=BTC,ETH,SOL`
 
@@ -74,7 +74,7 @@ Vercel Hobby cron jobs are limited; this repo uses GitHub Actions to periodicall
 	- `CRYPTOWIRE_REFRESH_SECRET` = same value as `NEWS_REFRESH_SECRET`
 - Workflows:
 	- `.github/workflows/refresh-news.yml` (keeps raw news cache warm)
-	- `.github/workflows/refresh-summary.yml` (generates one AI summary daily)
+	- `.github/workflows/refresh-summary.yml` (generates one AI summary every 12 hours)
 
 To persist cached news on Vercel (recommended), also set KV env vars in the API project:
 - `KV_REST_API_URL`

@@ -508,7 +508,7 @@ export class NewsSummaryService {
             `Interpret highlights as key articles. ` +
             `Each key article item must be: { "title": string, "detail": string, "sources": string[], "url"?: string }. ` +
             `Window: last ${params.windowHours} hours (${params.windowStart} to ${params.windowEnd}). ` +
-            `Keep summary to 3-5 sentences, and generate 4-8 highlights focused on the most important developments.\n\n` +
+            `Keep summary to 3-5 sentences, and generate 4-8 key articles focused on the most important developments.\n\n` +
             `Source coverage:\n${sourceCoverageRows}\n\n` +
             `Articles:\n${articleRows}`;
 

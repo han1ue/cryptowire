@@ -1,9 +1,9 @@
-name: Refresh CryptoWire daily AI summary
+name: Refresh CryptoWire 12h AI summary
 
 on:
   schedule:
-    # Once per day at 00:00 UTC
-    - cron: "0 0 * * *"
+    # Every 12 hours at 00:00 and 12:00 UTC
+    - cron: "0 */12 * * *"
   workflow_dispatch: {}
 
 jobs:
@@ -12,7 +12,7 @@ jobs:
     timeout-minutes: 2
 
     steps:
-      - name: Call API daily summary refresh endpoint
+      - name: Call API 12h summary refresh endpoint
         env:
           API_BASE_URL: ${{ secrets.CRYPTOWIRE_API_BASE_URL }}
           REFRESH_SECRET: ${{ secrets.CRYPTOWIRE_REFRESH_SECRET }}
@@ -55,5 +55,5 @@ jobs:
           # Fallback: if someone deploys without the /api prefix (older setup)
           try_url "${base}/news/summary/refresh?hours=24&limit=180" && exit 0
 
-          echo "Daily summary refresh failed for both candidate endpoints."
+          echo "12h summary refresh failed for both candidate endpoints."
           exit 22

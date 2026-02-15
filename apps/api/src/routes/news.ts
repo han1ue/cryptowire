@@ -405,7 +405,7 @@ export const createNewsRouter = (
 
     const SUMMARY_DEFAULT_HOURS = 24;
     const SUMMARY_DEFAULT_LIMIT = 180;
-    const SUMMARY_MAX_AGE_HOURS = 24;
+    const SUMMARY_MAX_AGE_HOURS = 12;
 
     const getRequestedSourceIds = (raw: string | undefined): string[] => {
         const requestedSourceIds = (raw ?? "")

@@ -31,28 +31,6 @@ export const AiSummaryDialog = ({
     error,
     onRefresh,
 }: AiSummaryDialogProps) => {
-    const formatDailyRefreshLocalTime = (referenceDate: Date): string => {
-        const scheduledUtc = new Date(
-            Date.UTC(
-                referenceDate.getUTCFullYear(),
-                referenceDate.getUTCMonth(),
-                referenceDate.getUTCDate(),
-                0,
-                0,
-                0,
-            ),
-        );
-
-        return new Intl.DateTimeFormat(undefined, {
-            hour: "numeric",
-            minute: "2-digit",
-            timeZoneName: "short",
-        }).format(scheduledUtc);
-    };
-
-    const dailyRefreshTimeLabel = formatDailyRefreshLocalTime(
-        data?.generatedAt ? new Date(data.generatedAt) : new Date(),
-    );
     const generatedAtLabel = data?.generatedAt
         ? formatDistanceToNowStrict(new Date(data.generatedAt), { addSuffix: true })
         : null;
@@ -100,7 +78,7 @@ export const AiSummaryDialog = ({
                             </Badge>
                             {generatedAtLabel ? (
                                 <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                                    Updated every day at {dailyRefreshTimeLabel} ({generatedAtLabel})
+                                    Updated every 12 hours ({generatedAtLabel})
                                 </span>
                             ) : null}
                         </div>
