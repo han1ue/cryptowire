@@ -52,7 +52,7 @@ export const createNewsRouter = (
         return "https://cryptowi.re";
     };
 
-    // RSS feed for discovery/syndication (served at /api/rss.xml; frontend rewrites /rss.xml -> /api/rss.xml).
+    // RSS feed for discovery/syndication (served at /rss.xml).
     router.get("/rss.xml", asyncHandler(async (req, res) => {
         const siteUrl = getPublicSiteUrl(req);
         const items = await newsStore.getPage({ limit: 50, offset: 0 });
@@ -542,7 +542,7 @@ export const createNewsRouter = (
 
         return res.status(503).json({
             error: "Daily summary is not ready yet",
-            hint: "Run /api/news/summary/refresh from your scheduled job first.",
+            hint: "Run /news/summary/refresh from your scheduled job first.",
         });
     }));
 
@@ -674,7 +674,7 @@ export const createNewsRouter = (
             refreshedAt: new Date().toISOString(),
             note:
                 items.length === 0
-                    ? "Upstream returned 0 items. Try /api/news/diagnose?limit=100 to see the CoinDesk response details (status/body)."
+                    ? "Upstream returned 0 items. Try /news/diagnose?limit=100 to see the CoinDesk response details (status/body)."
                     : null,
         });
     }));

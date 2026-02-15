@@ -2,11 +2,31 @@
     "rewrites": [
         {
             "source": "/rss.xml",
-            "destination": "https://cryptowire-api.vercel.app/api/rss.xml"
+            "destination": "https://cryptowire-api.vercel.app/rss.xml"
         },
         {
-            "source": "/api/(.*)",
-            "destination": "https://cryptowire-api.vercel.app/api/$1"
+            "source": "/news",
+            "destination": "https://cryptowire-api.vercel.app/news"
+        },
+        {
+            "source": "/news/(.*)",
+            "destination": "https://cryptowire-api.vercel.app/news/$1"
+        },
+        {
+            "source": "/prices",
+            "destination": "https://cryptowire-api.vercel.app/prices"
+        },
+        {
+            "source": "/market",
+            "destination": "https://cryptowire-api.vercel.app/market"
+        },
+        {
+            "source": "/health",
+            "destination": "https://cryptowire-api.vercel.app/health"
+        },
+        {
+            "source": "/stats",
+            "destination": "https://cryptowire-api.vercel.app/stats"
         },
         {
             "source": "/(.*)",

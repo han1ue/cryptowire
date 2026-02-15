@@ -10,7 +10,35 @@
     "rewrites": [
         {
             "source": "/",
+            "destination": "/api"
+        },
+        {
+            "source": "/health",
+            "destination": "/api/health"
+        },
+        {
+            "source": "/stats",
             "destination": "/api/stats"
+        },
+        {
+            "source": "/rss.xml",
+            "destination": "/api/rss.xml"
+        },
+        {
+            "source": "/news",
+            "destination": "/api/news"
+        },
+        {
+            "source": "/news/(.*)",
+            "destination": "/api/news/$1"
+        },
+        {
+            "source": "/prices",
+            "destination": "/api/prices"
+        },
+        {
+            "source": "/market",
+            "destination": "/api/market"
         }
     ]
 }

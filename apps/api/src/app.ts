@@ -14,6 +14,19 @@ import { asyncHandler } from "./lib/asyncHandler.js";
 
 export const app = express();
 const config = getConfig();
+const kvEnabled = Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
+const KV_LAST_REFRESH_KEY = "news:lastRefreshAt";
+
+const publicEndpoints = {
+    stats: "/stats",
+    health: "/health",
+    news: "/news?limit=40&offset=0",
+    summary: "/news/summary",
+    sources: "/news/sources",
+    refresh: "/news/refresh?limit=30",
+    prices: "/prices?symbols=BTC,ETH,SOL",
+    market: "/market",
+};
 
 const corsOrigin = config.CORS_ORIGIN
     ? config.CORS_ORIGIN.split(",").map((x) => x.trim()).filter(Boolean)
@@ -29,23 +42,7 @@ app.use((_req, res, next) => {
     next();
 });
 
-app.get("/", (_req, res) => {
-    return res.json({
-        ok: true,
-        name: "CryptoWire API",
-        endpoints: {
-            api: "/api",
-            stats: "/api/stats",
-            health: "/api/health",
-            news: "/api/news?limit=40&offset=0",
-            summary: "/api/news/summary",
-            sources: "/api/news/sources",
-            prices: "/api/prices?symbols=BTC,ETH,SOL",
-        },
-    });
-});
-
-app.get("/api/health", (_req, res) => {
+app.get("/health", (_req, res) => {
     res.json({ ok: true });
 });
 
@@ -64,9 +61,6 @@ const newsSummaryStore = createNewsSummaryStore({
 const priceService = new PriceService(config);
 const marketService = new MarketService();
 
-const kvEnabled = Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
-const KV_LAST_REFRESH_KEY = "news:lastRefreshAt";
-
 const getLastRefreshAt = async (): Promise<string | null> => {
     if (!kvEnabled) return null;
     try {
@@ -78,7 +72,7 @@ const getLastRefreshAt = async (): Promise<string | null> => {
     }
 };
 
-app.get("/api/stats", asyncHandler(async (_req, res) => {
+app.get("/stats", asyncHandler(async (_req, res) => {
     const now = new Date().toISOString();
     const newsCount = await newsStore.count();
     const newest = (await newsStore.getPage({ limit: 1, offset: 0 }))[0] ?? null;
@@ -99,45 +93,25 @@ app.get("/api/stats", asyncHandler(async (_req, res) => {
         newestPublishedAt: newest?.publishedAt ?? null,
         oldestPublishedAt: oldest?.publishedAt ?? null,
         lastRefreshAt,
-        endpoints: {
-            health: "/api/health",
-            news: "/api/news?limit=40&offset=0",
-            summary: "/api/news/summary",
-            sources: "/api/news/sources",
-            refresh: "/api/news/refresh?limit=30",
-            prices: "/api/prices?symbols=BTC,ETH,SOL",
-            market: "/api/market",
-        },
+        endpoints: publicEndpoints,
     });
 }));
 
-app.get("/api", (_req, res) => {
+app.get("/", (_req, res) => {
     return res.json({
         ok: true,
         name: "CryptoWire API",
         kvEnabled,
-        endpoints: {
-            stats: "/api/stats",
-            health: "/api/health",
-            news: "/api/news?limit=40&offset=0",
-            summary: "/api/news/summary",
-            sources: "/api/news/sources",
-            refresh: "/api/news/refresh?limit=30",
-            prices: "/api/prices?symbols=BTC,ETH,SOL",
-            market: "/api/market",
-        },
+        endpoints: publicEndpoints,
     });
 });
 
-app.use(
-    "/api",
-    createNewsRouter(newsService, newsStore, newsSummaryService, newsSummaryStore, {
-        refreshSecret: config.NEWS_REFRESH_SECRET,
-        siteUrl: config.SITE_URL,
-    }),
-);
-app.use("/api", createPricesRouter(priceService));
-app.use("/api", createMarketRouter(marketService));
+app.use(createNewsRouter(newsService, newsStore, newsSummaryService, newsSummaryStore, {
+    refreshSecret: config.NEWS_REFRESH_SECRET,
+    siteUrl: config.SITE_URL,
+}));
+app.use(createPricesRouter(priceService));
+app.use(createMarketRouter(marketService));
 
 const errorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
     console.error("[api] unhandled error", error);

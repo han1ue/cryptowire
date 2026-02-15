@@ -25,7 +25,7 @@ const getApiBaseUrl = (): string => {
 };
 
 const fetchMarketOverview = async (): Promise<MarketOverviewResponse> => {
-    const url = new URL("/api/market", getApiBaseUrl());
+    const url = new URL("/market", getApiBaseUrl());
     const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });
     if (!res.ok) throw new Error("Failed to fetch market overview");
     return (await res.json()) as MarketOverviewResponse;

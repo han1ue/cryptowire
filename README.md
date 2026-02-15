@@ -24,7 +24,7 @@ This repo is a single-repo setup with:
 Local URLs:
 
 - Frontend: `http://localhost:8080`
-- API: `http://localhost:3001/api/health`
+- API: `http://localhost:3001/health`
 
 Environment:
 
@@ -50,10 +50,10 @@ Quality checks:
 
 ## API
 
-- `GET /api/news?limit=30&retentionDays=7`
-- `GET /api/news/summary` (returns last generated summary from file/cache)
-- `GET /api/news/summary/refresh?hours=24&limit=180` (scheduled/manual summary generation)
-- `GET /api/prices?symbols=BTC,ETH,SOL`
+- `GET /news?limit=30&retentionDays=7`
+- `GET /news/summary` (returns last generated summary from file/cache)
+- `GET /news/summary/refresh?hours=24&limit=180` (scheduled/manual summary generation)
+- `GET /prices?symbols=BTC,ETH,SOL`
 
 ## Vercel deploy (one repo, two projects)
 
@@ -70,7 +70,7 @@ Vercel Hobby cron jobs are limited; this repo uses GitHub Actions to periodicall
 
 - Configure the API env var `NEWS_REFRESH_SECRET` (any random string)
 - Add GitHub repo secrets:
-	- `CRYPTOWIRE_API_BASE_URL` = your API deployment root URL (no trailing `/api`), e.g. `https://your-api.vercel.app`
+	- `CRYPTOWIRE_API_BASE_URL` = your API deployment root URL (no trailing slash), e.g. `https://your-api.vercel.app`
 	- `CRYPTOWIRE_REFRESH_SECRET` = same value as `NEWS_REFRESH_SECRET`
 - Workflows:
 	- `.github/workflows/refresh-news.yml` (keeps raw news cache warm)

@@ -8,7 +8,27 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
     proxy: {
-      "/api": {
+      "/news": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+      "/prices": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+      "/market": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+      "/health": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+      "/stats": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+      "/rss.xml": {
         target: "http://localhost:3001",
         changeOrigin: true,
       },

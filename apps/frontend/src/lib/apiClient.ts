@@ -15,7 +15,7 @@ export const fetchNews = async (params?: {
     sources?: string[];
     category?: string;
 }): Promise<NewsListResponse> => {
-    const url = new URL("/api/news", getApiBaseUrl());
+    const url = new URL("/news", getApiBaseUrl());
     if (params?.limit) url.searchParams.set("limit", String(params.limit));
     if (params?.retentionDays) url.searchParams.set("retentionDays", String(params.retentionDays));
     if (typeof params?.offset === "number") url.searchParams.set("offset", String(params.offset));
@@ -28,7 +28,7 @@ export const fetchNews = async (params?: {
 };
 
 export const fetchNewsCategories = async (params?: { sources?: string[] }): Promise<NewsCategoriesResponse> => {
-    const url = new URL("/api/news/categories", getApiBaseUrl());
+    const url = new URL("/news/categories", getApiBaseUrl());
     if (params?.sources && params.sources.length > 0) url.searchParams.set("sources", params.sources.join(","));
 
     const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });
@@ -37,7 +37,7 @@ export const fetchNewsCategories = async (params?: { sources?: string[] }): Prom
 };
 
 export const fetchNewsStatus = async (): Promise<{ lastRefreshAt: string | null; now: string }> => {
-    const url = new URL("/api/news/status", getApiBaseUrl());
+    const url = new URL("/news/status", getApiBaseUrl());
     const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });
     if (!res.ok) throw new Error("Failed to fetch news status");
     const json: unknown = await res.json();
@@ -49,7 +49,7 @@ export const fetchNewsStatus = async (): Promise<{ lastRefreshAt: string | null;
 };
 
 export const fetchNewsSummary = async (): Promise<NewsSummaryResponse> => {
-    const url = new URL("/api/news/summary", getApiBaseUrl());
+    const url = new URL("/news/summary", getApiBaseUrl());
 
     const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });
     if (!res.ok) throw new Error("Failed to fetch AI summary");
@@ -57,7 +57,7 @@ export const fetchNewsSummary = async (): Promise<NewsSummaryResponse> => {
 };
 
 export const fetchPrices = async (symbols?: string[]): Promise<PriceResponse> => {
-    const url = new URL("/api/prices", getApiBaseUrl());
+    const url = new URL("/prices", getApiBaseUrl());
     if (symbols && symbols.length > 0) url.searchParams.set("symbols", symbols.join(","));
 
     const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });

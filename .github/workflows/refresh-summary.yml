@@ -49,11 +49,7 @@ jobs:
             return 1
           }
 
-          # Primary: current API route
-          try_url "${base}/api/news/summary/refresh?hours=24&limit=180" && exit 0
-
-          # Fallback: if someone deploys without the /api prefix (older setup)
           try_url "${base}/news/summary/refresh?hours=24&limit=180" && exit 0
 
-          echo "12h summary refresh failed for both candidate endpoints."
+          echo "12h summary refresh failed."
           exit 22
