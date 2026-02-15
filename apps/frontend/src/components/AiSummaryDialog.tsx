@@ -44,7 +44,7 @@ export const AiSummaryDialog = ({
                     <div className="flex w-full items-center justify-between gap-3">
                         <DialogTitle className="flex items-center gap-2 text-left">
                             <Sparkles className="h-4 w-4 text-terminal-cyan" />
-                            AI 24 Recap
+                            AI 24h Recap
                         </DialogTitle>
                         <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
                             Updated every 12 hours
