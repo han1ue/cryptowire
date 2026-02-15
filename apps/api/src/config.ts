@@ -11,10 +11,6 @@ const EnvSchema = z.object({
     NEWS_REFRESH_SECRET: z.string().optional(),
     NEWS_SUMMARY_FILE_PATH: z.string().optional(),
     CORS_ORIGIN: z.string().optional(),
-    RATE_LIMIT_WINDOW_SECONDS: z.coerce.number().int().positive().max(3600).default(60),
-    RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().min(0).max(10_000).default(60),
-    RATE_LIMIT_SUMMARY_MAX_REQUESTS: z.coerce.number().int().min(0).max(10_000).default(20),
-    RATE_LIMIT_ADMIN_MAX_REQUESTS: z.coerce.number().int().min(0).max(10_000).default(8),
 
     GEMINI_API_KEY: z.string().optional(),
     GEMINI_MODEL: z.string().optional(),

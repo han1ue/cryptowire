@@ -11,7 +11,6 @@ import { createMarketRouter } from "./routes/market.js";
 import { createNewsStore } from "./stores/newsStore.js";
 import { createNewsSummaryStore } from "./stores/newsSummaryStore.js";
 import { asyncHandler } from "./lib/asyncHandler.js";
-import { createRateLimitMiddleware } from "./lib/rateLimit.js";
 
 export const app = express();
 const config = getConfig();
@@ -42,14 +41,6 @@ app.use((_req, res, next) => {
     res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
     next();
 });
-app.use(
-    createRateLimitMiddleware({
-        windowSeconds: config.RATE_LIMIT_WINDOW_SECONDS,
-        defaultMaxRequests: config.RATE_LIMIT_MAX_REQUESTS,
-        summaryMaxRequests: config.RATE_LIMIT_SUMMARY_MAX_REQUESTS,
-        adminMaxRequests: config.RATE_LIMIT_ADMIN_MAX_REQUESTS,
-    }),
-);
 
 app.get("/health", (_req, res) => {
     res.json({ ok: true });
