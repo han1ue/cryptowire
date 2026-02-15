@@ -4,7 +4,7 @@ import { NewsTicker } from "@/components/NewsTicker";
 import { Sidebar } from "@/components/Sidebar";
 import { SettingsDialog } from "@/components/SettingsDialog";
 import { SourcesDialog } from "@/components/SourcesDialog";
-import { AiSummaryDialog } from "@/components/AiSummaryDialog";
+import { AiSummaryPanel } from "@/components/AiSummaryPanel";
 import { NewsCard } from "@/components/NewsCard";
 import { ShareMenu } from "@/components/ShareMenu";
 import { sources as sourcesConfig, SourceId } from "@/data/sources";
@@ -266,7 +266,7 @@ const Index = () => {
     "That’s all, folks. Until the next candle.",
   ];
   const [endOfListSuffix, setEndOfListSuffix] = useState<string>("");
-  const [aiSummaryOpen, setAiSummaryOpen] = useState(false);
+  const [showAiRecapOnly, setShowAiRecapOnly] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedLineCategoriesById, setExpandedLineCategoriesById] = useState<Record<string, boolean>>({});
 
@@ -331,7 +331,7 @@ const Index = () => {
   const categoryInfiniteItems = categoryInfinite.data?.pages.flatMap((p) => p.items ?? []) ?? [];
 
   const aiSummaryQuery = useNewsSummary({
-    enabled: aiSummaryOpen,
+    enabled: showAiRecapOnly,
   });
 
   // Reset scroll/end-message state when the list context changes.
@@ -339,7 +339,7 @@ const Index = () => {
   useEffect(() => {
     setEndOfListSuffix("");
     setExpandedLineCategoriesById({});
-  }, [showSavedOnly, showRecentOnly, selectedCategory, selectedSourcesKey]);
+  }, [showSavedOnly, showRecentOnly, showAiRecapOnly, selectedCategory, selectedSourcesKey]);
 
   useEffect(() => {
     localStorage.setItem("selectedSources", JSON.stringify(selectedSources));
@@ -398,7 +398,7 @@ const Index = () => {
 
   // Auto-load more when near the bottom of the scrollable list.
   useEffect(() => {
-    if (showSavedOnly || showRecentOnly) return;
+    if (showSavedOnly || showRecentOnly || showAiRecapOnly) return;
     const el = document.getElementById("news-infinite-sentinel");
     if (!el) return;
 
@@ -420,6 +420,7 @@ const Index = () => {
   }, [
     showSavedOnly,
     showRecentOnly,
+    showAiRecapOnly,
     selectedCategory,
     infinite,
     categoryInfinite,
@@ -580,12 +581,13 @@ const Index = () => {
   const shouldShowEndMessage =
     !showSavedOnly &&
     !showRecentOnly &&
+    !showAiRecapOnly &&
     selectedCategory === 'All News' &&
     !isFetchingNext &&
     allNews.length > 0 &&
     !hasNextPage;
 
-  const shouldRenderInfiniteSentinel = !showSavedOnly && !showRecentOnly && (hasNextPage ?? true);
+  const shouldRenderInfiniteSentinel = !showSavedOnly && !showRecentOnly && !showAiRecapOnly && (hasNextPage ?? true);
 
   useEffect(() => {
     if (!shouldShowEndMessage) return;
@@ -639,8 +641,13 @@ const Index = () => {
         onSourcesClick={openSourcesDialog}
         activeSourceCount={activeSourceCount}
         totalSourceCount={totalSourceCount}
-        onAiSummaryClick={() => setAiSummaryOpen(true)}
-        aiSummaryLoading={aiSummaryOpen && aiSummaryQuery.isFetching}
+        onAiSummaryClick={() => {
+          setShowAiRecapOnly(true);
+          setShowSavedOnly(false);
+          setShowRecentOnly(false);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }}
+        aiSummaryLoading={showAiRecapOnly && aiSummaryQuery.isFetching}
         onMenuClick={() => setSidebarOpen(true)}
         lastRefreshAt={newsStatus.data?.lastRefreshAt ?? null}
       />
@@ -653,29 +660,32 @@ const Index = () => {
           <Sidebar
             savedArticlesCount={savedArticles.length}
             showSavedOnly={showSavedOnly}
-            onToggleSavedView={() => {
-              setShowSavedOnly((prev) => !prev);
-              setShowRecentOnly(false);
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
+                onToggleSavedView={() => {
+                  setShowSavedOnly((prev) => !prev);
+                  setShowRecentOnly(false);
+                  setShowAiRecapOnly(false);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
             savedArticles={savedArticles}
             recentArticlesCount={recentArticles.length}
             recentArticles={recentArticles}
             showRecentOnly={showRecentOnly}
-            onToggleRecentView={() => {
-              setShowRecentOnly((prev) => !prev);
-              setShowSavedOnly(false);
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
+                onToggleRecentView={() => {
+                  setShowRecentOnly((prev) => !prev);
+                  setShowSavedOnly(false);
+                  setShowAiRecapOnly(false);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
             allNews={sidebarNews}
             categories={filteredCategoryOptions}
             selectedCategory={selectedCategory}
-            onCategorySelect={cat => {
-              setSelectedCategory((prev) => (prev === cat ? 'All News' : cat));
-              setShowSavedOnly(false);
-              setShowRecentOnly(false);
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
+                onCategorySelect={cat => {
+                  setSelectedCategory((prev) => (prev === cat ? 'All News' : cat));
+                  setShowSavedOnly(false);
+                  setShowRecentOnly(false);
+                  setShowAiRecapOnly(false);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
             onSourcesClick={openSourcesDialog}
             activeSourceCount={activeSourceCount}
             totalSourceCount={totalSourceCount}
@@ -699,6 +709,7 @@ const Index = () => {
                 onToggleSavedView={() => {
                   setShowSavedOnly((prev) => !prev);
                   setShowRecentOnly(false);
+                  setShowAiRecapOnly(false);
                   setSidebarOpen(false);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
@@ -709,6 +720,7 @@ const Index = () => {
                 onToggleRecentView={() => {
                   setShowRecentOnly((prev) => !prev);
                   setShowSavedOnly(false);
+                  setShowAiRecapOnly(false);
                   setSidebarOpen(false);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
@@ -719,6 +731,7 @@ const Index = () => {
                   setSelectedCategory((prev) => (prev === cat ? 'All News' : cat));
                   setShowSavedOnly(false);
                   setShowRecentOnly(false);
+                  setShowAiRecapOnly(false);
                   setSidebarOpen(false);
                 }}
                 onSourcesClick={() => {
@@ -738,13 +751,14 @@ const Index = () => {
         <main
           className={`flex-1 ${displayMode === "cards" ? "p-2 sm:p-4" : "px-0 py-2 sm:p-4"}`}
         >
-          {showSavedOnly || showRecentOnly ? (
+          {showSavedOnly || showRecentOnly || showAiRecapOnly ? (
             <div className="mb-2 px-2 sm:px-0">
               <button
                 type="button"
                 onClick={() => {
                   setShowSavedOnly(false);
                   setShowRecentOnly(false);
+                  setShowAiRecapOnly(false);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 className="inline-flex items-center border border-border rounded px-2.5 py-1.5 text-[12px] font-medium uppercase tracking-wider text-muted-foreground bg-card/30 hover:bg-card/40 hover:text-foreground transition-colors"
@@ -756,7 +770,7 @@ const Index = () => {
           ) : null}
 
           {/* Category Tag - above news, smaller, left-aligned */}
-          {!showSavedOnly && !showRecentOnly && selectedCategoryKey && (
+          {!showSavedOnly && !showRecentOnly && !showAiRecapOnly && selectedCategoryKey && (
             <div className="mb-2 flex px-2">
               <span className="inline-flex items-center px-2 py-1 rounded bg-primary/10 text-primary text-sm font-medium uppercase tracking-wider">
                 {selectedCategoryKey}
@@ -774,7 +788,14 @@ const Index = () => {
             </div>
           )}
 
-          {!showSavedOnly && !showRecentOnly && selectedSources.length === 0 ? (
+          {showAiRecapOnly ? (
+            <AiSummaryPanel
+              data={aiSummaryQuery.data}
+              isLoading={aiSummaryQuery.isLoading}
+              isError={aiSummaryQuery.isError}
+              error={aiSummaryQuery.error}
+            />
+          ) : !showSavedOnly && !showRecentOnly && selectedSources.length === 0 ? (
             <div className="flex-1 flex items-center justify-center bg-card/30 border border-border rounded p-12 sm:p-20">
               <div className="text-center text-muted-foreground">
                 <p className="text-sm">Please select some sources to get the latest news</p>
@@ -1304,15 +1325,6 @@ const Index = () => {
           )}
         </main>
       </div>
-
-      <AiSummaryDialog
-        open={aiSummaryOpen}
-        onOpenChange={setAiSummaryOpen}
-        data={aiSummaryQuery.data}
-        isLoading={aiSummaryQuery.isLoading}
-        isError={aiSummaryQuery.isError}
-        error={aiSummaryQuery.error}
-      />
 
       <SourcesDialog
         open={sourcesOpen}
