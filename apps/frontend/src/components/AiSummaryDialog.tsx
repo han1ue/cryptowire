@@ -1,6 +1,5 @@
 import type { NewsSummaryResponse } from "@cryptowire/types";
-import { formatDistanceToNowStrict } from "date-fns";
-import { AlertTriangle, Lightbulb, PenSquare, RotateCw, Sparkles } from "lucide-react";
+import { AlertTriangle, Lightbulb, PenSquare, Sparkles } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,15 +9,13 @@ interface AiSummaryDialogProps {
     onOpenChange: (open: boolean) => void;
     data?: NewsSummaryResponse;
     isLoading: boolean;
-    isFetching: boolean;
     isError: boolean;
     error?: unknown;
-    onRefresh: () => void;
 }
 
 const getErrorMessage = (error: unknown): string => {
     if (error instanceof Error && error.message.trim().length > 0) return error.message;
-    return "Could not load the AI brief.";
+    return "Could not load the summary.";
 };
 
 export const AiSummaryDialog = ({
@@ -26,14 +23,9 @@ export const AiSummaryDialog = ({
     onOpenChange,
     data,
     isLoading,
-    isFetching,
     isError,
     error,
-    onRefresh,
 }: AiSummaryDialogProps) => {
-    const generatedAtLabel = data?.generatedAt
-        ? formatDistanceToNowStrict(new Date(data.generatedAt), { addSuffix: true })
-        : null;
     const aiGenerationError = data?.aiError ?? null;
     const modelUsed = data?.model ?? "unknown-model";
 
@@ -50,22 +42,13 @@ export const AiSummaryDialog = ({
             >
                 <DialogHeader className="border-b border-border px-0 pb-4 pt-0">
                     <div className="flex w-full items-center justify-between gap-3">
-                        <div>
-                            <DialogTitle className="flex items-center gap-2 text-left">
-                                <Sparkles className="h-4 w-4 text-terminal-cyan" />
-                                AI 24h Brief
-                            </DialogTitle>
-                        </div>
-
-                        <button
-                            type="button"
-                            onClick={onRefresh}
-                            disabled={isFetching}
-                            className="inline-flex items-center gap-1 rounded border border-border bg-muted/40 px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                            <RotateCw className={`h-3 w-3 ${isFetching ? "animate-spin" : ""}`} />
-                            Refresh
-                        </button>
+                        <DialogTitle className="flex items-center gap-2 text-left">
+                            <Sparkles className="h-4 w-4 text-terminal-cyan" />
+                            AI Recap
+                        </DialogTitle>
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                            Updated every 12 hours
+                        </span>
                     </div>
 
                     {hasData ? (
@@ -76,11 +59,6 @@ export const AiSummaryDialog = ({
                             <Badge variant="outline" className="text-[10px] uppercase tracking-wider">
                                 Model: {modelUsed}
                             </Badge>
-                            {generatedAtLabel ? (
-                                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                                    Updated every 12 hours ({generatedAtLabel})
-                                </span>
-                            ) : null}
                         </div>
                     ) : null}
                 </DialogHeader>

@@ -1310,10 +1310,8 @@ const Index = () => {
         onOpenChange={setAiSummaryOpen}
         data={aiSummaryQuery.data}
         isLoading={aiSummaryQuery.isLoading}
-        isFetching={aiSummaryQuery.isFetching}
         isError={aiSummaryQuery.isError}
         error={aiSummaryQuery.error}
-        onRefresh={() => void aiSummaryQuery.refetch()}
       />
 
       <SourcesDialog

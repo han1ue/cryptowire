@@ -236,12 +236,12 @@ export const Header = ({
             type="button"
             onClick={onAiSummaryClick}
             className="group relative inline-flex items-center gap-1.5 overflow-hidden rounded border border-terminal-cyan/50 bg-gradient-to-r from-terminal-cyan/20 via-primary/20 to-terminal-cyan/20 px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-foreground shadow-[0_0_14px_hsl(var(--terminal-cyan)/0.28)] transition-all hover:shadow-[0_0_20px_hsl(var(--primary)/0.35)]"
-            title="Open AI brief"
-            aria-label="Open AI brief"
+            title="Open AI recap"
+            aria-label="Open AI recap"
           >
             <span className="pointer-events-none absolute inset-y-0 -left-1/2 w-1/2 rotate-12 bg-white/30 blur-sm transition-transform duration-700 group-hover:translate-x-[210%]" />
             <Sparkles className={`h-3.5 w-3.5 ${aiSummaryLoading ? "animate-pulse text-primary" : "text-terminal-cyan"}`} />
-            <span>AI Brief</span>
+            <span>AI Recap</span>
           </button>
         </div>
 
