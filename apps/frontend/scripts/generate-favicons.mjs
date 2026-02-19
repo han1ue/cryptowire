@@ -5,10 +5,20 @@ import zlib from "node:zlib";
 const projectRoot = path.resolve(import.meta.dirname, "..");
 const publicDir = path.join(projectRoot, "public");
 
+const background = { r: 0x0b, g: 0x0f, b: 0x14, a: 0xff };
 const stroke = { r: 0x00, g: 0xff, b: 0x88, a: 0xff };
 
 function clampInt(value, min, max) {
     return Math.max(min, Math.min(max, value | 0));
+}
+
+function fillImage(image, color) {
+    for (let i = 0; i < image.length; i += 4) {
+        image[i + 0] = color.r;
+        image[i + 1] = color.g;
+        image[i + 2] = color.b;
+        image[i + 3] = color.a;
+    }
 }
 
 function setPixel(image, width, height, x, y, color) {
@@ -111,23 +121,25 @@ function renderFavicon(size) {
     const width = size;
     const height = size;
     const image = Buffer.alloc(width * height * 4, 0);
+    fillImage(image, background);
 
     // Recreate apps/frontend/public/favicon.svg:
     // viewBox 0 0 24 24
-    // polyline points="4 17 10 11 4 5"
-    // line x1="12" y1="19" x2="20" y2="19"
+    // rect width="24" height="24" fill="#0b0f14"
+    // polyline points="5.28 16.2 10.32 11.16 5.28 6.12"
+    // line x1="12" y1="17.88" x2="18.72" y2="17.88"
     const scale = size / 24;
     const thickness = Math.max(2, Math.round(2 * scale));
 
-    const p1 = { x: 4 * scale, y: 17 * scale };
-    const p2 = { x: 10 * scale, y: 11 * scale };
-    const p3 = { x: 4 * scale, y: 5 * scale };
+    const p1 = { x: 5.28 * scale, y: 16.2 * scale };
+    const p2 = { x: 10.32 * scale, y: 11.16 * scale };
+    const p3 = { x: 5.28 * scale, y: 6.12 * scale };
 
     drawThickLine(image, width, height, p1.x, p1.y, p2.x, p2.y, thickness, stroke);
     drawThickLine(image, width, height, p2.x, p2.y, p3.x, p3.y, thickness, stroke);
 
-    const l1 = { x: 12 * scale, y: 19 * scale };
-    const l2 = { x: 20 * scale, y: 19 * scale };
+    const l1 = { x: 12 * scale, y: 17.88 * scale };
+    const l2 = { x: 18.72 * scale, y: 17.88 * scale };
     drawThickLine(image, width, height, l1.x, l1.y, l2.x, l2.y, thickness, stroke);
 
     return makePngRgba(width, height, image);
@@ -170,7 +182,7 @@ function makeIco(entries) {
 fs.mkdirSync(publicDir, { recursive: true });
 
 const icoSizes = [16, 32, 48];
-const extraSizes = [180, 192, 512];
+const extraSizes = [96, 180, 192, 512];
 const sizes = [...icoSizes, ...extraSizes];
 const pngs = sizes.map((size) => ({ size, png: renderFavicon(size) }));
 
@@ -203,8 +215,8 @@ const manifest = {
     short_name: "cryptowi.re",
     start_url: "/",
     display: "standalone",
-    background_color: "#000000",
-    theme_color: "#000000",
+    background_color: "#0b0f14",
+    theme_color: "#0b0f14",
     icons: [
         {
             src: "/android-chrome-192x192.png",
