@@ -16,7 +16,7 @@ const getErrorMessage = (error: unknown): string => {
     return "Could not load the summary.";
 };
 
-const X_RECAP_BODY_TARGET = 240;
+const X_RECAP_MAX_CHARS = 280;
 
 const buildRecapShareText = (data?: NewsSummaryResponse): string => {
     if (!data) return "AI 24h Recap";
@@ -39,16 +39,16 @@ const buildRecapShareText = (data?: NewsSummaryResponse): string => {
 };
 
 const buildRecapXShareText = (data?: NewsSummaryResponse): string => {
-    if (!data) return "AI 24h Recap cryptowi.re/recap";
+    if (!data) return "AI 24h Recap\ncryptowi.re/recap";
 
     const heading = `AI ${data.windowHours}h Recap (${data.articleCount} stories)`;
     const link = "cryptowi.re/recap";
     const truncationSuffix = "(...)";
     const normalizedSummary = data.summary.replace(/"/g, "'").replace(/\s+/g, " ").trim();
 
-    const prefix = `${heading}\n\n"`;
-    const suffix = `" ${link}`;
-    const maxSummaryLength = Math.max(0, X_RECAP_BODY_TARGET - prefix.length - suffix.length);
+    const prefix = `${heading}\n${link}\n\n"`;
+    const suffix = `"`;
+    const maxSummaryLength = Math.max(0, X_RECAP_MAX_CHARS - prefix.length - suffix.length);
 
     let summaryText = normalizedSummary;
     if (summaryText.length > maxSummaryLength) {

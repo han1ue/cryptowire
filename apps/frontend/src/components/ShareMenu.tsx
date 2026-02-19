@@ -59,7 +59,13 @@ export const ShareMenu = ({
     const strippedUrl = useMemo(() => stripQueryParams(url), [url]);
     const encodedUrl = useMemo(() => encodeURIComponent(strippedUrl), [strippedUrl]);
     const shareText = useMemo(() => buildShareText(text ?? title), [text, title]);
-    const xShareBaseText = useMemo(() => buildShareText(xText ?? text ?? title), [xText, text, title]);
+    const xShareBaseText = useMemo(() => {
+        if (typeof xText === "string") {
+            const trimmed = xText.trim();
+            if (trimmed.length > 0) return trimmed;
+        }
+        return buildShareText(text ?? title);
+    }, [xText, text, title]);
     const xShareText = useMemo(() => encodeURIComponent(truncateForX(xShareBaseText)), [xShareBaseText]);
     const encodedShareText = useMemo(() => encodeURIComponent(shareText), [shareText]);
 
