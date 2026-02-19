@@ -10,6 +10,8 @@ type ShareMenuProps = {
     url: string;
     title?: string;
     text?: string;
+    xText?: string;
+    xAppendUrl?: boolean;
     children: ReactNode;
     align?: "start" | "center" | "end";
 };
@@ -43,14 +45,23 @@ const stripQueryParams = (rawUrl: string) => {
     }
 };
 
-export const ShareMenu = ({ url, title, text, children, align = "end" }: ShareMenuProps) => {
+export const ShareMenu = ({
+    url,
+    title,
+    text,
+    xText,
+    xAppendUrl = true,
+    children,
+    align = "end",
+}: ShareMenuProps) => {
     const strippedUrl = useMemo(() => stripQueryParams(url), [url]);
     const encodedUrl = useMemo(() => encodeURIComponent(strippedUrl), [strippedUrl]);
     const shareText = useMemo(() => buildShareText(text ?? title), [text, title]);
-    const xShareText = useMemo(() => encodeURIComponent(truncateForX(shareText)), [shareText]);
+    const xShareBaseText = useMemo(() => buildShareText(xText ?? text ?? title), [xText, text, title]);
+    const xShareText = useMemo(() => encodeURIComponent(truncateForX(xShareBaseText)), [xShareBaseText]);
     const encodedShareText = useMemo(() => encodeURIComponent(shareText), [shareText]);
 
-    const xShareUrl = `https://twitter.com/intent/tweet?text=${xShareText}&url=${encodedUrl}`;
+    const xShareUrl = `https://twitter.com/intent/tweet?text=${xShareText}${xAppendUrl ? `&url=${encodedUrl}` : ""}`;
     const telegramShareUrl = `https://t.me/share/url?url=${encodedUrl}&text=${encodedShareText}`;
     const redditShareUrl = `https://www.reddit.com/submit?url=${encodedUrl}&title=${encodedShareText}`;
 

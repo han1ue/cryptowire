@@ -16,6 +16,8 @@ const getErrorMessage = (error: unknown): string => {
     return "Could not load the summary.";
 };
 
+const X_RECAP_BODY_TARGET = 240;
+
 const buildRecapShareText = (data?: NewsSummaryResponse): string => {
     if (!data) return "AI 24h Recap";
 
@@ -36,6 +38,30 @@ const buildRecapShareText = (data?: NewsSummaryResponse): string => {
     return parts.join("\n\n");
 };
 
+const buildRecapXShareText = (data?: NewsSummaryResponse): string => {
+    if (!data) return "AI 24h Recap cryptowi.re/recap";
+
+    const heading = `AI ${data.windowHours}h Recap (${data.articleCount} stories)`;
+    const link = "cryptowi.re/recap";
+    const truncationSuffix = "(...)";
+    const normalizedSummary = data.summary.replace(/"/g, "'").replace(/\s+/g, " ").trim();
+
+    const prefix = `${heading}\n\n"`;
+    const suffix = `" ${link}`;
+    const maxSummaryLength = Math.max(0, X_RECAP_BODY_TARGET - prefix.length - suffix.length);
+
+    let summaryText = normalizedSummary;
+    if (summaryText.length > maxSummaryLength) {
+        if (maxSummaryLength <= truncationSuffix.length) {
+            summaryText = truncationSuffix.slice(0, maxSummaryLength);
+        } else {
+            summaryText = `${summaryText.slice(0, maxSummaryLength - truncationSuffix.length).trimEnd()}${truncationSuffix}`;
+        }
+    }
+
+    return `${prefix}${summaryText}${suffix}`;
+};
+
 export const AiSummaryPanel = ({
     data,
     isLoading,
@@ -47,19 +73,26 @@ export const AiSummaryPanel = ({
     const recapShareUrl =
         typeof window === "undefined" ? "https://cryptowi.re/recap" : `${window.location.origin}/recap`;
     const recapShareText = buildRecapShareText(data);
+    const recapXShareText = buildRecapXShareText(data);
 
     const hasData = Boolean(data);
     const hasArticles = Boolean(data && data.articleCount > 0);
 
     return (
         <section className="space-y-6 rounded border border-border bg-card/30 p-3 sm:p-4">
-            <header className="space-y-3 border-border">
+            <header className="space-y-2 border-border">
                 <div className="flex w-full items-center justify-between gap-3">
                     <h2 className="flex items-center gap-2 text-left text-lg font-semibold leading-none tracking-tight">
                         <Sparkles className="h-4 w-4 text-terminal-cyan" />
                         AI 24h Recap
                     </h2>
-                    <ShareMenu url={recapShareUrl} title="AI 24h Recap" text={recapShareText}>
+                    <ShareMenu
+                        url={recapShareUrl}
+                        title="AI 24h Recap"
+                        text={recapShareText}
+                        xText={recapXShareText}
+                        xAppendUrl={false}
+                    >
                         <button
                             type="button"
                             className="inline-flex items-center gap-1.5 rounded border border-border bg-card/50 px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground"
