@@ -92,14 +92,15 @@ export const AiSummaryPanel = ({
                         text={recapShareText}
                         xText={recapXShareText}
                         xAppendUrl={false}
+                        showCopyLink={false}
                     >
                         <button
                             type="button"
-                            className="inline-flex items-center gap-1.5 rounded border border-border bg-card/50 px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground"
+                            className="inline-flex items-center gap-2 rounded border border-border bg-card/50 px-3 py-1.5 text-xs uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground"
                             title="Share recap"
                             aria-label="Share AI recap"
                         >
-                            <Share2 className="h-3 w-3" />
+                            <Share2 className="h-3.5 w-3.5" />
                             Share
                         </button>
                     </ShareMenu>

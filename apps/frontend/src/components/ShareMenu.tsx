@@ -12,6 +12,7 @@ type ShareMenuProps = {
     text?: string;
     xText?: string;
     xAppendUrl?: boolean;
+    showCopyLink?: boolean;
     children: ReactNode;
     align?: "start" | "center" | "end";
 };
@@ -51,6 +52,7 @@ export const ShareMenu = ({
     text,
     xText,
     xAppendUrl = true,
+    showCopyLink = true,
     children,
     align = "end",
 }: ShareMenuProps) => {
@@ -82,17 +84,19 @@ export const ShareMenu = ({
         <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
             <DropdownMenuContent align={align} onClick={(e) => e.stopPropagation()}>
-                <DropdownMenuItem
-                    onSelect={async () => {
-                        try {
-                            await copyLink();
-                        } catch {
-                            // ignore
-                        }
-                    }}
-                >
-                    Copy link
-                </DropdownMenuItem>
+                {showCopyLink ? (
+                    <DropdownMenuItem
+                        onSelect={async () => {
+                            try {
+                                await copyLink();
+                            } catch {
+                                // ignore
+                            }
+                        }}
+                    >
+                        Copy link
+                    </DropdownMenuItem>
+                ) : null}
 
                 {typeof navigator !== "undefined" && typeof navigator.share === "function" ? (
                     <DropdownMenuItem
