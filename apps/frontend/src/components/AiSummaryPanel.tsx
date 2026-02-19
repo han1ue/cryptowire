@@ -1,5 +1,6 @@
 import type { NewsSummaryResponse } from "@cryptowire/types";
-import { AlertTriangle, Lightbulb, PenSquare, Sparkles } from "lucide-react";
+import { AlertTriangle, Lightbulb, PenSquare, Share2, Sparkles } from "lucide-react";
+import { ShareMenu } from "@/components/ShareMenu";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -15,6 +16,26 @@ const getErrorMessage = (error: unknown): string => {
     return "Could not load the summary.";
 };
 
+const buildRecapShareText = (data?: NewsSummaryResponse): string => {
+    if (!data) return "AI 24h Recap";
+
+    const highlights = data.highlights
+        .map((highlight, index) => `${index + 1}. ${highlight.title}: ${highlight.detail}`)
+        .join("\n");
+    const sourceCoverage = data.sourceCoverage
+        .map((source) => `${source.source}: ${source.articleCount} stories`)
+        .join(", ");
+
+    const parts = [
+        `AI ${data.windowHours}h Recap (${data.articleCount} stories)`,
+        `Summary: ${data.summary}`,
+        highlights ? `Highlights:\n${highlights}` : "",
+        sourceCoverage ? `Source coverage: ${sourceCoverage}` : "",
+    ].filter((part) => part.length > 0);
+
+    return parts.join("\n\n");
+};
+
 export const AiSummaryPanel = ({
     data,
     isLoading,
@@ -23,21 +44,32 @@ export const AiSummaryPanel = ({
 }: AiSummaryPanelProps) => {
     const aiGenerationError = data?.aiError ?? null;
     const modelUsed = data?.model ?? "unknown-model";
+    const recapShareUrl =
+        typeof window === "undefined" ? "https://cryptowi.re/recap" : `${window.location.origin}/recap`;
+    const recapShareText = buildRecapShareText(data);
 
     const hasData = Boolean(data);
     const hasArticles = Boolean(data && data.articleCount > 0);
 
     return (
-        <section className="space-y-4 rounded border border-border bg-card/30 p-3 sm:p-4">
-            <header className="space-y-2 border-border pb-4">
+        <section className="space-y-6 rounded border border-border bg-card/30 p-3 sm:p-4">
+            <header className="space-y-4 border-border">
                 <div className="flex w-full items-center justify-between gap-3">
                     <h2 className="flex items-center gap-2 text-left text-lg font-semibold leading-none tracking-tight">
                         <Sparkles className="h-4 w-4 text-terminal-cyan" />
                         AI 24h Recap
                     </h2>
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                        Updated every 12 hours
-                    </span>
+                    <ShareMenu url={recapShareUrl} title="AI 24h Recap" text={recapShareText}>
+                        <button
+                            type="button"
+                            className="inline-flex items-center gap-1.5 rounded border border-border bg-card/50 px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground"
+                            title="Share recap"
+                            aria-label="Share AI recap"
+                        >
+                            <Share2 className="h-3 w-3" />
+                            Share
+                        </button>
+                    </ShareMenu>
                 </div>
 
                 {hasData ? (

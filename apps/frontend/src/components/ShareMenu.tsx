@@ -2,17 +2,30 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useMemo } from "react";
 import type { ReactNode } from "react";
 
+const SHARE_ATTRIBUTION = "via cryptowire";
+const X_MAX_CHARS = 280;
+const X_TRUNCATION_SUFFIX = "(...)";
+
 type ShareMenuProps = {
     url: string;
     title?: string;
+    text?: string;
     children: ReactNode;
     align?: "start" | "center" | "end";
 };
 
-const buildShareText = (title?: string, platform?: string) => {
-    const base = platform === 'x' ? '(via @cryptowi_re)' : '(via cryptowi.re)';
-    if (!title) return base;
-    return `${title} ${base}`;
+const buildShareText = (text?: string) => {
+    const trimmed = text?.trim() ?? "";
+    if (!trimmed) return SHARE_ATTRIBUTION;
+    if (trimmed.toLowerCase().includes(SHARE_ATTRIBUTION)) return trimmed;
+    return `${trimmed} ${SHARE_ATTRIBUTION}`;
+};
+
+const truncateForX = (text: string) => {
+    if (text.length <= X_MAX_CHARS) return text;
+    const maxWithoutSuffix = X_MAX_CHARS - X_TRUNCATION_SUFFIX.length;
+    if (maxWithoutSuffix <= 0) return X_TRUNCATION_SUFFIX.slice(0, X_MAX_CHARS);
+    return `${text.slice(0, maxWithoutSuffix).trimEnd()}${X_TRUNCATION_SUFFIX}`;
 };
 
 const openNewWindow = (url: string) => {
@@ -30,16 +43,16 @@ const stripQueryParams = (rawUrl: string) => {
     }
 };
 
-export const ShareMenu = ({ url, title, children, align = "end" }: ShareMenuProps) => {
+export const ShareMenu = ({ url, title, text, children, align = "end" }: ShareMenuProps) => {
     const strippedUrl = useMemo(() => stripQueryParams(url), [url]);
     const encodedUrl = useMemo(() => encodeURIComponent(strippedUrl), [strippedUrl]);
-    const xShareText = useMemo(() => encodeURIComponent(buildShareText(title, 'x')), [title]);
-    const telegramShareText = useMemo(() => encodeURIComponent(buildShareText(title, 'telegram')), [title]);
-    const redditShareText = useMemo(() => encodeURIComponent(buildShareText(title, 'reddit')), [title]);
+    const shareText = useMemo(() => buildShareText(text ?? title), [text, title]);
+    const xShareText = useMemo(() => encodeURIComponent(truncateForX(shareText)), [shareText]);
+    const encodedShareText = useMemo(() => encodeURIComponent(shareText), [shareText]);
 
     const xShareUrl = `https://twitter.com/intent/tweet?text=${xShareText}&url=${encodedUrl}`;
-    const telegramShareUrl = `https://t.me/share/url?url=${encodedUrl}&text=${telegramShareText}`;
-    const redditShareUrl = `https://www.reddit.com/submit?url=${encodedUrl}&title=${redditShareText}`;
+    const telegramShareUrl = `https://t.me/share/url?url=${encodedUrl}&text=${encodedShareText}`;
+    const redditShareUrl = `https://www.reddit.com/submit?url=${encodedUrl}&title=${encodedShareText}`;
 
     const copyLink = async () => {
         await navigator.clipboard.writeText(strippedUrl);
@@ -49,7 +62,7 @@ export const ShareMenu = ({ url, title, children, align = "end" }: ShareMenuProp
     const nativeShare = async () => {
         await navigator.share({
             title,
-            text: buildShareText(title, 'native'),
+            text: shareText,
             url: strippedUrl,
         });
     };

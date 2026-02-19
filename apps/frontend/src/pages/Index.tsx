@@ -51,7 +51,7 @@ const MobileActionsMenu = ({ shareUrl, shareTitle, onToggleSave, isSaved }: Mobi
   const [open, setOpen] = useState(false);
 
   const buildShareText = (title?: string) => {
-    const base = "via cryptowi.re";
+    const base = "via cryptowire";
     if (!title) return base;
     return `${title} ${base}`;
   };
