@@ -205,7 +205,7 @@ export const Sidebar = ({
       <div className="p-4 border-b border-border lg:hidden">
         <a href="/" className="flex items-center gap-2 group cursor-pointer select-none">
           <img
-            src="/favicon.svg"
+            src="/logo-mark.svg"
             alt=""
             aria-hidden="true"
             className="h-5 w-5"

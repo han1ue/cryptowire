@@ -171,7 +171,7 @@ export const Header = ({
 
           <a href="/" className="hidden lg:flex items-center gap-2 group cursor-pointer select-none">
             <img
-              src="/favicon.svg"
+              src="/logo-mark.svg"
               alt=""
               aria-hidden="true"
               className="h-5 w-5"
