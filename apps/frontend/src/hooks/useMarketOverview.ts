@@ -36,19 +36,21 @@ const fetchMarketOverview = async (): Promise<MarketOverviewResponse> => {
 };
 
 export const useMarketOverview = () => {
-    const [isEnabled, setIsEnabled] = useState(false);
+    const [refetchIntervalMs, setRefetchIntervalMs] = useState<number | false>(false);
 
     useEffect(() => {
-        const timer = window.setTimeout(() => setIsEnabled(true), MARKET_OVERVIEW_INITIAL_DELAY_MS);
+        const timer = window.setTimeout(
+            () => setRefetchIntervalMs(MARKET_OVERVIEW_REFRESH_MS),
+            MARKET_OVERVIEW_INITIAL_DELAY_MS,
+        );
         return () => window.clearTimeout(timer);
     }, []);
 
     return useQuery({
         queryKey: ["market-overview"],
         queryFn: fetchMarketOverview,
-        enabled: isEnabled,
         staleTime: MARKET_OVERVIEW_REFRESH_MS,
-        refetchInterval: isEnabled ? MARKET_OVERVIEW_REFRESH_MS : false,
+        refetchInterval: refetchIntervalMs,
         retry: 1,
     });
 };
