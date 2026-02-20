@@ -6,7 +6,7 @@ const InstallAndroid = () => {
     return (
         <div className="min-h-screen bg-background flex flex-col">
             <Seo
-                title="Install CryptoWire on Android | cryptowi.re"
+                title="Install cryptowi.re on Android | cryptowi.re"
                 description="Add cryptowi.re to your Android Home Screen for quick access to real-time crypto news."
                 canonicalPath="/install/android"
             />
@@ -25,10 +25,10 @@ const InstallAndroid = () => {
                 <div className="space-y-6">
                     <div>
                         <h1 className="text-2xl font-bold text-foreground mb-2">
-                            Add CryptoWire to Your Home Screen
+                            Add cryptowi.re to Your Home Screen
                         </h1>
                         <p className="text-sm text-muted-foreground">
-                            Get quick access to CryptoWire with an app-like shortcut on your Android device.
+                            Get quick access to cryptowi.re with an app-like shortcut on your Android device.
                         </p>
                     </div>
 
@@ -43,7 +43,7 @@ const InstallAndroid = () => {
                                         Open Chrome
                                     </h3>
                                     <p className="text-xs text-muted-foreground">
-                                        Make sure you're viewing CryptoWire in Chrome browser for the best experience.
+                                        Make sure you're viewing cryptowi.re in Chrome browser for the best experience.
                                     </p>
                                 </div>
                             </div>
@@ -102,7 +102,7 @@ const InstallAndroid = () => {
                                         <Home className="h-4 w-4 text-muted-foreground" />
                                     </h3>
                                     <p className="text-xs text-muted-foreground">
-                                        CryptoWire will now appear on your home screen or app drawer. Tap the icon to launch it like a native app!
+                                        cryptowi.re will now appear on your home screen or app drawer. Tap the icon to launch it like a native app!
                                     </p>
                                 </div>
                             </div>
@@ -149,7 +149,7 @@ const InstallAndroid = () => {
                         to="/"
                         className="block w-full py-3 px-4 bg-primary text-primary-foreground rounded-lg text-center font-medium hover:bg-primary/90 transition-colors"
                     >
-                        Back to CryptoWire
+                        Back to cryptowi.re
                     </Link>
                 </div>
             </main>

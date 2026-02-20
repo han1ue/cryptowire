@@ -6,7 +6,7 @@ const InstallIOS = () => {
     return (
         <div className="min-h-screen bg-background flex flex-col">
             <Seo
-                title="Install CryptoWire on iOS | cryptowi.re"
+                title="Install cryptowi.re on iOS | cryptowi.re"
                 description="Add cryptowi.re to your iPhone or iPad Home Screen for fast access to real-time crypto news."
                 canonicalPath="/install/ios"
             />
@@ -25,10 +25,10 @@ const InstallIOS = () => {
                 <div className="space-y-6">
                     <div>
                         <h1 className="text-2xl font-bold text-foreground mb-2">
-                            Add CryptoWire to Your Home Screen
+                            Add cryptowi.re to Your Home Screen
                         </h1>
                         <p className="text-sm text-muted-foreground">
-                            Get quick access to CryptoWire with an app-like shortcut on your iPhone or iPad.
+                            Get quick access to cryptowi.re with an app-like shortcut on your iPhone or iPad.
                         </p>
                     </div>
 
@@ -43,7 +43,7 @@ const InstallIOS = () => {
                                         Open Safari
                                     </h3>
                                     <p className="text-xs text-muted-foreground">
-                                        Make sure you're viewing CryptoWire in Safari browser (this won't work in Chrome or other browsers).
+                                        Make sure you're viewing cryptowi.re in Safari browser (this won't work in Chrome or other browsers).
                                     </p>
                                 </div>
                             </div>
@@ -87,7 +87,7 @@ const InstallIOS = () => {
                                         Name your app and confirm
                                     </h3>
                                     <p className="text-xs text-muted-foreground">
-                                        You can customize the name or keep "CryptoWire", then tap "Add" in the top right corner.
+                                        You can customize the name or keep "cryptowi.re", then tap "Add" in the top right corner.
                                     </p>
                                 </div>
                             </div>
@@ -102,7 +102,7 @@ const InstallIOS = () => {
                                         <Home className="h-4 w-4 text-muted-foreground" />
                                     </h3>
                                     <p className="text-xs text-muted-foreground">
-                                        CryptoWire will now appear on your home screen. Tap the icon to launch it like a native app!
+                                        cryptowi.re will now appear on your home screen. Tap the icon to launch it like a native app!
                                     </p>
                                 </div>
                             </div>
@@ -135,7 +135,7 @@ const InstallIOS = () => {
                         to="/"
                         className="block w-full py-3 px-4 bg-primary text-primary-foreground rounded-lg text-center font-medium hover:bg-primary/90 transition-colors"
                     >
-                        Back to CryptoWire
+                        Back to cryptowi.re
                     </Link>
                 </div>
             </main>
