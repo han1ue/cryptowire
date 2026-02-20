@@ -1,4 +1,8 @@
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+
+const MARKET_OVERVIEW_REFRESH_MS = 10 * 60 * 1000;
+const MARKET_OVERVIEW_INITIAL_DELAY_MS = 3 * 60 * 1000;
 
 type MarketOverviewResponse = {
     ok: true;
@@ -32,11 +36,19 @@ const fetchMarketOverview = async (): Promise<MarketOverviewResponse> => {
 };
 
 export const useMarketOverview = () => {
+    const [isEnabled, setIsEnabled] = useState(false);
+
+    useEffect(() => {
+        const timer = window.setTimeout(() => setIsEnabled(true), MARKET_OVERVIEW_INITIAL_DELAY_MS);
+        return () => window.clearTimeout(timer);
+    }, []);
+
     return useQuery({
         queryKey: ["market-overview"],
         queryFn: fetchMarketOverview,
-        staleTime: 30_000,
-        refetchInterval: 60_000,
+        enabled: isEnabled,
+        staleTime: MARKET_OVERVIEW_REFRESH_MS,
+        refetchInterval: isEnabled ? MARKET_OVERVIEW_REFRESH_MS : false,
         retry: 1,
     });
 };

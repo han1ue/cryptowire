@@ -4,6 +4,8 @@ import { CoinGeckoPriceProvider } from "@cryptowire/adapters";
 import { SimpleTtlCache } from "../lib/cache.js";
 import type { AppConfig } from "../config.js";
 
+const PRICE_CACHE_TTL_MS = 5 * 60 * 1000;
+
 export class PriceService {
     private readonly cache = new SimpleTtlCache();
     private readonly provider: PriceProvider;
@@ -20,7 +22,7 @@ export class PriceService {
         if (cached) return cached;
 
         const quotes = await this.provider.fetchPrices({ symbols });
-        this.cache.set(cacheKey, quotes, 30_000);
+        this.cache.set(cacheKey, quotes, PRICE_CACHE_TTL_MS);
         return quotes;
     }
 }

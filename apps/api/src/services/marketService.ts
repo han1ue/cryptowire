@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { SimpleTtlCache } from "../lib/cache.js";
 
+const MARKET_OVERVIEW_CACHE_TTL_MS = 10 * 60 * 1000;
+
 const CoinGeckoGlobalSchema = z
     .object({
         data: z.object({
@@ -96,8 +98,8 @@ export class MarketService {
             },
         };
 
-        // Cache briefly to avoid hammering upstream from every client.
-        this.cache.set(cacheKey, out, 60_000);
+        // Cache to align with frontend polling cadence.
+        this.cache.set(cacheKey, out, MARKET_OVERVIEW_CACHE_TTL_MS);
         return out;
     }
 }
