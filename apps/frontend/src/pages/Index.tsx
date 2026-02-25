@@ -710,6 +710,7 @@ const Index = () => {
               <Sidebar
                 savedArticlesCount={savedArticles.length}
                 showSavedOnly={showSavedOnly}
+                onSidebarNavigate={() => setSidebarOpen(false)}
                 onToggleSavedView={() => {
                   navigate(showSavedOnly ? "/" : "/saved");
                   setSidebarOpen(false);

@@ -87,6 +87,7 @@ interface SidebarProps {
   savedArticlesCount?: number;
   showSavedOnly?: boolean;
   onToggleSavedView?: () => void;
+  onSidebarNavigate?: () => void;
   savedArticles?: SavedArticle[];
   recentArticlesCount?: number;
   recentArticles?: RecentArticle[];
@@ -108,6 +109,7 @@ export const Sidebar = ({
   savedArticlesCount = 0,
   showSavedOnly = false,
   onToggleSavedView,
+  onSidebarNavigate = () => { },
   savedArticles = [],
   recentArticlesCount = 0,
   recentArticles = [],
@@ -434,6 +436,7 @@ export const Sidebar = ({
                 to="/recents"
                 className="block text-[10px] text-primary pl-2 hover:underline"
                 title="View all recently viewed articles"
+                onClick={onSidebarNavigate}
               >
                 +{recentArticlesCount - 3} more
               </Link>
@@ -443,7 +446,7 @@ export const Sidebar = ({
       </div>
 
       {/* Bookmarks */}
-      <div className="p-4 shrink-0 min-h-40 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+      <div className="p-4 shrink-0 min-h-40 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:border-b border-border">
         <button
           onClick={onToggleSavedView}
           className={`w-full text-left p-2 -mx-2 rounded transition-colors ${showSavedOnly ? "bg-primary/10" : "hover:bg-muted/30"
@@ -515,6 +518,7 @@ export const Sidebar = ({
                 to="/saved"
                 className="block text-[10px] text-primary pl-2 hover:underline"
                 title="View all saved articles"
+                onClick={onSidebarNavigate}
               >
                 +{savedArticlesCount - 3} more
               </Link>
