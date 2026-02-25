@@ -18,6 +18,8 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/saved" element={<Index />} />
+          <Route path="/recents" element={<Index />} />
           <Route path="/recap" element={<Index />} />
           <Route path="/install/ios" element={<InstallIOS />} />
           <Route path="/install/android" element={<InstallAndroid />} />

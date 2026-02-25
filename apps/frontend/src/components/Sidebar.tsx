@@ -11,6 +11,7 @@ import {
   Rss
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useMarketOverview } from '@/hooks/useMarketOverview';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
@@ -429,9 +430,13 @@ export const Sidebar = ({
               );
             })}
             {recentArticlesCount > 3 && (
-              <div className="text-[10px] text-muted-foreground pl-2">
+              <Link
+                to="/recents"
+                className="block text-[10px] text-primary pl-2 hover:underline"
+                title="View all recently viewed articles"
+              >
                 +{recentArticlesCount - 3} more
-              </div>
+              </Link>
             )}
           </div>
         )}
@@ -506,9 +511,13 @@ export const Sidebar = ({
               );
             })}
             {savedArticlesCount > 3 && (
-              <div className="text-[10px] text-muted-foreground pl-2">
+              <Link
+                to="/saved"
+                className="block text-[10px] text-primary pl-2 hover:underline"
+                title="View all saved articles"
+              >
                 +{savedArticlesCount - 3} more
-              </div>
+              </Link>
             )}
           </div>
         )}

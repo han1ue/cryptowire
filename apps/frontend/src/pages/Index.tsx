@@ -177,6 +177,8 @@ const MobileActionsMenu = ({ shareUrl, shareTitle, onToggleSave, isSaved }: Mobi
 const Index = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const showSavedOnly = location.pathname === "/saved";
+  const showRecentOnly = location.pathname === "/recents";
   const showAiRecapOnly = location.pathname === "/recap";
 
   const [_visitedVersion, setVisitedVersion] = useState(0);
@@ -256,8 +258,6 @@ const Index = () => {
     toggleSaved: toggleSaveArticle,
   } = useSavedArticles();
   const { recentArticles, addRecent } = useRecentArticles();
-  const [showSavedOnly, setShowSavedOnly] = useState(false);
-  const [showRecentOnly, setShowRecentOnly] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All News');
 
   const END_OF_LIST_BASE = "You’ve reached the end.";
@@ -605,8 +605,14 @@ const Index = () => {
 
   const siteUrl = (import.meta.env.VITE_SITE_URL as string | undefined) ?? "https://cryptowi.re";
   const normalizedSiteUrl = siteUrl.replace(/\/+$/, "");
-  const seoTitle = showAiRecapOnly ? "cryptowi.re | AI 24h Recap" : "cryptowi.re | Real-Time Crypto News Aggregator";
-  const seoCanonicalPath = showAiRecapOnly ? "/recap" : "/";
+  const seoTitle = showAiRecapOnly
+    ? "cryptowi.re | AI 24h Recap"
+    : showSavedOnly
+      ? "cryptowi.re | Saved Articles"
+      : showRecentOnly
+        ? "cryptowi.re | Recently Viewed"
+        : "cryptowi.re | Real-Time Crypto News Aggregator";
+  const seoCanonicalPath = showAiRecapOnly ? "/recap" : showSavedOnly ? "/saved" : showRecentOnly ? "/recents" : "/";
 
   const jsonLd = [
     {
@@ -626,8 +632,8 @@ const Index = () => {
     {
       "@context": "https://schema.org",
       "@type": "CollectionPage",
-      name: "Crypto News Aggregator",
-      url: normalizedSiteUrl + "/",
+      name: showSavedOnly ? "Saved Articles" : showRecentOnly ? "Recently Viewed" : "Crypto News Aggregator",
+      url: normalizedSiteUrl + seoCanonicalPath,
       isPartOf: { "@type": "WebSite", url: normalizedSiteUrl },
     },
   ];
@@ -648,8 +654,6 @@ const Index = () => {
         activeSourceCount={activeSourceCount}
         totalSourceCount={totalSourceCount}
         onAiSummaryClick={() => {
-          setShowSavedOnly(false);
-          setShowRecentOnly(false);
           navigate("/recap");
           window.scrollTo({ top: 0, behavior: "smooth" });
         }}
@@ -666,32 +670,26 @@ const Index = () => {
           <Sidebar
             savedArticlesCount={savedArticles.length}
             showSavedOnly={showSavedOnly}
-                onToggleSavedView={() => {
-                  setShowSavedOnly((prev) => !prev);
-                  setShowRecentOnly(false);
-                  if (showAiRecapOnly) navigate("/");
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
+            onToggleSavedView={() => {
+              navigate(showSavedOnly ? "/" : "/saved");
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
             savedArticles={savedArticles}
             recentArticlesCount={recentArticles.length}
             recentArticles={recentArticles}
             showRecentOnly={showRecentOnly}
-                onToggleRecentView={() => {
-                  setShowRecentOnly((prev) => !prev);
-                  setShowSavedOnly(false);
-                  if (showAiRecapOnly) navigate("/");
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
+            onToggleRecentView={() => {
+              navigate(showRecentOnly ? "/" : "/recents");
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
             allNews={sidebarNews}
             categories={filteredCategoryOptions}
             selectedCategory={selectedCategory}
-                onCategorySelect={cat => {
-                  setSelectedCategory((prev) => (prev === cat ? 'All News' : cat));
-                  setShowSavedOnly(false);
-                  setShowRecentOnly(false);
-                  if (showAiRecapOnly) navigate("/");
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
+            onCategorySelect={cat => {
+              setSelectedCategory((prev) => (prev === cat ? 'All News' : cat));
+              if (showSavedOnly || showRecentOnly || showAiRecapOnly) navigate("/");
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
             onSourcesClick={openSourcesDialog}
             activeSourceCount={activeSourceCount}
             totalSourceCount={totalSourceCount}
@@ -713,9 +711,7 @@ const Index = () => {
                 savedArticlesCount={savedArticles.length}
                 showSavedOnly={showSavedOnly}
                 onToggleSavedView={() => {
-                  setShowSavedOnly((prev) => !prev);
-                  setShowRecentOnly(false);
-                  if (showAiRecapOnly) navigate("/");
+                  navigate(showSavedOnly ? "/" : "/saved");
                   setSidebarOpen(false);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
@@ -724,9 +720,7 @@ const Index = () => {
                 recentArticles={recentArticles}
                 showRecentOnly={showRecentOnly}
                 onToggleRecentView={() => {
-                  setShowRecentOnly((prev) => !prev);
-                  setShowSavedOnly(false);
-                  if (showAiRecapOnly) navigate("/");
+                  navigate(showRecentOnly ? "/" : "/recents");
                   setSidebarOpen(false);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
@@ -735,9 +729,7 @@ const Index = () => {
                 selectedCategory={selectedCategory}
                 onCategorySelect={cat => {
                   setSelectedCategory((prev) => (prev === cat ? 'All News' : cat));
-                  setShowSavedOnly(false);
-                  setShowRecentOnly(false);
-                  if (showAiRecapOnly) navigate("/");
+                  if (showSavedOnly || showRecentOnly || showAiRecapOnly) navigate("/");
                   setSidebarOpen(false);
                 }}
                 onSourcesClick={() => {
@@ -762,12 +754,7 @@ const Index = () => {
               <button
                 type="button"
                 onClick={() => {
-                  if (showAiRecapOnly) {
-                    navigate("/");
-                  } else {
-                    setShowSavedOnly(false);
-                    setShowRecentOnly(false);
-                  }
+                  navigate("/");
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 className="inline-flex items-center border border-border rounded px-2.5 py-1.5 text-[12px] font-medium uppercase tracking-wider text-muted-foreground bg-card/30 hover:bg-card/40 hover:text-foreground transition-colors"
@@ -1114,7 +1101,7 @@ const Index = () => {
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       setSelectedCategory((prev) => (prev === cat ? 'All News' : cat));
-                                      setShowSavedOnly(false);
+                                      if (showSavedOnly || showRecentOnly || showAiRecapOnly) navigate("/");
                                       window.scrollTo({ top: 0, behavior: 'smooth' });
                                     }}
                                     title={`Filter by ${cat}`}
@@ -1293,7 +1280,7 @@ const Index = () => {
                   isSaved={savedArticleTitles.includes(item.title)}
                   onCategoryClick={(cat) => {
                     setSelectedCategory((prev) => (prev === cat ? 'All News' : cat));
-                    setShowSavedOnly(false);
+                    if (showSavedOnly || showRecentOnly || showAiRecapOnly) navigate("/");
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   onToggleSave={() =>
