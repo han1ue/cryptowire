@@ -446,7 +446,7 @@ export const Sidebar = ({
       </div>
 
       {/* Bookmarks */}
-      <div className="p-4 shrink-0 min-h-40 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:border-b border-border">
+      <div className="p-4 shrink-0 border-b border-border">
         <button
           onClick={onToggleSavedView}
           className={`w-full text-left p-2 -mx-2 rounded transition-colors ${showSavedOnly ? "bg-primary/10" : "hover:bg-muted/30"
@@ -568,7 +568,7 @@ export const Sidebar = ({
       </div>
 
       {/* Links */}
-      <div className="p-4 border-t border-border">
+      <div className="p-4">
         <div className="space-y-1">
           <a
             href="https://x.com/cryptowi_re"
