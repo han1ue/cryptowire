@@ -1,6 +1,6 @@
 # cryptowi.re API instructions for agents
 
-`cryptowi.re` is a crypto news aggregator.
+`cryptowi.re` is a real time crypto news aggregator.
 
 Use these rules when calling the API:
 
