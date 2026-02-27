@@ -10,14 +10,65 @@ You can integrate it three ways:
 
 ## Live Example
 
-Example of the widget running:
+Adjust options and see the widget update live.
+
+Use source ids from [References > Sources](/references/sources).
+
+<div style="display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin:12px 0 16px;">
+  <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;">
+    <span>Sources</span>
+    <input
+      v-model="liveSources"
+      type="text"
+      style="padding:8px;border:1px solid var(--vp-c-divider);border-radius:8px;"
+      placeholder="coindesk,decrypt,cointelegraph"
+    />
+  </label>
+  <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;">
+    <span>Limit (1-20)</span>
+    <input
+      v-model="liveLimit"
+      type="number"
+      min="1"
+      max="20"
+      style="padding:8px;border:1px solid var(--vp-c-divider);border-radius:8px;"
+    />
+  </label>
+  <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;">
+    <span>Theme</span>
+    <select v-model="liveTheme" style="padding:8px;border:1px solid var(--vp-c-divider);border-radius:8px;">
+      <option value="light">light</option>
+      <option value="dark">dark</option>
+    </select>
+  </label>
+  <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;">
+    <span>Category (optional)</span>
+    <input
+      v-model="liveCategory"
+      type="text"
+      style="padding:8px;border:1px solid var(--vp-c-divider);border-radius:8px;"
+      placeholder="Markets"
+    />
+  </label>
+  <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;">
+    <span>Title (optional)</span>
+    <input
+      v-model="liveTitle"
+      type="text"
+      style="padding:8px;border:1px solid var(--vp-c-divider);border-radius:8px;"
+      placeholder="Latest crypto news"
+    />
+  </label>
+</div>
 
 <iframe
-  src="https://cryptowi.re/widget?sources=coindesk,decrypt,cointelegraph&limit=6&theme=light&title=Latest%20crypto%20news"
+  :src="liveWidgetUrl"
   title="cryptowi.re widget example"
   style="width:100%;height:420px;border:0;"
   loading="lazy"
   referrerpolicy="strict-origin-when-cross-origin"></iframe>
+
+Current URL: <code>{{ liveWidgetUrl }}</code>
 
 ## Option 1: npm Package
 
@@ -101,3 +152,31 @@ Use source ids from [References > Sources](/references/sources).
 - `title`: optional widget title override
 - `api`: optional API base override
 - `style.height`: fixed height (or use script/npm mode for auto-resize)
+
+<script setup>
+import { computed, ref } from "vue";
+
+const liveSources = ref("coindesk,decrypt,cointelegraph");
+const liveLimit = ref("6");
+const liveTheme = ref("light");
+const liveCategory = ref("");
+const liveTitle = ref("Latest crypto news");
+
+const liveWidgetUrl = computed(() => {
+  const parsedLimit = Number.parseInt(String(liveLimit.value), 10);
+  const safeLimit = Number.isFinite(parsedLimit) ? Math.min(20, Math.max(1, parsedLimit)) : 6;
+  const safeTheme = String(liveTheme.value).toLowerCase() === "dark" ? "dark" : "light";
+  const url = new URL("https://cryptowi.re/widget");
+
+  url.searchParams.set("sources", String(liveSources.value || "").trim() || "coindesk,decrypt,cointelegraph");
+  url.searchParams.set("limit", String(safeLimit));
+  url.searchParams.set("theme", safeTheme);
+
+  const category = String(liveCategory.value || "").trim();
+  const title = String(liveTitle.value || "").trim();
+  if (category) url.searchParams.set("category", category);
+  if (title) url.searchParams.set("title", title);
+
+  return url.toString();
+});
+</script>
