@@ -52,6 +52,19 @@ const renderState = (className, text) => {
   const outer = document.createElement("div");
   outer.className = `cw-root theme-${config.theme}`;
 
+  const brand = document.createElement("div");
+  brand.className = "cw-brand";
+
+  const brandName = document.createElement("span");
+  brandName.className = "cw-brand-name";
+  brandName.textContent = "cryptowi.re";
+
+  const brandByline = document.createElement("span");
+  brandByline.className = "cw-brand-byline";
+  brandByline.textContent = "by cryptowi.re";
+
+  brand.append(brandName, brandByline);
+
   const header = document.createElement("div");
   header.className = "cw-header";
 
@@ -69,7 +82,7 @@ const renderState = (className, text) => {
   state.className = className;
   state.textContent = text;
 
-  outer.append(header, state);
+  outer.append(brand, header, state);
   root.replaceChildren(outer);
   postHeight();
 };
@@ -77,6 +90,19 @@ const renderState = (className, text) => {
 const renderItems = (items) => {
   const outer = document.createElement("div");
   outer.className = `cw-root theme-${config.theme}`;
+
+  const brand = document.createElement("div");
+  brand.className = "cw-brand";
+
+  const brandName = document.createElement("span");
+  brandName.className = "cw-brand-name";
+  brandName.textContent = "cryptowi.re";
+
+  const brandByline = document.createElement("span");
+  brandByline.className = "cw-brand-byline";
+  brandByline.textContent = "by cryptowi.re";
+
+  brand.append(brandName, brandByline);
 
   const header = document.createElement("div");
   header.className = "cw-header";
@@ -90,7 +116,7 @@ const renderItems = (items) => {
   badge.textContent = `${items.length} headlines`;
 
   header.append(title, badge);
-  outer.append(header);
+  outer.append(brand, header);
 
   const list = document.createElement("ul");
   list.className = "cw-list";
