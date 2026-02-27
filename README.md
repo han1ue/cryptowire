@@ -75,8 +75,8 @@ Quality checks:
 Publish process:
 1. Bump version in `packages/widget/package.json`
 2. Commit + push to `main`
-3. Create and push a tag like `widget-v0.1.1`
-4. GitHub Actions workflow `Publish Widget Package` publishes to npm (requires `NPM_TOKEN` secret)
+3. Workflow `Publish Widget Package` auto-runs and publishes when the new version is not yet on npm (requires `NPM_TOKEN` secret)
+4. Optional fallback: run the workflow manually from GitHub Actions (`workflow_dispatch`)
 
 ## Vercel deploy (one repo, three projects)
 

@@ -3,8 +3,10 @@ name: Publish Widget Package
 on:
   workflow_dispatch: {}
   push:
-    tags:
-      - "widget-v*"
+    branches:
+      - main
+    paths:
+      - "packages/widget/package.json"
 
 jobs:
   publish:
@@ -28,7 +30,31 @@ jobs:
       - name: Build widget package
         run: npm run build -w @cryptowire/widget
 
+      - name: Compare local and published versions
+        id: versions
+        run: |
+          set -euo pipefail
+          LOCAL_VERSION=$(node -p "JSON.parse(require('fs').readFileSync('packages/widget/package.json','utf8')).version")
+          PUBLISHED_VERSION=$(npm view @cryptowire/widget version 2>/dev/null || true)
+
+          echo "local=${LOCAL_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "published=${PUBLISHED_VERSION}" >> "$GITHUB_OUTPUT"
+
+          if [ "${LOCAL_VERSION}" = "${PUBLISHED_VERSION}" ]; then
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
+          echo "Local version: ${LOCAL_VERSION}"
+          echo "Published version: ${PUBLISHED_VERSION:-<none>}"
+
       - name: Publish to npm
+        if: steps.versions.outputs.publish == 'true'
         run: npm publish -w @cryptowire/widget --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Skip publish (already published)
+        if: steps.versions.outputs.publish != 'true'
+        run: echo "No publish needed. Version ${{ steps.versions.outputs.local }} is already on npm."
