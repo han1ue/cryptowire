@@ -1,17 +1,39 @@
-# CryptoWire Docs
+---
+layout: home
 
-CryptoWire is a monorepo with:
+hero:
+  name: cryptowi.re
+  text: Crypto News Aggregator
+  tagline: Use the API, embed the latest-news widget, and install the agent skill.
+  actions:
+    - theme: brand
+      text: API Docs
+      link: /api
+    - theme: alt
+      text: Widget Install
+      link: /widget
+    - theme: alt
+      text: Agent Skill
+      link: /agent-skill
 
-- `apps/frontend`: React + Vite web app
-- `apps/api`: Express API
-- `apps/docs`: VitePress docs site
-- `packages/types`: shared DTOs/zod schemas
-- `packages/adapters`: external data adapters
+features:
+  - title: API
+    details: Pull latest headlines, source lists, prices, and market overview data.
+    link: /api
+  - title: Widget
+    details: Embed cryptowi.re headlines on your own website with one script tag.
+    link: /widget
+  - title: Agent Skill
+    details: Download and install the cryptowi.re skill for your coding agent.
+    link: /agent-skill
+---
 
-Use these docs to run locally, integrate the API, and deploy updates.
+## What is cryptowi.re?
 
-## Quick Links
+`cryptowi.re` is a crypto news aggregator that collects and normalizes headlines from multiple publishers.
 
-- [Getting Started](/getting-started)
-- [API Endpoints](/api)
-- [Deployment](/deployment)
+## Documentation
+
+- [API](/api)
+- [Widget](/widget)
+- [Agent Skill](/agent-skill)

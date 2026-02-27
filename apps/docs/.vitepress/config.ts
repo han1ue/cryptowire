@@ -1,29 +1,24 @@
 import { defineConfig } from "vitepress";
 
 export default defineConfig({
-  title: "CryptoWire Docs",
-  description: "Documentation for the CryptoWire API and monorepo setup.",
+  title: "cryptowi.re docs",
+  description: "Documentation for the cryptowi.re news aggregator.",
   lang: "en-US",
   cleanUrls: true,
   themeConfig: {
     nav: [
-      { text: "Guide", link: "/getting-started" },
       { text: "API", link: "/api" },
-      { text: "Deploy", link: "/deployment" }
+      { text: "Widget", link: "/widget" },
+      { text: "Agent Skill", link: "/agent-skill" }
     ],
     sidebar: [
       {
-        text: "Start",
+        text: "Docs",
         items: [
-          { text: "Introduction", link: "/" },
-          { text: "Getting Started", link: "/getting-started" }
-        ]
-      },
-      {
-        text: "Reference",
-        items: [
-          { text: "API Endpoints", link: "/api" },
-          { text: "Deployment", link: "/deployment" }
+          { text: "Start", link: "/" },
+          { text: "API", link: "/api" },
+          { text: "Widget", link: "/widget" },
+          { text: "Agent Skill", link: "/agent-skill" },
         ]
       }
     ],

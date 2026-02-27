@@ -1,73 +1,62 @@
-# API Endpoints
+# API
 
-Base URL examples:
+Base URLs:
 
-- Local: `http://localhost:3001`
 - Production: `https://api.cryptowi.re`
+- Local: `http://localhost:3001`
+
+## Quick Start
+
+Get headlines from selected sources:
+
+```sh
+curl "https://api.cryptowi.re/news?sources=coindesk,decrypt,cointelegraph&limit=20"
+```
 
 ## Public Endpoints
 
-### `GET /health`
-Returns service health.
-
 ### `GET /news`
+
+Returns normalized news items.
+
 Query params:
 
-- `limit` (max effective 100)
-- `offset`
-- `retentionDays`
-- `sources` (comma-separated source ids)
-- `category`
-
-### `GET /news/summary`
-Returns the latest generated AI summary.
+- `sources` (required, comma-separated source ids)
+- `limit` (default `30`, max effective `100`)
+- `offset` (default `0`)
+- `retentionDays` (max effective `7`)
+- `category` (optional category filter)
 
 ### `GET /news/sources`
-Returns supported news sources.
+
+Returns all supported source ids and names. Use this first to build your `sources` query.
+
+### `GET /news/summary`
+
+Returns the latest generated summary of recent headlines.
 
 ### `GET /prices`
+
+Returns quotes for requested symbols.
+
 Query params:
 
-- `symbols` (comma-separated, e.g. `BTC,ETH,SOL`)
+- `symbols` (comma-separated, example `BTC,ETH,SOL`)
 
 ### `GET /market`
-Returns market overview metrics.
 
-## Admin Endpoints
+Returns market overview stats.
 
-Admin endpoints require `x-refresh-secret` header and should be called with `POST`.
+### `GET /health`
 
-### `POST /news/refresh`
-Refresh and persist latest news items.
+Health check endpoint.
 
-```sh
-curl -X POST "https://api.cryptowi.re/news/refresh" \
-  -H "content-type: application/json" \
-  -H "x-refresh-secret: YOUR_SECRET" \
-  --data-raw '{"limit":30,"force":true,"sources":"coindesk,decrypt,cointelegraph"}'
-```
+## Admin Endpoints (Operator Only)
 
-### `POST /news/summary/refresh`
-Generate and store AI summary.
+These endpoints are for `cryptowi.re` operators, not public integrations.
 
-```sh
-curl -X POST "https://api.cryptowi.re/news/summary/refresh" \
-  -H "content-type: application/json" \
-  -H "x-refresh-secret: YOUR_SECRET" \
-  --data-raw '{"hours":24,"limit":180}'
-```
+- `POST /news/refresh`
+- `POST /news/summary/refresh`
+- `POST /news/diagnose`
 
-### `POST /news/diagnose`
-Debug upstream provider responses.
-
-```sh
-curl -X POST "https://api.cryptowi.re/news/diagnose" \
-  -H "content-type: application/json" \
-  -H "x-refresh-secret: YOUR_SECRET" \
-  --data-raw '{"limit":100}'
-```
-
-## Notes
-
-- Vercel cron traffic can still hit refresh endpoints with `GET` when Vercel sends `x-vercel-cron: 1`.
-- Manual/admin use should always be `POST` + header auth.
+They require `x-refresh-secret` header.
