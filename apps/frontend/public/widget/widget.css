@@ -32,13 +32,6 @@ body {
 }
 
 .cw-header {
-  align-items: center;
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-.cw-brand {
   align-items: baseline;
   border-bottom: 1px solid var(--cw-border);
   display: flex;
@@ -47,33 +40,26 @@ body {
   padding-bottom: 8px;
 }
 
-.cw-brand-name {
-  color: var(--cw-text);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.cw-brand-byline {
+.cw-byline {
   color: var(--cw-muted);
   font-size: 10px;
   letter-spacing: 0.02em;
-  text-transform: lowercase;
+  white-space: nowrap;
+}
+
+.cw-brand-link {
+  color: var(--cw-link);
+  text-decoration: none;
+}
+
+.cw-brand-link:hover {
+  text-decoration: underline;
 }
 
 .cw-title {
   font-size: 14px;
   font-weight: 700;
   margin: 0;
-}
-
-.cw-badge {
-  border: 1px solid var(--cw-border);
-  border-radius: 999px;
-  color: var(--cw-muted);
-  font-size: 11px;
-  padding: 2px 8px;
 }
 
 .cw-list {
