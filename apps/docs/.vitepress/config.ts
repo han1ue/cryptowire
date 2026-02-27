@@ -12,6 +12,7 @@ export default defineConfig({
   ],
   themeConfig: {
     logo: "/logo-mark.svg",
+    logoLink: "/",
     nav: [
       { text: "API", link: "/api" },
       { text: "Widget", link: "/widget" },
