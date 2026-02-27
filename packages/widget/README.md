@@ -7,13 +7,13 @@ Embeddable `cryptowi.re` headlines widget for any website.
 - Widget docs: https://docs.cryptowi.re/widget
 - API docs: https://docs.cryptowi.re/api
 
-## Install (npm)
+## Install
 
 ```sh
 npm install @cryptowire/widget
 ```
 
-## Usage (npm)
+## Usage
 
 ```js
 import { mount } from "@cryptowire/widget";

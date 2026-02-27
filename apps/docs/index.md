@@ -4,7 +4,7 @@ layout: home
 hero:
   name: cryptowi.re
   text: Crypto News Aggregator
-  tagline: Use the API, embed the latest-news widget, and install the agent skill.
+  tagline: Use the API, embed the latest-news widget, and give your agent API instructions.
   actions:
     - theme: brand
       text: API Docs
@@ -13,7 +13,7 @@ hero:
       text: Widget Install
       link: /widget
     - theme: alt
-      text: Agent Skill
+      text: Agent Instructions
       link: /agent-skill
 
 features:
@@ -23,7 +23,7 @@ features:
   - title: Widget
     details: Embed cryptowi.re headlines on your own website with one script tag.
     link: /widget
-  - title: Agent Skill
-    details: Download and install the cryptowi.re skill for your coding agent.
+  - title: Agent Instructions
+    details: Share one link so your agent follows cryptowi.re API usage rules.
     link: /agent-skill
 ---
