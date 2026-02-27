@@ -35,6 +35,25 @@ Example:
 curl "https://api.cryptowi.re/news?sources=coindesk,decrypt,cointelegraph&limit=20&offset=0"
 ```
 
+Example response:
+
+```json
+{
+  "items": [
+    {
+      "id": "coindesk-20260227-001",
+      "title": "Bitcoin ETFs See Fresh Inflows as Volatility Cools",
+      "summary": "Analysts point to steady institutional demand as crypto markets stabilize.",
+      "url": "https://www.coindesk.com/example-article",
+      "source": "CoinDesk",
+      "categories": ["Markets"],
+      "publishedAt": "2026-02-27T19:20:00.000Z",
+      "imageUrl": "https://cdn.example.com/image.jpg"
+    }
+  ]
+}
+```
+
 ### `GET /news/sources`
 
 Returns all supported source ids and names. Use this first to build your `sources` query.
@@ -45,6 +64,18 @@ Example:
 curl "https://api.cryptowi.re/news/sources"
 ```
 
+Example response:
+
+```json
+{
+  "sources": [
+    { "id": "coindesk", "name": "CoinDesk" },
+    { "id": "decrypt", "name": "Decrypt" },
+    { "id": "cointelegraph", "name": "Cointelegraph" }
+  ]
+}
+```
+
 ### `GET /news/summary`
 
 Returns the latest generated summary of recent headlines.
@@ -53,6 +84,37 @@ Example:
 
 ```sh
 curl "https://api.cryptowi.re/news/summary"
+```
+
+Example response:
+
+```json
+{
+  "generatedAt": "2026-02-27T19:00:00.000Z",
+  "windowStart": "2026-02-26T19:00:00.000Z",
+  "windowEnd": "2026-02-27T19:00:00.000Z",
+  "windowHours": 24,
+  "articleCount": 180,
+  "model": "unknown-model",
+  "aiError": null,
+  "summary": "Crypto markets were mixed over the last 24 hours, with Bitcoin holding key levels while altcoins diverged.",
+  "highlights": [
+    {
+      "title": "ETF flows improve",
+      "detail": "US spot Bitcoin ETFs posted net inflows after two muted sessions.",
+      "sources": ["CoinDesk", "Decrypt"],
+      "url": "https://www.coindesk.com/example-article"
+    }
+  ],
+  "sourceCoverage": [
+    {
+      "sourceId": "coindesk",
+      "source": "CoinDesk",
+      "articleCount": 25,
+      "reputationWeight": 0.95
+    }
+  ]
+}
 ```
 
 ### `GET /prices`
@@ -69,6 +131,27 @@ Example:
 curl "https://api.cryptowi.re/prices?symbols=BTC,ETH,SOL"
 ```
 
+Example response:
+
+```json
+{
+  "quotes": [
+    {
+      "symbol": "BTC",
+      "usd": 86123.45,
+      "usd24hChange": 2.1,
+      "fetchedAt": "2026-02-27T19:20:00.000Z"
+    },
+    {
+      "symbol": "ETH",
+      "usd": 4620.17,
+      "usd24hChange": 1.4,
+      "fetchedAt": "2026-02-27T19:20:00.000Z"
+    }
+  ]
+}
+```
+
 ### `GET /market`
 
 Returns market overview stats.
@@ -79,6 +162,26 @@ Example:
 curl "https://api.cryptowi.re/market"
 ```
 
+Example response:
+
+```json
+{
+  "ok": true,
+  "overview": {
+    "marketCapUsd": 3123456789012,
+    "marketCapChange24hPct": 1.4,
+    "volume24hUsd": 154321098765,
+    "btcDominancePct": 52.3,
+    "updatedAt": 1740684000,
+    "fearGreed": {
+      "value": 71,
+      "classification": "Greed",
+      "timestamp": 1740684000
+    }
+  }
+}
+```
+
 ### `GET /health`
 
 Health check endpoint.
@@ -87,6 +190,12 @@ Example:
 
 ```sh
 curl "https://api.cryptowi.re/health"
+```
+
+Example response:
+
+```json
+{ "ok": true }
 ```
 
 ## Local Endpoints

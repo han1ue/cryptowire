@@ -158,7 +158,7 @@ const liveSources = ref("coindesk,decrypt,cointelegraph");
 const liveLimit = ref("6");
 const liveTheme = ref("light");
 const liveCategory = ref("");
-const liveTitle = ref("");
+const liveTitle = ref("Latest crypto news");
 
 const liveWidgetUrl = computed(() => {
   const parsedLimit = Number.parseInt(String(liveLimit.value), 10);
