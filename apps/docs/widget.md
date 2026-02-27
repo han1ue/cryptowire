@@ -8,6 +8,17 @@ You can integrate it three ways:
 2. Script loader (`/widget/widget.js`)
 3. Direct iframe (`/widget`)
 
+## Live Example
+
+Example of the widget running:
+
+<iframe
+  src="https://cryptowi.re/widget?sources=coindesk,decrypt,cointelegraph&limit=6&theme=light&title=Latest%20crypto%20news"
+  title="cryptowi.re widget example"
+  style="width:100%;height:420px;border:0;"
+  loading="lazy"
+  referrerpolicy="strict-origin-when-cross-origin"></iframe>
+
 ## Option 1: npm Package
 
 ```sh
