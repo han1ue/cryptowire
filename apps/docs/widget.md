@@ -2,23 +2,54 @@
 
 Use the `cryptowi.re` widget to show latest crypto headlines on your own website.
 
-## Install
+You can integrate it three ways:
 
-1. Add a container where the widget should render.
-2. Add the widget script tag.
-3. Configure the widget with `data-*` attributes.
+1. Script loader (`/widget/widget.js`)
+2. Direct iframe (`/widget`)
+3. npm package (`@cryptowire/widget`)
+
+## Option 1: Script Loader
 
 ## Embed Example
 
 ```html
 <div id="cw-news"></div>
 <script
-  src="https://widgets.cryptowi.re/widget.js"
+  src="https://cryptowi.re/widget/widget.js"
   data-target="#cw-news"
   data-limit="6"
   data-theme="light"
   data-category="Markets"
   data-sources="coindesk,decrypt,cointelegraph"></script>
+```
+
+## Option 2: Direct iframe
+
+```html
+<iframe
+  src="https://cryptowi.re/widget?sources=coindesk,decrypt,cointelegraph&limit=6&theme=light"
+  title="Latest crypto news"
+  style="width:100%;height:420px;border:0;"
+  loading="lazy"
+  referrerpolicy="strict-origin-when-cross-origin"></iframe>
+```
+
+## Option 3: npm Package
+
+```sh
+npm install @cryptowire/widget
+```
+
+```js
+import { mount } from "@cryptowire/widget";
+
+mount({
+  target: "#cw-news",
+  baseUrl: "https://cryptowi.re/widget",
+  sources: "coindesk,decrypt,cointelegraph",
+  limit: 6,
+  theme: "light",
+});
 ```
 
 ## Options
@@ -32,7 +63,8 @@ Use the `cryptowi.re` widget to show latest crypto headlines on your own website
 ## Behavior
 
 - The widget should be embedded via an `iframe` runtime for style/script isolation.
-- Data should come from `https://api.cryptowi.re`.
+- By default, widget requests use the same domain as the loader (`cryptowi.re`), which rewrites API paths to the backend.
+- npm integration mounts the same iframe runtime and uses the same postMessage auto-height behavior.
 
 ## Operational Notes
 

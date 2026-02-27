@@ -5,6 +5,14 @@
             "destination": "https://cryptowire-api.vercel.app/rss.xml"
         },
         {
+            "source": "/widget",
+            "destination": "/widget/index.html"
+        },
+        {
+            "source": "/widget/(.*)",
+            "destination": "/widget/$1"
+        },
+        {
             "source": "/news",
             "destination": "https://cryptowire-api.vercel.app/news"
         },

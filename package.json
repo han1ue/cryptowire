@@ -11,6 +11,8 @@
     "dev:frontend": "npm run dev -w @cryptowire/frontend",
     "dev:api": "npm run dev -w @cryptowire/api",
     "dev:docs": "npm run dev -w @cryptowire/docs",
+    "build:widget": "npm run build -w @cryptowire/widget",
+    "check:widget-sync": "npm run build:widget && git diff --exit-code -- apps/frontend/public/widget/widget.js",
     "build": "npm --workspaces run build --if-present",
     "lint": "eslint .",
     "format": "prettier --write ."

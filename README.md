@@ -10,6 +10,7 @@ This repo is a single-repo setup with:
 - `apps/docs` – VitePress docs site
 - `packages/types` – shared DTOs/zod schemas
 - `packages/adapters` – provider adapters (CoinDesk news, CoinGecko prices)
+- `packages/widget` – embeddable widget package (`@cryptowire/widget`)
 
 ## Getting Started
 
@@ -53,6 +54,8 @@ Quality checks:
 - Saved articles
 - Category filtering
 - Responsive terminal-inspired UI
+- Embeddable widget at `/widget` with loader script `/widget/widget.js`
+- npm package: `@cryptowire/widget`
 
 ## API
 
@@ -61,6 +64,19 @@ Quality checks:
 - `POST /news/refresh` (admin; send `x-refresh-secret` header)
 - `POST /news/summary/refresh` (admin; send `x-refresh-secret` header)
 - `GET /prices?symbols=BTC,ETH,SOL`
+
+## Widget Package
+
+- Source of truth: `packages/widget`
+- Hosted loader used by websites: `apps/frontend/public/widget/widget.js`
+- Rebuild/sync command: `npm run build -w @cryptowire/widget`
+- CI enforces sync between package source and hosted loader
+
+Publish process:
+1. Bump version in `packages/widget/package.json`
+2. Commit + push to `main`
+3. Create and push a tag like `widget-v0.1.1`
+4. GitHub Actions workflow `Publish Widget Package` publishes to npm (requires `NPM_TOKEN` secret)
 
 ## Vercel deploy (one repo, three projects)
 

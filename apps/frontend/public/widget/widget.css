@@ -1,0 +1,95 @@
+:root {
+  --cw-bg: #ffffff;
+  --cw-text: #111827;
+  --cw-muted: #6b7280;
+  --cw-border: #e5e7eb;
+  --cw-link: #0f766e;
+  --cw-card-bg: #ffffff;
+}
+
+body {
+  margin: 0;
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  background: transparent;
+  color: var(--cw-text);
+}
+
+.cw-root {
+  background: var(--cw-bg);
+  border: 1px solid var(--cw-border);
+  border-radius: 12px;
+  box-sizing: border-box;
+  padding: 12px;
+}
+
+.cw-root.theme-dark {
+  --cw-bg: #111827;
+  --cw-text: #f9fafb;
+  --cw-muted: #9ca3af;
+  --cw-border: #374151;
+  --cw-link: #2dd4bf;
+  --cw-card-bg: #111827;
+}
+
+.cw-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.cw-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.cw-badge {
+  border: 1px solid var(--cw-border);
+  border-radius: 999px;
+  color: var(--cw-muted);
+  font-size: 11px;
+  padding: 2px 8px;
+}
+
+.cw-list {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cw-item {
+  background: var(--cw-card-bg);
+  border: 1px solid var(--cw-border);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.cw-link {
+  color: var(--cw-link);
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-decoration: none;
+}
+
+.cw-link:hover {
+  text-decoration: underline;
+}
+
+.cw-meta {
+  color: var(--cw-muted);
+  font-size: 11px;
+  margin-top: 6px;
+}
+
+.cw-empty,
+.cw-error,
+.cw-loading {
+  color: var(--cw-muted);
+  font-size: 13px;
+  padding: 10px 4px;
+}

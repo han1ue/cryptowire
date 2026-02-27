@@ -1,0 +1,37 @@
+{
+  "name": "@cryptowire/widget",
+  "version": "0.1.0",
+  "description": "Embeddable cryptowi.re news widget (npm + script loader)",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./loader": "./dist/widget.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "prepack": "npm run build",
+    "publish:public": "npm publish --access public"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "cryptowi.re",
+    "widget",
+    "crypto",
+    "news",
+    "embed"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "esbuild": "^0.25.10"
+  }
+}
