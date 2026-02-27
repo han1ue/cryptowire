@@ -59,7 +59,7 @@ const SOURCE_REPUTATION_WEIGHTS: Record<NewsSourceId, number> = {
 const DEFAULT_REPUTATION_WEIGHT = 0.55;
 const MAX_HIGHLIGHTS = 8;
 const MAX_ARTICLES_IN_PROMPT = 140;
-const DEFAULT_AI_REQUEST_TIMEOUT_MS = 50_000;
+const DEFAULT_AI_REQUEST_TIMEOUT_MS = 120_000;
 const SOURCE_ID_SET = new Set<string>(SUPPORTED_NEWS_SOURCES.map((source) => source.id));
 
 const sourceNameById = new Map<NewsSourceId, string>();
@@ -215,7 +215,7 @@ export class NewsSummaryService {
         this.openAiModel = options?.openAiModel?.trim() || "gpt-4.1-mini";
         const requestedTimeoutMs = options?.requestTimeoutMs;
         this.aiRequestTimeoutMs = typeof requestedTimeoutMs === "number" && Number.isFinite(requestedTimeoutMs)
-            ? Math.max(5_000, Math.min(55_000, Math.trunc(requestedTimeoutMs)))
+            ? Math.max(5_000, Math.min(120_000, Math.trunc(requestedTimeoutMs)))
             : DEFAULT_AI_REQUEST_TIMEOUT_MS;
     }
 
