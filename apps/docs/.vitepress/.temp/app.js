@@ -30,7 +30,7 @@ _sfc_main$14.setup = (props, ctx) => {
 function deserializeFunctions(r) {
   return Array.isArray(r) ? r.map(deserializeFunctions) : typeof r == "object" && r !== null ? Object.keys(r).reduce((t, n) => (t[n] = deserializeFunctions(r[n]), t), {}) : typeof r == "string" && r.startsWith("_vp-fn_") ? new Function(`return ${r.slice(7)}`)() : r;
 }
-const siteData = deserializeFunctions(JSON.parse('{"lang":"en-US","dir":"ltr","title":"cryptowi.re docs","description":"Documentation for the cryptowi.re news aggregator.","base":"/","head":[],"router":{"prefetchLinks":true},"appearance":true,"themeConfig":{"nav":[{"text":"API","link":"/api"},{"text":"Widget","link":"/widget"},{"text":"Agent Skill","link":"/agent-skill"}],"sidebar":[{"text":"Docs","items":[{"text":"Start","link":"/"},{"text":"API","link":"/api"},{"text":"Widget","link":"/widget"},{"text":"Agent Skill","link":"/agent-skill"}]}],"search":{"provider":"local"}},"locales":{},"scrollOffset":134,"cleanUrls":true}'));
+const siteData = deserializeFunctions(JSON.parse('{"lang":"en-US","dir":"ltr","title":"cryptowi.re docs","description":"Documentation for the cryptowi.re news aggregator.","base":"/","head":[],"router":{"prefetchLinks":true},"appearance":true,"themeConfig":{"nav":[{"text":"API","link":"/api"},{"text":"Widget","link":"/widget"},{"text":"References","link":"/references/sources"},{"text":"Agent Instructions","link":"/agent-skill"}],"sidebar":[{"text":"Docs","items":[{"text":"API","link":"/api"},{"text":"Widget","link":"/widget"},{"text":"Agent Instructions","link":"/agent-skill"}]},{"text":"References","items":[{"text":"Sources","link":"/references/sources"}]}],"search":{"provider":"local"}},"locales":{},"scrollOffset":134,"cleanUrls":true}'));
 const __vite_import_meta_env__ = {};
 const EXTERNAL_URL_RE = /^(?:[a-z]+:|\/\/)/i;
 const APPEARANCE_KEY = "vitepress-theme-appearance";
@@ -3102,7 +3102,7 @@ const _sfc_main$s = /* @__PURE__ */ defineComponent({
   __name: "VPNavBarSearch",
   __ssrInlineRender: true,
   setup(__props) {
-    const VPLocalSearchBox = defineAsyncComponent(() => import("./VPLocalSearchBox.BDXZ6PGq.js"));
+    const VPLocalSearchBox = defineAsyncComponent(() => import("./VPLocalSearchBox.DOHSr5NW.js"));
     const VPAlgoliaSearchBox = () => null;
     const { theme: theme2 } = useData();
     const loaded = ref(false);
