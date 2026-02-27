@@ -9,20 +9,9 @@ export default defineConfig({
     ["link", { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" }],
     ["link", { rel: "alternate icon", href: "/favicon.ico" }],
     ["link", { rel: "apple-touch-icon", href: "/apple-touch-icon.png" }],
-    [
-      "style",
-      {},
-      `
-      .VPNavBar.home .VPNavBarTitle .title {
-        pointer-events: none;
-        cursor: default;
-      }
-      `
-    ],
   ],
   themeConfig: {
     logo: "/logo-mark.svg",
-    logoLink: "/",
     nav: [
       { text: "API", link: "/api" },
       { text: "Widget", link: "/widget" },
