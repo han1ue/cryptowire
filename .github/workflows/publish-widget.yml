@@ -24,12 +24,6 @@ jobs:
           cache: npm
           registry-url: https://registry.npmjs.org
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build widget package
-        run: npm run build -w @cryptowire/widget
-
       - name: Compare local and published versions
         id: versions
         run: |
@@ -48,6 +42,14 @@ jobs:
 
           echo "Local version: ${LOCAL_VERSION}"
           echo "Published version: ${PUBLISHED_VERSION:-<none>}"
+
+      - name: Install dependencies
+        if: steps.versions.outputs.publish == 'true'
+        run: npm ci
+
+      - name: Build widget package
+        if: steps.versions.outputs.publish == 'true'
+        run: npm run build -w @cryptowire/widget
 
       - name: Publish to npm
         if: steps.versions.outputs.publish == 'true'
