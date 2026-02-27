@@ -112,7 +112,7 @@ export const AiSummaryPanel = ({
                             {data?.articleCount ?? 0} stories
                         </Badge>
                         <Badge variant="outline" className="text-[10px] uppercase tracking-wider">
-                            Model: {modelUsed}
+                            {modelUsed}
                         </Badge>
                     </div>
                 ) : null}

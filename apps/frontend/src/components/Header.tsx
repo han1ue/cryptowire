@@ -247,7 +247,7 @@ export const Header = ({
 
         {/* Right - Time & Actions */}
         <div className="flex items-center gap-4">
-          <div className="hidden xl:flex flex-col items-end">
+          <div className="hidden 2xl:flex flex-col items-end">
             <span className="text-xs font-medium text-foreground tabular-nums">
               {currentTime}
             </span>

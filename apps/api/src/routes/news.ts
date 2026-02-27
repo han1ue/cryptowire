@@ -496,6 +496,10 @@ export const createNewsRouter = (
         return Date.now() - generatedAtMs <= maxAgeHours * 60 * 60 * 1000;
     };
 
+    const hasSummaryAiError = (summary: z.infer<typeof NewsSummaryResponseSchema>): boolean => {
+        return typeof summary.aiError === "string" && summary.aiError.trim().length > 0;
+    };
+
     const normalizeSummaryAiError = (summary: z.infer<typeof NewsSummaryResponseSchema>) => {
         const model = typeof summary.model === "string" && summary.model.trim().length > 0
             ? summary.model.trim()
@@ -569,26 +573,28 @@ export const createNewsRouter = (
             return res.status(401).json({ error: "Unauthorized" });
         }
 
-        const existing = await newsSummaryStore.getLatest();
+        const existingRaw = await newsSummaryStore.getLatest();
+        const existing = existingRaw ? normalizeSummaryAiError(existingRaw) : null;
+        if (existing && existing !== existingRaw) {
+            await newsSummaryStore.putLatest(existing);
+        }
+
         if (
             existing &&
             !parsed.data.force &&
             existing.windowHours === parsed.data.hours &&
-            isSummaryFresh(existing.generatedAt, SUMMARY_MAX_AGE_HOURS)
+            isSummaryFresh(existing.generatedAt, SUMMARY_MAX_AGE_HOURS) &&
+            !hasSummaryAiError(existing)
         ) {
-            const normalizedExisting = normalizeSummaryAiError(existing);
-            if (normalizedExisting !== existing) {
-                await newsSummaryStore.putLatest(normalizedExisting);
-            }
             return res.json({
                 ok: true,
                 skipped: true,
                 reason: "Summary is still fresh",
-                generatedAt: normalizedExisting.generatedAt,
-                articleCount: normalizedExisting.articleCount,
-                windowHours: normalizedExisting.windowHours,
-                model: normalizedExisting.model,
-                aiError: normalizedExisting.aiError,
+                generatedAt: existing.generatedAt,
+                articleCount: existing.articleCount,
+                windowHours: existing.windowHours,
+                model: existing.model,
+                aiError: existing.aiError,
             });
         }
 
