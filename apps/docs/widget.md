@@ -23,6 +23,18 @@ You can integrate it three ways:
   data-sources="coindesk,decrypt,cointelegraph"></script>
 ```
 
+### Script Options
+
+- `src`: loader URL (`https://cryptowi.re/widget/widget.js`)
+- `data-target`: CSS selector for mount point
+- `data-limit`: number of headlines to show (1-20)
+- `data-theme`: `light` or `dark`
+- `data-category`: optional category filter
+- `data-sources`: optional source-id list
+- `data-title`: optional widget title override
+- `data-api-base`: optional API base override
+- `data-min-height`: optional minimum iframe height in pixels
+
 ## Option 2: Direct iframe
 
 ```html
@@ -33,6 +45,17 @@ You can integrate it three ways:
   loading="lazy"
   referrerpolicy="strict-origin-when-cross-origin"></iframe>
 ```
+
+### iframe Options
+
+- `src`: widget URL + query params
+- `sources`: comma-separated source ids
+- `limit`: number of headlines to show (1-20)
+- `theme`: `light` or `dark`
+- `category`: optional category filter
+- `title`: optional widget title override
+- `api`: optional API base override
+- `style.height`: fixed height (or use script/npm mode for auto-resize)
 
 ## Option 3: npm Package
 
@@ -52,22 +75,20 @@ mount({
 });
 ```
 
-## Options
+### npm `mount()` Options
 
-- `data-target`: CSS selector for mount point
-- `data-limit`: number of headlines to show
-- `data-theme`: visual theme (for example `light` or `dark`)
-- `data-category`: optional category filter
-- `data-sources`: optional source-id list
+- `target`: CSS selector or HTMLElement
+- `baseUrl`: widget page URL (for example `https://cryptowi.re/widget`)
+- `sources`: comma-separated source ids
+- `limit`: number of headlines to show (1-20)
+- `theme`: `light` or `dark`
+- `category`: optional category filter
+- `title`: optional widget title override
+- `apiBase`: optional API base override
+- `minHeight`: optional minimum iframe height in pixels
 
 ## Behavior
 
 - The widget should be embedded via an `iframe` runtime for style/script isolation.
 - By default, widget requests use the same domain as the loader (`cryptowi.re`), which rewrites API paths to the backend.
 - npm integration mounts the same iframe runtime and uses the same postMessage auto-height behavior.
-
-## Operational Notes
-
-- Keep admin endpoints private (`x-refresh-secret`)
-- Add caching on API responses used by widgets
-- Add rate limits before opening wide public access
