@@ -25,6 +25,6 @@ After install, restart Codex so the new skill loads.
 ## What The Skill Includes
 
 - Repository layout and common workflows
-- API/admin endpoint behavior
+- API/local endpoint behavior
 - Widget and docs update guardrails
 - Validation checklist before shipping changes

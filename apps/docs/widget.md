@@ -10,8 +10,6 @@ You can integrate it three ways:
 
 ## Option 1: Script Loader
 
-## Embed Example
-
 ```html
 <div id="cw-news"></div>
 <script
@@ -23,6 +21,8 @@ You can integrate it three ways:
   data-sources="coindesk,decrypt,cointelegraph"></script>
 ```
 
+Use source ids from [References](#references).
+
 ### Script Options
 
 - `src`: loader URL (`https://cryptowi.re/widget/widget.js`)
@@ -30,7 +30,7 @@ You can integrate it three ways:
 - `data-limit`: number of headlines to show (1-20)
 - `data-theme`: `light` or `dark`
 - `data-category`: optional category filter
-- `data-sources`: optional source-id list
+- `data-sources`: optional source-id list (see [References](#references))
 - `data-title`: optional widget title override
 - `data-api-base`: optional API base override
 - `data-min-height`: optional minimum iframe height in pixels
@@ -46,10 +46,12 @@ You can integrate it three ways:
   referrerpolicy="strict-origin-when-cross-origin"></iframe>
 ```
 
+Use source ids from [References](#references).
+
 ### iframe Options
 
 - `src`: widget URL + query params
-- `sources`: comma-separated source ids
+- `sources`: comma-separated source ids (see [References](#references))
 - `limit`: number of headlines to show (1-20)
 - `theme`: `light` or `dark`
 - `category`: optional category filter
@@ -75,11 +77,13 @@ mount({
 });
 ```
 
+Use source ids from [References](#references).
+
 ### npm `mount()` Options
 
 - `target`: CSS selector or HTMLElement
 - `baseUrl`: widget page URL (for example `https://cryptowi.re/widget`)
-- `sources`: comma-separated source ids
+- `sources`: comma-separated source ids (see [References](#references))
 - `limit`: number of headlines to show (1-20)
 - `theme`: `light` or `dark`
 - `category`: optional category filter
@@ -87,8 +91,31 @@ mount({
 - `apiBase`: optional API base override
 - `minHeight`: optional minimum iframe height in pixels
 
-## Behavior
+## References
 
-- The widget should be embedded via an `iframe` runtime for style/script isolation.
-- By default, widget requests use the same domain as the loader (`cryptowi.re`), which rewrites API paths to the backend.
-- npm integration mounts the same iframe runtime and uses the same postMessage auto-height behavior.
+### Sources
+
+Available source ids:
+
+- `coindesk`
+- `decrypt`
+- `cointelegraph`
+- `blockworks`
+- `bitcoin.com`
+- `cryptopotato`
+- `forbes`
+- `cryptopolitan`
+- `coinpaprika`
+- `seekingalpha`
+- `bitcoinist`
+- `newsbtc`
+- `utoday`
+- `investing_comcryptonews`
+- `ethereumfoundation`
+- `bitcoincore`
+
+You can also fetch the live source list from:
+
+```sh
+curl "https://api.cryptowi.re/news/sources"
+```

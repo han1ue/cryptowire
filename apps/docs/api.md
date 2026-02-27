@@ -13,6 +13,8 @@ Get headlines from selected sources:
 curl "https://api.cryptowi.re/news?sources=coindesk,decrypt,cointelegraph&limit=20"
 ```
 
+Use source ids from [Sources Reference](#sources-reference).
+
 ## Public Endpoints
 
 ### `GET /news`
@@ -21,7 +23,7 @@ Returns normalized news items.
 
 Query params:
 
-- `sources` (required, comma-separated source ids)
+- `sources` (required, comma-separated source ids; see [Sources Reference](#sources-reference))
 - `limit` (default `30`, max effective `100`)
 - `offset` (default `0`)
 - `retentionDays` (max effective `7`)
@@ -87,13 +89,19 @@ Example:
 curl "https://api.cryptowi.re/health"
 ```
 
-## Local/Admin Endpoints
+## Local Endpoints
 
-These endpoints are for local operations and trusted admin automation, not public integrations.
+These endpoints are for local operations, not public integrations.
 
 They require `x-refresh-secret` header.
 
 ### `POST /news/refresh`
+
+Body fields:
+
+- `limit` (optional, default `30`)
+- `force` (optional boolean)
+- `sources` (optional, comma-separated source ids; see [Sources Reference](#sources-reference))
 
 Example:
 
@@ -124,4 +132,31 @@ curl -X POST "https://api.cryptowi.re/news/diagnose" \
   -H "content-type: application/json" \
   -H "x-refresh-secret: YOUR_SECRET" \
   --data-raw '{"limit":100}'
+```
+
+## Sources Reference
+
+Use these source ids anywhere a `sources` parameter is accepted:
+
+- `coindesk`
+- `decrypt`
+- `cointelegraph`
+- `blockworks`
+- `bitcoin.com`
+- `cryptopotato`
+- `forbes`
+- `cryptopolitan`
+- `coinpaprika`
+- `seekingalpha`
+- `bitcoinist`
+- `newsbtc`
+- `utoday`
+- `investing_comcryptonews`
+- `ethereumfoundation`
+- `bitcoincore`
+
+You can always fetch the latest list dynamically with:
+
+```sh
+curl "https://api.cryptowi.re/news/sources"
 ```
