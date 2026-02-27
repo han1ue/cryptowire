@@ -15,7 +15,6 @@ export default defineConfig({
       {
         text: "Docs",
         items: [
-          { text: "Start", link: "/" },
           { text: "API", link: "/api" },
           { text: "Widget", link: "/widget" },
           { text: "Agent Skill", link: "/agent-skill" },

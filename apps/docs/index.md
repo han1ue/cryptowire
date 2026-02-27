@@ -27,13 +27,3 @@ features:
     details: Download and install the cryptowi.re skill for your coding agent.
     link: /agent-skill
 ---
-
-## What is cryptowi.re?
-
-`cryptowi.re` is a crypto news aggregator that collects and normalizes headlines from multiple publishers.
-
-## Documentation
-
-- [API](/api)
-- [Widget](/widget)
-- [Agent Skill](/agent-skill)
