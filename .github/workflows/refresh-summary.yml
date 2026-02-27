@@ -31,12 +31,16 @@ jobs:
 
           base="${API_BASE_URL%/}"
 
-          try_url() {
-            url="$1"
+          try_refresh_summary() {
+            url="${base}/news/summary/refresh"
+            payload='{"hours":24,"limit":180}'
             echo "Requesting: ${url}"
             http_code=$(curl -sS -o /tmp/refresh_summary_body.json -w "%{http_code}" \
               --retry 3 --retry-all-errors --retry-delay 5 \
+              -X POST \
+              -H "content-type: application/json" \
               -H "x-refresh-secret: ${REFRESH_SECRET}" \
+              --data-raw "${payload}" \
               "${url}" || true)
 
             if [ "${http_code}" = "200" ]; then
@@ -49,7 +53,7 @@ jobs:
             return 1
           }
 
-          try_url "${base}/news/summary/refresh?hours=24&limit=180" && exit 0
+          try_refresh_summary && exit 0
 
           echo "12h summary refresh failed."
           exit 22

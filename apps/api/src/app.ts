@@ -23,7 +23,6 @@ const publicEndpoints = {
     news: "/news?limit=40&offset=0",
     summary: "/news/summary",
     sources: "/news/sources",
-    refresh: "/news/refresh?limit=30",
     prices: "/prices?symbols=BTC,ETH,SOL",
     market: "/market",
 };

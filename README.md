@@ -7,6 +7,7 @@ This repo is a single-repo setup with:
 
 - `apps/frontend` – Vite + React UI
 - `apps/api` – Express + TypeScript API (can deploy to Vercel)
+- `apps/docs` – VitePress docs site
 - `packages/types` – shared DTOs/zod schemas
 - `packages/adapters` – provider adapters (CoinDesk news, CoinGecko prices)
 
@@ -20,11 +21,16 @@ This repo is a single-repo setup with:
 	```sh
 	npm run dev
 	```
+3. Start docs:
+	```sh
+	npm run dev:docs
+	```
 
 Local URLs:
 
 - Frontend: `http://localhost:8080`
 - API: `http://localhost:3001/health`
+- Docs: `http://localhost:5173`
 
 Environment:
 
@@ -52,15 +58,17 @@ Quality checks:
 
 - `GET /news?limit=30&retentionDays=7`
 - `GET /news/summary` (returns last generated summary from file/cache)
-- `GET /news/summary/refresh?hours=24&limit=180` (scheduled/manual summary generation)
+- `POST /news/refresh` (admin; send `x-refresh-secret` header)
+- `POST /news/summary/refresh` (admin; send `x-refresh-secret` header)
 - `GET /prices?symbols=BTC,ETH,SOL`
 
-## Vercel deploy (one repo, two projects)
+## Vercel deploy (one repo, three projects)
 
-Create two Vercel projects pointing at the same Git repo:
+Create three Vercel projects pointing at the same Git repo:
 
 - Frontend project Root Directory: `apps/frontend`
 - API project Root Directory: `apps/api`
+- Docs project Root Directory: `apps/docs`
 
 Set the API project env vars from `.env`.
 

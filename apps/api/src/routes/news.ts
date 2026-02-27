@@ -522,6 +522,39 @@ export const createNewsRouter = (
         };
     };
 
+    const isVercelCronRequest = (req: Request) => req.header("x-vercel-cron") === "1";
+
+    const isRefreshAuthorized = (req: Request) => {
+        const expected = opts?.refreshSecret;
+        if (isVercelCronRequest(req)) return true;
+        if (!expected) return true;
+        return req.header("x-refresh-secret") === expected;
+    };
+
+    const adminBooleanSchema = z
+        .union([z.literal("1"), z.literal("true"), z.literal("0"), z.literal("false"), z.boolean()])
+        .optional()
+        .transform((v) => v === true || v === "1" || v === "true");
+
+    const summaryRefreshSchema = z.object({
+        hours: z.coerce.number().int().positive().max(72).default(SUMMARY_DEFAULT_HOURS),
+        limit: z.coerce.number().int().positive().max(500).default(SUMMARY_DEFAULT_LIMIT),
+        sources: z.string().optional(),
+        force: adminBooleanSchema,
+    });
+
+    const newsRefreshSchema = z.object({
+        limit: z.coerce.number().int().positive().max(500).default(30),
+        retentionDays: z.coerce.number().int().positive().max(30).optional(),
+        sources: z.string().optional(),
+        force: adminBooleanSchema,
+    });
+
+    const diagnoseSchema = z.object({
+        limit: z.coerce.number().int().positive().max(200).default(5),
+        sources: z.string().optional(),
+    });
+
     router.get("/news/summary", asyncHandler(async (_req, res) => {
         const cached = await newsSummaryStore.getLatest();
         if (cached) {
@@ -550,27 +583,17 @@ export const createNewsRouter = (
         });
     }));
 
-    router.get("/news/summary/refresh", asyncHandler(async (req, res) => {
-        const querySchema = z.object({
-            hours: z.coerce.number().int().positive().max(72).default(SUMMARY_DEFAULT_HOURS),
-            limit: z.coerce.number().int().positive().max(500).default(SUMMARY_DEFAULT_LIMIT),
-            sources: z.string().optional(),
-            force: z
-                .union([z.literal("1"), z.literal("true"), z.literal("0"), z.literal("false")])
-                .optional()
-                .transform((v) => v === "1" || v === "true"),
-            secret: z.string().optional(),
-        });
-
-        const parsed = querySchema.safeParse(req.query);
-        if (!parsed.success) {
-            return res.status(400).json({ error: parsed.error.message });
+    const summaryRefreshHandler = asyncHandler(async (req, res) => {
+        if (req.method === "GET" && !isVercelCronRequest(req)) {
+            return res.status(405).json({ error: "Method not allowed. Use POST with x-refresh-secret header." });
+        }
+        if (!isRefreshAuthorized(req)) {
+            return res.status(401).json({ error: "Unauthorized" });
         }
 
-        const expected = opts?.refreshSecret;
-        const isVercelCron = req.header("x-vercel-cron") === "1";
-        if (!isVercelCron && expected && parsed.data.secret !== expected && req.header("x-refresh-secret") !== expected) {
-            return res.status(401).json({ error: "Unauthorized" });
+        const parsed = summaryRefreshSchema.safeParse(req.method === "POST" ? req.body : req.query);
+        if (!parsed.success) {
+            return res.status(400).json({ error: parsed.error.message });
         }
 
         const existingRaw = await newsSummaryStore.getLatest();
@@ -613,31 +636,22 @@ export const createNewsRouter = (
             model: summary.model,
             aiError: summary.aiError,
         });
-    }));
+    });
 
-    router.get("/news/refresh", asyncHandler(async (req, res) => {
-        const querySchema = z.object({
-            limit: z.coerce.number().int().positive().max(500).default(30),
-            retentionDays: z.coerce.number().int().positive().max(30).optional(),
-            sources: z.string().optional(),
-            force: z
-                .union([z.literal("1"), z.literal("true"), z.literal("0"), z.literal("false")])
-                .optional()
-                .transform((v) => v === "1" || v === "true"),
-            secret: z.string().optional(),
-        });
+    router.post("/news/summary/refresh", summaryRefreshHandler);
+    router.get("/news/summary/refresh", summaryRefreshHandler);
 
-        const parsed = querySchema.safeParse(req.query);
-        if (!parsed.success) {
-            return res.status(400).json({ error: parsed.error.message });
+    const newsRefreshHandler = asyncHandler(async (req, res) => {
+        if (req.method === "GET" && !isVercelCronRequest(req)) {
+            return res.status(405).json({ error: "Method not allowed. Use POST with x-refresh-secret header." });
+        }
+        if (!isRefreshAuthorized(req)) {
+            return res.status(401).json({ error: "Unauthorized" });
         }
 
-        // Optional protection for cron/warm endpoints.
-        // Vercel Cron requests include `x-vercel-cron: 1`, which we allow.
-        const expected = opts?.refreshSecret;
-        const isVercelCron = req.header("x-vercel-cron") === "1";
-        if (!isVercelCron && expected && parsed.data.secret !== expected && req.header("x-refresh-secret") !== expected) {
-            return res.status(401).json({ error: "Unauthorized" });
+        const parsed = newsRefreshSchema.safeParse(req.method === "POST" ? req.body : req.query);
+        if (!parsed.success) {
+            return res.status(400).json({ error: parsed.error.message });
         }
 
         // CoinDesk commonly rejects very large limits; keep this conservative.
@@ -680,38 +694,34 @@ export const createNewsRouter = (
             refreshedAt: new Date().toISOString(),
             note:
                 items.length === 0
-                    ? "Upstream returned 0 items. Try /news/diagnose?limit=100 to see the CoinDesk response details (status/body)."
+                    ? "Upstream returned 0 items. Try POST /news/diagnose with x-refresh-secret and body {\"limit\":100} for diagnostics."
                     : null,
         });
-    }));
+    });
+
+    router.post("/news/refresh", newsRefreshHandler);
+    router.get("/news/refresh", newsRefreshHandler);
 
     // Debug helper to understand why refresh returns 0 items in production.
     // Protected by the same refresh secret as /news/refresh.
-    router.get("/news/diagnose", asyncHandler(async (req, res) => {
-        const querySchema = z.object({
-            limit: z.coerce.number().int().positive().max(200).default(5),
-            sources: z.string().optional(),
-        });
-
-        const parsedQuery = querySchema.safeParse(req.query);
-        if (!parsedQuery.success) {
-            return res.status(400).json({ error: parsedQuery.error.message });
+    router.post("/news/diagnose", asyncHandler(async (req, res) => {
+        if (!isRefreshAuthorized(req)) {
+            return res.status(401).json({ error: "Unauthorized" });
         }
 
-        const expected = opts?.refreshSecret;
-        const isVercelCron = req.header("x-vercel-cron") === "1";
-        if (!isVercelCron && expected && req.header("x-refresh-secret") !== expected) {
-            return res.status(401).json({ error: "Unauthorized" });
+        const parsed = diagnoseSchema.safeParse(req.body);
+        if (!parsed.success) {
+            return res.status(400).json({ error: parsed.error.message });
         }
 
         const apiKeyPresent = Boolean(process.env.COINDESK_API_KEY);
         const baseUrl = process.env.COINDESK_BASE_URL ?? "https://data-api.coindesk.com";
         const endpointPath = process.env.COINDESK_NEWS_ENDPOINT_PATH ?? "/news/v1/article/list";
-        const sourceIds = (parsedQuery.data.sources ?? "").trim();
+        const sourceIds = (parsed.data.sources ?? "").trim();
 
         const buildUrl = (includeSources: boolean) => {
             const url = new URL(endpointPath, baseUrl);
-            url.searchParams.set("limit", String(parsedQuery.data.limit));
+            url.searchParams.set("limit", String(parsed.data.limit));
             url.searchParams.set("lang", "EN");
             if (includeSources && sourceIds) url.searchParams.set("source_ids", sourceIds);
             // CoinDesk Data API supports api_key as a query param.
@@ -779,6 +789,10 @@ export const createNewsRouter = (
                 withoutSources,
             },
         });
+    }));
+
+    router.get("/news/diagnose", asyncHandler(async (_req, res) => {
+        return res.status(405).json({ error: "Method not allowed. Use POST with x-refresh-secret header." });
     }));
 
     router.get("/news", asyncHandler(async (req, res) => {

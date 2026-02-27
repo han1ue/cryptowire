@@ -10,6 +10,7 @@
     "dev": "concurrently -n frontend,api -c blue,green \"npm run dev -w @cryptowire/frontend\" \"npm run dev -w @cryptowire/api\"",
     "dev:frontend": "npm run dev -w @cryptowire/frontend",
     "dev:api": "npm run dev -w @cryptowire/api",
+    "dev:docs": "npm run dev -w @cryptowire/docs",
     "build": "npm --workspaces run build --if-present",
     "lint": "eslint .",
     "format": "prettier --write ."
