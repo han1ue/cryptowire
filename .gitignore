@@ -35,3 +35,6 @@ dist-ssr
 
 # Vercel serverless function build artifacts (avoid .js/.ts path conflicts)
 apps/api/api/**/*.js
+
+# VitePress generated temp files
+apps/docs/.vitepress/.temp/
