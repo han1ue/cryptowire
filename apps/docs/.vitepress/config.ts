@@ -11,6 +11,7 @@ export default defineConfig({
     ["link", { rel: "apple-touch-icon", href: "/apple-touch-icon.png" }],
   ],
   themeConfig: {
+    logo: "/logo-mark.svg",
     nav: [
       { text: "API", link: "/api" },
       { text: "Widget", link: "/widget" },
