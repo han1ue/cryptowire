@@ -35,7 +35,7 @@ mount({
 - `limit`: headline count (`1-20`)
 - `theme`: `light` or `dark`
 - `category`: optional category filter
-- `title`: optional widget title override
+- `title`: optional widget title override (if omitted, no title is shown)
 - `apiBase`: optional API base override
 - `minHeight`: minimum iframe height in px
 

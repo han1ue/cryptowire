@@ -1,5 +1,4 @@
 const DEFAULT_SOURCES = "coindesk,decrypt,cointelegraph";
-const DEFAULT_TITLE = "Latest crypto news";
 
 const params = new URLSearchParams(window.location.search);
 
@@ -7,7 +6,7 @@ const config = {
   apiBase: (params.get("api") || window.location.origin).trim().replace(/\/$/, ""),
   sources: (params.get("sources") || DEFAULT_SOURCES).trim(),
   category: (params.get("category") || "").trim(),
-  title: (params.get("title") || DEFAULT_TITLE).trim(),
+  title: (params.get("title") || "").trim(),
   theme: (params.get("theme") || "light").trim().toLowerCase() === "dark" ? "dark" : "light",
   limit: (() => {
     const raw = Number(params.get("limit") || 6);
@@ -52,9 +51,12 @@ const createHeader = () => {
   const header = document.createElement("div");
   header.className = "cw-header";
 
-  const title = document.createElement("h2");
-  title.className = "cw-title";
-  title.textContent = config.title;
+  if (config.title) {
+    const title = document.createElement("h2");
+    title.className = "cw-title";
+    title.textContent = config.title;
+    header.append(title);
+  }
 
   const byline = document.createElement("div");
   byline.className = "cw-byline";
@@ -68,7 +70,7 @@ const createHeader = () => {
   brandLink.textContent = "cryptowi.re";
 
   byline.append(brandLink);
-  header.append(title, byline);
+  header.append(byline);
   return header;
 };
 

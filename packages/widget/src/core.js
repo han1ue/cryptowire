@@ -2,7 +2,7 @@ const DEFAULTS = Object.freeze({
   sources: "coindesk,decrypt,cointelegraph",
   limit: 6,
   theme: "light",
-  title: "Latest crypto news",
+  title: "",
   minHeight: 340,
 });
 
@@ -64,7 +64,7 @@ const readDataOptions = (scriptEl) => {
     theme: scriptEl.getAttribute("data-theme") || DEFAULTS.theme,
     category: scriptEl.getAttribute("data-category") || "",
     sources: scriptEl.getAttribute("data-sources") || DEFAULTS.sources,
-    title: scriptEl.getAttribute("data-title") || DEFAULTS.title,
+    title: scriptEl.getAttribute("data-title") || "",
     minHeight: scriptEl.getAttribute("data-min-height") || DEFAULTS.minHeight,
     baseUrl: scriptEl.src,
   };
@@ -100,14 +100,15 @@ export const mount = (options = {}) => {
   src.searchParams.set("sources", String(options.sources || DEFAULTS.sources));
   src.searchParams.set("limit", String(clampInt(options.limit, 1, 20, DEFAULTS.limit)));
   src.searchParams.set("theme", normalizeTheme(options.theme));
-  src.searchParams.set("title", String(options.title || DEFAULTS.title));
+  const normalizedTitle = String(options.title ?? "").trim();
+  if (normalizedTitle.length > 0) src.searchParams.set("title", normalizedTitle);
 
   if (options.category) src.searchParams.set("category", String(options.category));
   if (options.apiBase) src.searchParams.set("api", String(options.apiBase));
 
   const iframe = document.createElement("iframe");
   iframe.src = src.toString();
-  iframe.title = String(options.title || DEFAULTS.title);
+  iframe.title = normalizedTitle.length > 0 ? normalizedTitle : "cryptowi.re widget";
   iframe.loading = "lazy";
   iframe.referrerPolicy = "strict-origin-when-cross-origin";
   iframe.style.width = "100%";

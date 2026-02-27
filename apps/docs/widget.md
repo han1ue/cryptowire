@@ -96,7 +96,7 @@ Use source ids from [References > Sources](/references/sources).
 - `limit`: number of headlines to show (1-20)
 - `theme`: `light` or `dark`
 - `category`: optional category filter
-- `title`: optional widget title override
+- `title`: optional widget title override (if omitted, no title is shown)
 - `apiBase`: optional API base override
 - `minHeight`: optional minimum iframe height in pixels
 
@@ -123,7 +123,7 @@ Use source ids from [References > Sources](/references/sources).
 - `data-theme`: `light` or `dark`
 - `data-category`: optional category filter
 - `data-sources`: optional source-id list (see [References > Sources](/references/sources))
-- `data-title`: optional widget title override
+- `data-title`: optional widget title override (if omitted, no title is shown)
 - `data-api-base`: optional API base override
 - `data-min-height`: optional minimum iframe height in pixels
 
@@ -147,7 +147,7 @@ Use source ids from [References > Sources](/references/sources).
 - `limit`: number of headlines to show (1-20)
 - `theme`: `light` or `dark`
 - `category`: optional category filter
-- `title`: optional widget title override
+- `title`: optional widget title override (if omitted, no title is shown)
 - `api`: optional API base override
 - `style.height`: fixed height (or use script/npm mode for auto-resize)
 
@@ -158,7 +158,7 @@ const liveSources = ref("coindesk,decrypt,cointelegraph");
 const liveLimit = ref("6");
 const liveTheme = ref("light");
 const liveCategory = ref("");
-const liveTitle = ref("Latest crypto news");
+const liveTitle = ref("");
 
 const liveWidgetUrl = computed(() => {
   const parsedLimit = Number.parseInt(String(liveLimit.value), 10);
