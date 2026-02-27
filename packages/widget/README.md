@@ -13,7 +13,7 @@ Embeddable `cryptowi.re` headlines widget for any website.
 npm install @cryptowire/widget
 ```
 
-## Option 1: npm Usage
+## Usage (npm)
 
 ```js
 import { mount } from "@cryptowire/widget";
