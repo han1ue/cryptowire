@@ -62,6 +62,21 @@ const buildRecapXShareText = (data?: NewsSummaryResponse): string => {
     return `${prefix}${summaryText}${suffix}`;
 };
 
+const buildUpdatedLabel = (generatedAt?: string): string | null => {
+    if (!generatedAt) return null;
+
+    const generatedAtMs = Date.parse(generatedAt);
+    if (!Number.isFinite(generatedAtMs)) return null;
+
+    const elapsedMs = Math.max(0, Date.now() - generatedAtMs);
+    const elapsedHours = elapsedMs / (60 * 60 * 1000);
+
+    if (elapsedHours < 1) return "Updated less than 1 hour ago";
+
+    const roundedHours = Math.floor(elapsedHours);
+    return `Updated ${roundedHours} hour${roundedHours === 1 ? "" : "s"} ago`;
+};
+
 export const AiSummaryPanel = ({
     data,
     isLoading,
@@ -74,6 +89,7 @@ export const AiSummaryPanel = ({
         typeof window === "undefined" ? "https://cryptowi.re/recap" : `${window.location.origin}/recap`;
     const recapShareText = buildRecapShareText(data);
     const recapXShareText = buildRecapXShareText(data);
+    const updatedLabel = buildUpdatedLabel(data?.generatedAt);
 
     const hasData = Boolean(data);
     const hasArticles = Boolean(data && data.articleCount > 0);
@@ -267,6 +283,12 @@ export const AiSummaryPanel = ({
                     </>
                 ) : null}
             </div>
+
+            {hasData && updatedLabel ? (
+                <p className="text-center text-[11px] text-muted-foreground">
+                    {updatedLabel}
+                </p>
+            ) : null}
         </section>
     );
 };
