@@ -1,6 +1,6 @@
 {
   "name": "@cryptowire/widget",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Embeddable cryptowi.re news widget (npm + script loader)",
   "type": "module",
   "main": "./dist/index.js",

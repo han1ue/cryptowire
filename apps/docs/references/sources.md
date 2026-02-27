@@ -1,6 +1,4 @@
-# References
-
-## Sources
+# Sources
 
 Use these source ids anywhere a `sources` parameter is accepted:
 

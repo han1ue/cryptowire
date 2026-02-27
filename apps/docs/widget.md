@@ -21,7 +21,7 @@ You can integrate it three ways:
   data-sources="coindesk,decrypt,cointelegraph"></script>
 ```
 
-Use source ids from [References](/references#sources).
+Use source ids from [References > Sources](/references/sources).
 
 ### Script Options
 
@@ -30,7 +30,7 @@ Use source ids from [References](/references#sources).
 - `data-limit`: number of headlines to show (1-20)
 - `data-theme`: `light` or `dark`
 - `data-category`: optional category filter
-- `data-sources`: optional source-id list (see [References](/references#sources))
+- `data-sources`: optional source-id list (see [References > Sources](/references/sources))
 - `data-title`: optional widget title override
 - `data-api-base`: optional API base override
 - `data-min-height`: optional minimum iframe height in pixels
@@ -46,12 +46,12 @@ Use source ids from [References](/references#sources).
   referrerpolicy="strict-origin-when-cross-origin"></iframe>
 ```
 
-Use source ids from [References](/references#sources).
+Use source ids from [References > Sources](/references/sources).
 
 ### iframe Options
 
 - `src`: widget URL + query params
-- `sources`: comma-separated source ids (see [References](/references#sources))
+- `sources`: comma-separated source ids (see [References > Sources](/references/sources))
 - `limit`: number of headlines to show (1-20)
 - `theme`: `light` or `dark`
 - `category`: optional category filter
@@ -77,13 +77,13 @@ mount({
 });
 ```
 
-Use source ids from [References](/references#sources).
+Use source ids from [References > Sources](/references/sources).
 
 ### npm `mount()` Options
 
 - `target`: CSS selector or HTMLElement
 - `baseUrl`: widget page URL (for example `https://cryptowi.re/widget`)
-- `sources`: comma-separated source ids (see [References](/references#sources))
+- `sources`: comma-separated source ids (see [References > Sources](/references/sources))
 - `limit`: number of headlines to show (1-20)
 - `theme`: `light` or `dark`
 - `category`: optional category filter

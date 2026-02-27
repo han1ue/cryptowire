@@ -13,7 +13,7 @@ Get headlines from selected sources:
 curl "https://api.cryptowi.re/news?sources=coindesk,decrypt,cointelegraph&limit=20"
 ```
 
-Use source ids from [References](/references#sources).
+Use source ids from [References > Sources](/references/sources).
 
 ## Public Endpoints
 
@@ -23,7 +23,7 @@ Returns normalized news items.
 
 Query params:
 
-- `sources` (required, comma-separated source ids; see [References](/references#sources))
+- `sources` (required, comma-separated source ids; see [References > Sources](/references/sources))
 - `limit` (default `30`, max effective `100`)
 - `offset` (default `0`)
 - `retentionDays` (max effective `7`)
@@ -101,7 +101,7 @@ Body fields:
 
 - `limit` (optional, default `30`)
 - `force` (optional boolean)
-- `sources` (optional, comma-separated source ids; see [References](/references#sources))
+- `sources` (optional, comma-separated source ids; see [References > Sources](/references/sources))
 
 Example:
 

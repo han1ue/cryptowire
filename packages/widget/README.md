@@ -31,13 +31,15 @@ mount({
 
 - `target`: CSS selector or HTMLElement where widget should mount
 - `baseUrl`: iframe page URL (example: `https://cryptowi.re/widget`)
-- `sources`: comma-separated source ids
+- `sources`: comma-separated source ids (see `https://docs.cryptowi.re/references/sources`)
 - `limit`: headline count (`1-20`)
 - `theme`: `light` or `dark`
 - `category`: optional category filter
 - `title`: optional widget title override
 - `apiBase`: optional API base override
 - `minHeight`: minimum iframe height in px
+
+Find source ids in docs: `https://docs.cryptowi.re/references/sources`
 
 ## Notes
 
