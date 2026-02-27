@@ -68,8 +68,6 @@ Use source ids from [References > Sources](/references/sources).
   loading="lazy"
   referrerpolicy="strict-origin-when-cross-origin"></iframe>
 
-Current URL: <code>{{ liveWidgetUrl }}</code>
-
 ## Option 1: npm Package
 
 ```sh
