@@ -19,6 +19,7 @@ body {
   border: 1px solid var(--cw-border);
   border-radius: 12px;
   box-sizing: border-box;
+  color: var(--cw-text);
   padding: 12px;
 }
 
@@ -57,6 +58,7 @@ body {
 }
 
 .cw-title {
+  color: var(--cw-text);
   font-size: 14px;
   font-weight: 700;
   margin: 0;
