@@ -5,6 +5,11 @@ export default defineConfig({
   description: "Documentation for the cryptowi.re news aggregator.",
   lang: "en-US",
   cleanUrls: true,
+  head: [
+    ["link", { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" }],
+    ["link", { rel: "alternate icon", href: "/favicon.ico" }],
+    ["link", { rel: "apple-touch-icon", href: "/apple-touch-icon.png" }],
+  ],
   themeConfig: {
     nav: [
       { text: "API", link: "/api" },
