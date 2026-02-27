@@ -1,7 +1,7 @@
 import { defineConfig } from "vitepress";
 
 export default defineConfig({
-  title: "cryptowi.re docs",
+  title: "cryptowire documentation",
   description: "Documentation for the cryptowi.re news aggregator.",
   lang: "en-US",
   cleanUrls: true,
@@ -20,7 +20,7 @@ export default defineConfig({
     ],
     sidebar: [
       {
-        text: "Docs",
+        text: "Documentation",
         items: [
           { text: "API", link: "/api" },
           { text: "Widget", link: "/widget" },
