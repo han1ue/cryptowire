@@ -14,6 +14,7 @@ export default defineConfig({
     nav: [
       { text: "API", link: "/api" },
       { text: "Widget", link: "/widget" },
+      { text: "References", link: "/references" },
       { text: "Agent Instructions", link: "/agent-skill" }
     ],
     sidebar: [
@@ -22,6 +23,7 @@ export default defineConfig({
         items: [
           { text: "API", link: "/api" },
           { text: "Widget", link: "/widget" },
+          { text: "References", link: "/references" },
           { text: "Agent Instructions", link: "/agent-skill" },
         ]
       }

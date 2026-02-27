@@ -2,6 +2,7 @@
 import {
   Activity,
   BarChart3,
+  BookOpen,
   Bookmark,
   Clock,
   Filter,
@@ -626,6 +627,16 @@ export const Sidebar = ({
           >
             <Github className="h-4 w-4 text-primary" />
             <span>GitHub</span>
+          </a>
+          <a
+            href="https://docs.cryptowi.re"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full -mx-2 flex items-center gap-2 px-2 py-2 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors"
+            title="Read docs"
+          >
+            <BookOpen className="h-4 w-4 text-primary" />
+            <span>Docs</span>
           </a>
         </div>
       </div>

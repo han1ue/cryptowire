@@ -21,7 +21,7 @@ You can integrate it three ways:
   data-sources="coindesk,decrypt,cointelegraph"></script>
 ```
 
-Use source ids from [References](#references).
+Use source ids from [References](/references#sources).
 
 ### Script Options
 
@@ -30,7 +30,7 @@ Use source ids from [References](#references).
 - `data-limit`: number of headlines to show (1-20)
 - `data-theme`: `light` or `dark`
 - `data-category`: optional category filter
-- `data-sources`: optional source-id list (see [References](#references))
+- `data-sources`: optional source-id list (see [References](/references#sources))
 - `data-title`: optional widget title override
 - `data-api-base`: optional API base override
 - `data-min-height`: optional minimum iframe height in pixels
@@ -46,12 +46,12 @@ Use source ids from [References](#references).
   referrerpolicy="strict-origin-when-cross-origin"></iframe>
 ```
 
-Use source ids from [References](#references).
+Use source ids from [References](/references#sources).
 
 ### iframe Options
 
 - `src`: widget URL + query params
-- `sources`: comma-separated source ids (see [References](#references))
+- `sources`: comma-separated source ids (see [References](/references#sources))
 - `limit`: number of headlines to show (1-20)
 - `theme`: `light` or `dark`
 - `category`: optional category filter
@@ -77,45 +77,16 @@ mount({
 });
 ```
 
-Use source ids from [References](#references).
+Use source ids from [References](/references#sources).
 
 ### npm `mount()` Options
 
 - `target`: CSS selector or HTMLElement
 - `baseUrl`: widget page URL (for example `https://cryptowi.re/widget`)
-- `sources`: comma-separated source ids (see [References](#references))
+- `sources`: comma-separated source ids (see [References](/references#sources))
 - `limit`: number of headlines to show (1-20)
 - `theme`: `light` or `dark`
 - `category`: optional category filter
 - `title`: optional widget title override
 - `apiBase`: optional API base override
 - `minHeight`: optional minimum iframe height in pixels
-
-## References
-
-### Sources
-
-Available source ids:
-
-- `coindesk`
-- `decrypt`
-- `cointelegraph`
-- `blockworks`
-- `bitcoin.com`
-- `cryptopotato`
-- `forbes`
-- `cryptopolitan`
-- `coinpaprika`
-- `seekingalpha`
-- `bitcoinist`
-- `newsbtc`
-- `utoday`
-- `investing_comcryptonews`
-- `ethereumfoundation`
-- `bitcoincore`
-
-You can also fetch the live source list from:
-
-```sh
-curl "https://api.cryptowi.re/news/sources"
-```
