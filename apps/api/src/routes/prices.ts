@@ -32,6 +32,14 @@ export const createPricesRouter = (
             return res.status(400).json({ error: parsed.error.message });
         }
 
+        const status = await priceService.getStatus();
+        if (!status.lastRefreshAt || status.quoteCount === 0) {
+            return res.status(503).json({
+                error: "Prices are not ready yet",
+                hint: "Run /prices/refresh from your scheduled job first.",
+            });
+        }
+
         const quotes = await priceService.getStoredPrices({ symbols: parsed.data.symbols });
         const payload = { quotes };
 
@@ -41,6 +49,16 @@ export const createPricesRouter = (
         }
 
         return res.json(payload);
+    }));
+
+    router.get("/prices/status", asyncHandler(async (_req, res) => {
+        const status = await priceService.getStatus();
+        return res.json({
+            lastRefreshAt: status.lastRefreshAt,
+            quoteCount: status.quoteCount,
+            ready: Boolean(status.lastRefreshAt && status.quoteCount > 0),
+            now: new Date().toISOString(),
+        });
     }));
 
     const refreshSchema = z.object({

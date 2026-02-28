@@ -25,6 +25,7 @@ const publicEndpoints = {
     summary: "/news/summary",
     sources: "/news/sources",
     prices: "/prices?symbols=BTC,ETH,SOL",
+    pricesStatus: "/prices/status",
     market: "/market",
 };
 

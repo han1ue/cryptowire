@@ -35,6 +35,9 @@ after(async () => {
 
 test("GET /prices returns quotes from price service", async () => {
     const priceService = {
+        async getStatus() {
+            return { lastRefreshAt: new Date("2026-02-01T00:00:00.000Z").toISOString(), quoteCount: 2 };
+        },
         async getStoredPrices() {
             return [
                 {
@@ -72,8 +75,38 @@ test("GET /prices returns quotes from price service", async () => {
     assert.equal(payload.quotes[0]?.usd, 100_000);
 });
 
+test("GET /prices returns 503 before first refresh", async () => {
+    const priceService = {
+        async getStatus() {
+            return { lastRefreshAt: null, quoteCount: 0 };
+        },
+        async getStoredPrices() {
+            return [];
+        },
+        async refreshPrices() {
+            return [];
+        },
+    };
+
+    const app = express();
+    app.use(express.json());
+    app.use(createPricesRouter(priceService as never, { refreshSecret }));
+    const server = createServer(app);
+    const baseUrl = await startServer(server);
+
+    const response = await fetch(`${baseUrl}/prices?symbols=BTC`);
+    const payload = (await response.json()) as { error: string; hint: string };
+
+    assert.equal(response.status, 503);
+    assert.equal(payload.error, "Prices are not ready yet");
+    assert.equal(payload.hint, "Run /prices/refresh from your scheduled job first.");
+});
+
 test("GET /prices returns 500 when price service throws", async () => {
     const priceService = {
+        async getStatus() {
+            return { lastRefreshAt: new Date("2026-02-01T00:00:00.000Z").toISOString(), quoteCount: 2 };
+        },
         async getStoredPrices() {
             throw new Error("provider unavailable");
         },
@@ -103,8 +136,45 @@ test("GET /prices returns 500 when price service throws", async () => {
     assert.equal(payload.error, "Internal server error");
 });
 
+test("GET /prices/status returns readiness metadata", async () => {
+    const priceService = {
+        async getStatus() {
+            return { lastRefreshAt: new Date("2026-02-01T00:00:00.000Z").toISOString(), quoteCount: 8 };
+        },
+        async getStoredPrices() {
+            return [];
+        },
+        async refreshPrices() {
+            return [];
+        },
+    };
+
+    const app = express();
+    app.use(express.json());
+    app.use(createPricesRouter(priceService as never, { refreshSecret }));
+    const server = createServer(app);
+    const baseUrl = await startServer(server);
+
+    const response = await fetch(`${baseUrl}/prices/status`);
+    const payload = (await response.json()) as {
+        lastRefreshAt: string | null;
+        quoteCount: number;
+        ready: boolean;
+        now: string;
+    };
+
+    assert.equal(response.status, 200);
+    assert.equal(payload.quoteCount, 8);
+    assert.equal(payload.ready, true);
+    assert.equal(typeof payload.lastRefreshAt, "string");
+    assert.equal(typeof payload.now, "string");
+});
+
 test("POST /prices/refresh rejects unauthorized requests", async () => {
     const priceService = {
+        async getStatus() {
+            return { lastRefreshAt: null, quoteCount: 0 };
+        },
         async getStoredPrices() {
             return [];
         },
@@ -132,6 +202,9 @@ test("POST /prices/refresh rejects unauthorized requests", async () => {
 
 test("POST /prices/refresh succeeds with x-refresh-secret", async () => {
     const priceService = {
+        async getStatus() {
+            return { lastRefreshAt: null, quoteCount: 0 };
+        },
         async getStoredPrices() {
             return [];
         },
@@ -176,6 +249,9 @@ test("POST /prices/refresh succeeds with x-refresh-secret", async () => {
 
 test("GET /prices/refresh is method-restricted", async () => {
     const priceService = {
+        async getStatus() {
+            return { lastRefreshAt: null, quoteCount: 0 };
+        },
         async getStoredPrices() {
             return [];
         },

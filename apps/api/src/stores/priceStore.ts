@@ -4,9 +4,11 @@ import { z } from "zod";
 export interface PriceStore {
     getAll(): Promise<PriceQuote[]>;
     putAll(quotes: PriceQuote[]): Promise<void>;
+    getStatus(): Promise<{ lastRefreshAt: string | null; quoteCount: number }>;
 }
 
 const KV_PRICES_KEY = "prices:latest";
+const KV_PRICES_LAST_REFRESH_KEY = "prices:lastRefreshAt";
 const PriceQuoteListSchema = z.array(PriceQuoteSchema);
 
 const normalizeQuotes = (quotes: PriceQuote[]): PriceQuote[] => {
@@ -37,38 +39,65 @@ const parseQuoteList = (raw: unknown): PriceQuote[] | null => {
     return normalizeQuotes(parsed.data);
 };
 
+class InMemoryPriceStore implements PriceStore {
+    private latest: PriceQuote[] = [];
+    private lastRefreshAt: string | null = null;
+
+    async getAll(): Promise<PriceQuote[]> {
+        return this.latest;
+    }
+
+    async putAll(quotes: PriceQuote[]): Promise<void> {
+        this.latest = normalizeQuotes(quotes);
+        this.lastRefreshAt = new Date().toISOString();
+    }
+
+    async getStatus(): Promise<{ lastRefreshAt: string | null; quoteCount: number }> {
+        return {
+            lastRefreshAt: this.lastRefreshAt,
+            quoteCount: this.latest.length,
+        };
+    }
+}
+
 export const createPriceStore = (): PriceStore => {
-    const kvEnabled = Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
-    let latestMemory: PriceQuote[] = [];
+    const hasKv = Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
+    if (!hasKv) return new InMemoryPriceStore();
 
-    return {
+    const kvStore: PriceStore = {
         async getAll(): Promise<PriceQuote[]> {
-            if (!kvEnabled) return latestMemory;
-
-            try {
-                const { kv } = await import("@vercel/kv");
-                const raw = await kv.get(KV_PRICES_KEY);
-                const parsed = parseQuoteList(raw);
-                if (!parsed) return latestMemory;
-                latestMemory = parsed;
-                return parsed;
-            } catch {
-                return latestMemory;
-            }
+            const { kv } = await import("@vercel/kv");
+            const raw = await kv.get(KV_PRICES_KEY);
+            const parsed = parseQuoteList(raw);
+            return parsed ?? [];
         },
 
         async putAll(quotes: PriceQuote[]): Promise<void> {
             const normalized = normalizeQuotes(quotes);
-            latestMemory = normalized;
+            const { kv } = await import("@vercel/kv");
+            const refreshedAt = new Date().toISOString();
+            await Promise.all([
+                kv.set(KV_PRICES_KEY, JSON.stringify(normalized), { ex: 7 * 24 * 60 * 60 }),
+                kv.set(KV_PRICES_LAST_REFRESH_KEY, refreshedAt, { ex: 7 * 24 * 60 * 60 }),
+            ]);
+        },
 
-            if (!kvEnabled) return;
-
-            try {
-                const { kv } = await import("@vercel/kv");
-                await kv.set(KV_PRICES_KEY, JSON.stringify(normalized), { ex: 7 * 24 * 60 * 60 });
-            } catch {
-                // ignore
-            }
+        async getStatus(): Promise<{ lastRefreshAt: string | null; quoteCount: number }> {
+            const { kv } = await import("@vercel/kv");
+            const [rawQuotes, rawRefreshAt] = await Promise.all([
+                kv.get(KV_PRICES_KEY),
+                kv.get(KV_PRICES_LAST_REFRESH_KEY),
+            ]);
+            const quotes = parseQuoteList(rawQuotes) ?? [];
+            const lastRefreshAt = typeof rawRefreshAt === "string" && rawRefreshAt.trim().length > 0
+                ? rawRefreshAt
+                : null;
+            return {
+                lastRefreshAt,
+                quoteCount: quotes.length,
+            };
         },
     };
+
+    return kvStore;
 };

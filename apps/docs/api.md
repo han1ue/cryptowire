@@ -223,6 +223,7 @@ Notes:
 - This endpoint serves cached/stored values (KV in production, memory fallback otherwise).
 - It does not fetch CoinGecko on each request.
 - Prices are updated by calling `POST /prices/refresh` (typically from a scheduled workflow).
+- Before the first successful refresh, it returns `503`.
 
 Query params:
 
@@ -259,6 +260,32 @@ Status codes:
 
 - `200` success
 - `400` invalid query params
+- `503` prices not ready yet (before first successful refresh)
+
+### `GET /prices/status`
+
+Returns price refresh readiness metadata.
+
+Example:
+
+```sh
+curl "https://api.cryptowi.re/prices/status"
+```
+
+Example response:
+
+```json
+{
+  "lastRefreshAt": "2026-02-27T19:20:00.000Z",
+  "quoteCount": 8,
+  "ready": true,
+  "now": "2026-02-27T19:25:00.000Z"
+}
+```
+
+Status codes:
+
+- `200` success
 
 ### `GET /market`
 

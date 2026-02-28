@@ -52,4 +52,8 @@ export class PriceService {
 
         return this.getStoredPrices({ symbols });
     }
+
+    async getStatus(): Promise<{ lastRefreshAt: string | null; quoteCount: number }> {
+        return this.store.getStatus();
+    }
 }
