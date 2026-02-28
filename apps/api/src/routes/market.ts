@@ -10,9 +10,10 @@ export const createMarketRouter = (marketService: MarketService) => {
             const overview = await marketService.getMarketOverview();
             return res.json({ ok: true, overview });
         } catch (err: unknown) {
+            console.error("[market] overview fetch failed", err);
             return res.status(502).json({
                 ok: false,
-                error: err instanceof Error ? err.message : String(err),
+                error: "Upstream service unavailable",
             });
         }
     }));

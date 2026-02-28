@@ -79,5 +79,5 @@ test("GET /market returns 502 when market service throws", async () => {
 
     assert.equal(response.status, 502);
     assert.equal(payload.ok, false);
-    assert.equal(payload.error, "upstream failed");
+    assert.equal(payload.error, "Upstream service unavailable");
 });

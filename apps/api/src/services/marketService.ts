@@ -2,6 +2,9 @@ import { z } from "zod";
 import { SimpleTtlCache } from "../lib/cache.js";
 
 const MARKET_OVERVIEW_CACHE_TTL_MS = 10 * 60 * 1000;
+const DEFAULT_MARKET_UPSTREAM_TIMEOUT_MS = 12_000;
+
+type FetchLike = typeof fetch;
 
 const CoinGeckoGlobalSchema = z
     .object({
@@ -48,29 +51,47 @@ export type MarketOverview = {
 export class MarketService {
     private readonly cache = new SimpleTtlCache();
 
+    constructor(
+        private readonly fetchImpl: FetchLike = fetch,
+        private readonly upstreamTimeoutMs: number = DEFAULT_MARKET_UPSTREAM_TIMEOUT_MS,
+    ) {
+    }
+
+    private async fetchJsonWithTimeout(url: string, label: string): Promise<unknown> {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), this.upstreamTimeoutMs);
+
+        try {
+            const response = await this.fetchImpl(url, {
+                headers: { Accept: "application/json" },
+                signal: controller.signal,
+            });
+
+            if (!response.ok) {
+                throw new Error(`${label} failed: ${response.status}`);
+            }
+
+            return await response.json();
+        } catch (error: unknown) {
+            if (error instanceof Error && error.name === "AbortError") {
+                throw new Error(`${label} timed out after ${this.upstreamTimeoutMs}ms`);
+            }
+            if (error instanceof Error) throw error;
+            throw new Error(`${label} request failed`);
+        } finally {
+            clearTimeout(timeout);
+        }
+    }
+
     async getMarketOverview(): Promise<MarketOverview> {
         const cacheKey = "market:overview:v1";
         const cached = this.cache.get<MarketOverview>(cacheKey);
         if (cached) return cached;
 
-        const [globalResp, fngResp] = await Promise.all([
-            fetch("https://api.coingecko.com/api/v3/global", {
-                headers: { Accept: "application/json" },
-            }),
-            fetch("https://api.alternative.me/fng/", {
-                headers: { Accept: "application/json" },
-            }),
+        const [globalRaw, fngRaw] = await Promise.all([
+            this.fetchJsonWithTimeout("https://api.coingecko.com/api/v3/global", "CoinGecko global"),
+            this.fetchJsonWithTimeout("https://api.alternative.me/fng/", "Alternative.me fng"),
         ]);
-
-        if (!globalResp.ok) {
-            throw new Error(`CoinGecko global failed: ${globalResp.status}`);
-        }
-        if (!fngResp.ok) {
-            throw new Error(`Alternative.me fng failed: ${fngResp.status}`);
-        }
-
-        const globalRaw: unknown = await globalResp.json();
-        const fngRaw: unknown = await fngResp.json();
 
         const globalParsed = CoinGeckoGlobalSchema.safeParse(globalRaw);
         if (!globalParsed.success) {

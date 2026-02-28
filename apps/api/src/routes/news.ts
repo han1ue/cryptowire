@@ -208,9 +208,86 @@ export const createNewsRouter = (
     const kvEnabled = Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
     const KV_LAST_REFRESH_KEY = "news:lastRefreshAt";
     const KV_CATEGORIES_BY_SOURCE_HASH_KEY = "news:categories:bySource";
+    const KV_SUMMARY_REFRESH_META_KEY = "news:summary:refreshMeta";
+
+    const SummaryRefreshMetaSchema = z.object({
+        generatedAt: z.string(),
+        windowHours: z.number().int().positive(),
+        limit: z.number().int().positive(),
+        sourceIds: z.array(z.string().min(1)),
+    });
+
+    type SummaryRefreshMeta = z.infer<typeof SummaryRefreshMetaSchema>;
 
     let lastRefreshAtMemory: string | null = null;
     const categoriesBySourceMemory = new Map<string, string[]>();
+    let summaryRefreshMetaMemory: SummaryRefreshMeta | null = null;
+
+    const normalizeSourceIds = (sourceIds: string[]) =>
+        Array.from(
+            new Set(
+                sourceIds
+                    .map((sourceId) => sourceId.trim().toLowerCase())
+                    .filter(Boolean),
+            ),
+        ).sort((a, b) => a.localeCompare(b));
+
+    const sameSourceIdSet = (left: string[], right: string[]) => {
+        const normalizedLeft = normalizeSourceIds(left);
+        const normalizedRight = normalizeSourceIds(right);
+        if (normalizedLeft.length !== normalizedRight.length) return false;
+        for (let i = 0; i < normalizedLeft.length; i++) {
+            if (normalizedLeft[i] !== normalizedRight[i]) return false;
+        }
+        return true;
+    };
+
+    const setSummaryRefreshMeta = async (meta: SummaryRefreshMeta) => {
+        const normalized: SummaryRefreshMeta = {
+            ...meta,
+            sourceIds: normalizeSourceIds(meta.sourceIds),
+        };
+
+        summaryRefreshMetaMemory = normalized;
+
+        if (!kvEnabled) return;
+        try {
+            const { kv } = await import("@vercel/kv");
+            await kv.set(KV_SUMMARY_REFRESH_META_KEY, JSON.stringify(normalized), { ex: 8 * 24 * 60 * 60 });
+        } catch {
+            // ignore
+        }
+    };
+
+    const getSummaryRefreshMeta = async (): Promise<SummaryRefreshMeta | null> => {
+        if (!kvEnabled) return summaryRefreshMetaMemory;
+
+        try {
+            const { kv } = await import("@vercel/kv");
+            const raw = await kv.get(KV_SUMMARY_REFRESH_META_KEY);
+
+            let parsedRaw: unknown = raw;
+            if (typeof raw === "string") {
+                try {
+                    parsedRaw = JSON.parse(raw) as unknown;
+                } catch {
+                    return summaryRefreshMetaMemory;
+                }
+            }
+
+            const parsed = SummaryRefreshMetaSchema.safeParse(parsedRaw);
+            if (!parsed.success) return summaryRefreshMetaMemory;
+
+            const normalized: SummaryRefreshMeta = {
+                ...parsed.data,
+                sourceIds: normalizeSourceIds(parsed.data.sourceIds),
+            };
+            summaryRefreshMetaMemory = normalized;
+            return normalized;
+        } catch {
+            return summaryRefreshMetaMemory;
+        }
+    };
 
     const normalizeCategory = (raw: unknown): string => {
         const v = typeof raw === "string" ? raw.trim() : "";
@@ -478,6 +555,12 @@ export const createNewsRouter = (
             windowEnd: now.toISOString(),
         });
         await newsSummaryStore.putLatest(summary);
+        await setSummaryRefreshMeta({
+            generatedAt: summary.generatedAt,
+            windowHours: params.windowHours,
+            limit: params.limit,
+            sourceIds: params.sourceIds,
+        });
         return summary;
     };
 
@@ -587,11 +670,18 @@ export const createNewsRouter = (
         if (existing && existing !== existingRaw) {
             await newsSummaryStore.putLatest(existing);
         }
+        const requestedSourceIds = getRequestedSourceIds(parsed.data.sources);
+        const requestedLimit = Math.min(parsed.data.limit, 250);
+        const existingMeta = await getSummaryRefreshMeta();
 
         if (
             existing &&
             !parsed.data.force &&
             existing.windowHours === parsed.data.hours &&
+            existingMeta &&
+            existingMeta.windowHours === parsed.data.hours &&
+            existingMeta.limit === requestedLimit &&
+            sameSourceIdSet(existingMeta.sourceIds, requestedSourceIds) &&
             isSummaryFresh(existing.generatedAt, SUMMARY_MAX_AGE_HOURS) &&
             !hasSummaryAiError(existing)
         ) {
@@ -609,8 +699,8 @@ export const createNewsRouter = (
 
         const summary = await generateAndStoreSummary({
             windowHours: parsed.data.hours,
-            limit: Math.min(parsed.data.limit, 250),
-            sourceIds: getRequestedSourceIds(parsed.data.sources),
+            limit: requestedLimit,
+            sourceIds: requestedSourceIds,
         });
 
         return res.json({
@@ -822,9 +912,17 @@ export const createNewsRouter = (
         const supportedIds = new Set<string>(SUPPORTED_SOURCES.map((s) => s.id));
         const requested = requestedSourceIds.filter((id) => supportedIds.has(id));
 
+        if (requested.length === 0) {
+            const payload = { items: [] };
+            const validated = NewsListResponseSchema.safeParse(payload);
+            if (!validated.success) {
+                return res.status(500).json({ error: "Invalid response shape" });
+            }
+            return res.json(payload);
+        }
+
         const maybeDevAutoRefreshIfEmpty = async () => {
             if (isProd) return;
-            if (requested.length === 0) return;
 
             const count = await newsStore.count();
             if (count > 0) return;

@@ -11,11 +11,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } catch (error) {
         console.error("[api] serverless handler error", error);
 
-        const message = error instanceof Error ? error.message : String(error);
+        if (process.env.NODE_ENV !== "production") {
+            const message = error instanceof Error ? error.message : String(error);
+            return res.status(500).json({
+                ok: false,
+                error: "Serverless function error",
+                message,
+            });
+        }
+
         return res.status(500).json({
             ok: false,
             error: "Serverless function error",
-            message,
         });
     }
 }
