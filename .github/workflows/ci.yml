@@ -30,6 +30,12 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: API Tests
+        run: npm run test:api
+
+      - name: Adapter Tests
+        run: npm run test:adapters
+
       - name: Verify widget loader sync
         run: |
           npm run build -w @cryptowire/widget

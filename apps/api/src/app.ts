@@ -54,9 +54,7 @@ const newsSummaryService = new NewsSummaryService({
     requestTimeoutMs: config.AI_REQUEST_TIMEOUT_MS,
 });
 const newsStore = createNewsStore();
-const newsSummaryStore = createNewsSummaryStore({
-    filePath: config.NEWS_SUMMARY_FILE_PATH,
-});
+const newsSummaryStore = createNewsSummaryStore();
 const priceService = new PriceService(config);
 const marketService = new MarketService();
 

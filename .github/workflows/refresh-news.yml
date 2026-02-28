@@ -20,7 +20,7 @@ jobs:
           set -euo pipefail
 
           if [ -z "${API_BASE_URL:-}" ]; then
-            echo "Missing secret: CRYPTOWIRE_API_BASE_URL (e.g. https://your-api.vercel.app)"
+            echo "Missing secret: CRYPTOWIRE_API_BASE_URL (e.g. https://api.cryptowi.re)"
             exit 1
           fi
 

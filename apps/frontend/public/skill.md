@@ -1,216 +1,74 @@
+---
+name: cryptowire-api
+description: |
+  cryptowi.re public API for crypto news, summary, prices, and market context.
+  Use when users ask for latest crypto headlines, source discovery, recap, quotes, or market overview.
+  Do not call restricted admin endpoints unless user explicitly asks and provides x-refresh-secret.
+---
+
 # cryptowi.re API instructions for agents
 
-`cryptowi.re` is a real time crypto news aggregator.
-
-Use these rules when calling the API:
+`cryptowi.re` is a real-time crypto news aggregator.
 
 ## Base URL
 
 - `https://api.cryptowi.re`
 
-## Public endpoints
+## Default Workflow
 
-- `GET /news`
-- `GET /news/sources`
-- `GET /news/summary`
-- `GET /prices`
-- `GET /market`
-- `GET /health`
+1. Call `GET /news/sources` first to fetch valid source ids.
+2. If the user does not specify sources, apply the default source policy below.
+3. Call `GET /news` with selected `sources`, plus optional `limit`, `offset`, `category`, and `retentionDays`.
+4. If needed, enrich with:
+   - `GET /news/summary` for 24h recap
+   - `GET /prices` for symbol quotes
+   - `GET /market` for market context
+5. In user-facing answers, include queried source ids and preserve timestamps.
 
-## Endpoint guide
+## Default Source Policy
 
-- `GET /news`
-  Use for article retrieval. This is the main feed endpoint and returns normalized headline items.
-  Requires `sources`; supports `limit`, `offset`, optional `category`, and optional `retentionDays`.
-- `GET /news/sources`
-  Use to discover valid source ids before calling `/news`.
-  Returns the canonical id/name pairs the API currently supports.
-- `GET /news/summary`
-  Use when you need a high-level recap of recent activity.
-  Returns an AI-generated summary, highlights, and source coverage metadata.
-- `GET /prices`
-  Use for spot price snapshots on selected symbols.
-  Returns quotes with USD price and optional 24h change.
-- `GET /market`
-  Use for market-wide context instead of per-asset prices.
-  Returns market cap, 24h volume, BTC dominance, and fear/greed data.
-- `GET /health`
-  Use for uptime checks and connectivity tests.
-  Returns a minimal service-health response.
-
-## Example calls (curl)
-
-### Get news
-
-```sh
-curl "https://api.cryptowi.re/news?sources=coindesk,decrypt,cointelegraph&limit=10&offset=0"
-```
-
-Expected format:
-
-```json
-{
-  "items": [
-    {
-      "id": "string",
-      "title": "string",
-      "summary": "string",
-      "url": "https://example.com/article",
-      "source": "CoinDesk",
-      "categories": ["Markets"],
-      "publishedAt": "2026-02-27T19:20:00.000Z",
-      "imageUrl": "https://example.com/image.jpg"
-    }
-  ]
-}
-```
-
-### Get available sources
-
-```sh
-curl "https://api.cryptowi.re/news/sources"
-```
-
-Expected format:
-
-```json
-{
-  "sources": [
-    { "id": "coindesk", "name": "CoinDesk" },
-    { "id": "decrypt", "name": "Decrypt" }
-  ]
-}
-```
-
-### Get AI summary
-
-```sh
-curl "https://api.cryptowi.re/news/summary"
-```
-
-Expected format:
-
-```json
-{
-  "generatedAt": "2026-02-27T19:00:00.000Z",
-  "windowStart": "2026-02-26T19:00:00.000Z",
-  "windowEnd": "2026-02-27T19:00:00.000Z",
-  "windowHours": 24,
-  "articleCount": 180,
-  "model": "unknown-model",
-  "aiError": null,
-  "summary": "string",
-  "highlights": [
-    {
-      "title": "string",
-      "detail": "string",
-      "sources": ["CoinDesk", "Decrypt"],
-      "url": "https://example.com/article"
-    }
-  ],
-  "sourceCoverage": [
-    {
-      "sourceId": "coindesk",
-      "source": "CoinDesk",
-      "articleCount": 25,
-      "reputationWeight": 0.95
-    }
-  ]
-}
-```
-
-### Get prices
-
-```sh
-curl "https://api.cryptowi.re/prices?symbols=BTC,ETH,SOL"
-```
-
-Expected format:
-
-```json
-{
-  "quotes": [
-    {
-      "symbol": "BTC",
-      "usd": 86123.45,
-      "usd24hChange": 2.1,
-      "fetchedAt": "2026-02-27T19:20:00.000Z"
-    }
-  ]
-}
-```
-
-### Get market overview
-
-```sh
-curl "https://api.cryptowi.re/market"
-```
-
-Expected format:
-
-```json
-{
-  "ok": true,
-  "overview": {
-    "marketCapUsd": 3123456789012,
-    "marketCapChange24hPct": 1.4,
-    "volume24hUsd": 154321098765,
-    "btcDominancePct": 52.3,
-    "updatedAt": 1740684000,
-    "fearGreed": {
-      "value": 71,
-      "classification": "Greed",
-      "timestamp": 1740684000
-    }
-  }
-}
-```
-
-### Health check
-
-```sh
-curl "https://api.cryptowi.re/health"
-```
-
-Expected format:
-
-```json
-{ "ok": true }
-```
-
-## Required behavior
-
-1. `GET /news` requires `sources` (comma-separated source ids). If source ids are unknown, call `GET /news/sources` first.
-2. Keep `limit` at `1-100` for `/news`.
-3. Keep `retentionDays` at `1-7` for `/news`.
-4. For prices, call `/prices?symbols=BTC,ETH,SOL` style queries.
-5. For market overview, call `/market`.
-6. For latest aggregate summary, call `/news/summary`.
-
-## Source ids
-
-Use `/news/sources` as the source of truth.
-
-Current source ids:
+When the user does not specify sources, use this preferred default set:
 
 - `coindesk`
 - `decrypt`
 - `cointelegraph`
 - `blockworks`
-- `bitcoin.com`
-- `cryptopotato`
-- `forbes`
-- `cryptopolitan`
-- `coinpaprika`
-- `seekingalpha`
-- `bitcoinist`
-- `newsbtc`
-- `utoday`
-- `investing_comcryptonews`
-- `ethereumfoundation`
-- `bitcoincore`
 
-## Restricted local endpoints
+Selection rules:
+
+1. Start from `GET /news/sources`.
+2. Pick the preferred defaults that exist in that response, in the order above.
+3. If fewer than 3 of the preferred defaults are available, fill remaining slots from `/news/sources` in listed order until you have 4 sources total.
+4. Always report which source ids were actually used.
+
+## Quick Reference
+
+| Task | Endpoint | Notes |
+|------|----------|-------|
+| Discover source ids | `GET /news/sources` | Source of truth for ids. |
+| Fetch headlines | `GET /news` | Requires `sources` query param. |
+| Fetch recap | `GET /news/summary` | AI summary + highlights + source coverage. |
+| Fetch quotes | `GET /prices` | Pass `symbols=BTC,ETH,SOL` style list. |
+| Fetch market overview | `GET /market` | Market cap, dominance, volume, fear/greed. |
+| Health check | `GET /health` | Service uptime check. |
+
+## Required Behavior
+
+1. `GET /news` requires `sources` (comma-separated source ids).
+2. Always query `GET /news/sources` if source ids are unknown or stale.
+3. Keep `/news` `limit` in `1-100`.
+4. Keep `/news` `retentionDays` in `1-7`.
+5. Use `/market` for macro context and `/prices` for per-symbol spot quotes.
+6. Do not hardcode the source-id list in prompts or responses.
+
+## Error Handling
+
+- `GET /news/summary` may return `503` when daily summary is not ready; report that and suggest retry later.
+- `400` means query/body validation error; correct inputs and retry.
+- `401` on restricted endpoints means missing/invalid `x-refresh-secret`.
+- `405` on restricted endpoints means wrong method (must use `POST`).
+
+## Restricted Endpoints
 
 Do not call these unless the user explicitly asks and provides `x-refresh-secret`:
 
@@ -218,7 +76,9 @@ Do not call these unless the user explicitly asks and provides `x-refresh-secret
 - `POST /news/summary/refresh`
 - `POST /news/diagnose`
 
-Local endpoint example:
+Never use `GET` for refresh endpoints.
+
+Example:
 
 ```sh
 curl -X POST "https://api.cryptowi.re/news/refresh" \
@@ -227,24 +87,13 @@ curl -X POST "https://api.cryptowi.re/news/refresh" \
   --data-raw '{"limit":30,"force":true,"sources":"coindesk,decrypt,cointelegraph"}'
 ```
 
-Expected format:
+## Example Public Calls
 
-```json
-{
-  "ok": true,
-  "count": 30,
-  "limit": 30,
-  "retentionDays": 7,
-  "force": true,
-  "refreshedAt": "2026-02-27T19:20:00.000Z",
-  "note": null
-}
+```sh
+curl "https://api.cryptowi.re/news/sources"
+curl "https://api.cryptowi.re/news?sources=coindesk,decrypt,cointelegraph&limit=10&offset=0"
+curl "https://api.cryptowi.re/news/summary"
+curl "https://api.cryptowi.re/prices?symbols=BTC,ETH,SOL"
+curl "https://api.cryptowi.re/market"
+curl "https://api.cryptowi.re/health"
 ```
-
-## Response handling
-
-When summarizing results for users:
-
-- Include source names and links when available.
-- Preserve timestamps from API data.
-- State which source ids were queried.

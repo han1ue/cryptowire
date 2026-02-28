@@ -36,11 +36,16 @@ export const createNewsRouter = (
         sourceNameByKey.set(source.name.trim().toLowerCase(), source.name);
     }
 
-    const canonicalSiteUrl = "https://cryptowi.re";
+    const normalizeSiteUrl = (raw: string) => raw.replace(/\/+$/, "");
+    const configuredSiteUrl = (() => {
+        const raw = typeof opts?.siteUrl === "string" ? opts.siteUrl.trim() : "";
+        if (raw.startsWith("http://") || raw.startsWith("https://")) return normalizeSiteUrl(raw);
+        return "http://localhost:8080";
+    })();
 
     // RSS feed for discovery/syndication (served at /rss.xml).
     router.get("/rss.xml", asyncHandler(async (_req, res) => {
-        const siteUrl = canonicalSiteUrl;
+        const siteUrl = configuredSiteUrl;
         const items = await newsStore.getPage({ limit: 50, offset: 0 });
         const lastBuildDate = new Date(items[0]?.publishedAt ?? Date.now()).toUTCString();
 
@@ -508,13 +513,11 @@ export const createNewsRouter = (
         };
     };
 
-    const isVercelCronRequest = (req: Request) => req.header("x-vercel-cron") === "1";
-
+    const refreshSecret = opts?.refreshSecret?.trim() ?? "";
     const isRefreshAuthorized = (req: Request) => {
-        const expected = opts?.refreshSecret;
-        if (isVercelCronRequest(req)) return true;
-        if (!expected) return true;
-        return req.header("x-refresh-secret") === expected;
+        // Local dev convenience: allow refresh without a secret in non-production.
+        if (!refreshSecret) return !isProd;
+        return req.header("x-refresh-secret") === refreshSecret;
     };
 
     const adminBooleanSchema = z
@@ -570,14 +573,11 @@ export const createNewsRouter = (
     }));
 
     const summaryRefreshHandler = asyncHandler(async (req, res) => {
-        if (req.method === "GET" && !isVercelCronRequest(req)) {
-            return res.status(405).json({ error: "Method not allowed. Use POST with x-refresh-secret header." });
-        }
         if (!isRefreshAuthorized(req)) {
             return res.status(401).json({ error: "Unauthorized" });
         }
 
-        const parsed = summaryRefreshSchema.safeParse(req.method === "POST" ? req.body : req.query);
+        const parsed = summaryRefreshSchema.safeParse(req.body);
         if (!parsed.success) {
             return res.status(400).json({ error: parsed.error.message });
         }
@@ -625,17 +625,16 @@ export const createNewsRouter = (
     });
 
     router.post("/news/summary/refresh", summaryRefreshHandler);
-    router.get("/news/summary/refresh", summaryRefreshHandler);
+    router.get("/news/summary/refresh", asyncHandler(async (_req, res) => {
+        return res.status(405).json({ error: "Method not allowed. Use POST with x-refresh-secret header." });
+    }));
 
     const newsRefreshHandler = asyncHandler(async (req, res) => {
-        if (req.method === "GET" && !isVercelCronRequest(req)) {
-            return res.status(405).json({ error: "Method not allowed. Use POST with x-refresh-secret header." });
-        }
         if (!isRefreshAuthorized(req)) {
             return res.status(401).json({ error: "Unauthorized" });
         }
 
-        const parsed = newsRefreshSchema.safeParse(req.method === "POST" ? req.body : req.query);
+        const parsed = newsRefreshSchema.safeParse(req.body);
         if (!parsed.success) {
             return res.status(400).json({ error: parsed.error.message });
         }
@@ -686,7 +685,9 @@ export const createNewsRouter = (
     });
 
     router.post("/news/refresh", newsRefreshHandler);
-    router.get("/news/refresh", newsRefreshHandler);
+    router.get("/news/refresh", asyncHandler(async (_req, res) => {
+        return res.status(405).json({ error: "Method not allowed. Use POST with x-refresh-secret header." });
+    }));
 
     // Debug helper to understand why refresh returns 0 items in production.
     // Protected by the same refresh secret as /news/refresh.

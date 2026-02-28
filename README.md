@@ -35,13 +35,13 @@ Local URLs:
 
 Environment:
 
+- Set `SITE_URL` (required in production) to your public site origin, e.g. `https://cryptowi.re`
 - Set `COINDESK_API_KEY` to enable live news
 - News retention defaults to 7 days via `NEWS_RETENTION_DAYS`
 - Set `CORS_ORIGIN` (comma-separated) to restrict API CORS origins in production
 - Set `GEMINI_API_KEY` to enable AI summary generation with Gemini
 - Optional: set `GEMINI_MODEL` (default: `gemini-2.0-flash`)
 - Optional fallback: set `OPENAI_API_KEY` (and `OPENAI_MODEL`) if you prefer OpenAI
-- Optional: set `NEWS_SUMMARY_FILE_PATH` (default: `data/news-summary-latest.json`) for daily summary file storage
 - Set `VITE_GA_ID` in frontend env to enable Google Analytics in production builds
 
 Quality checks:

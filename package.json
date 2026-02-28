@@ -14,6 +14,8 @@
     "build:widget": "npm run build -w @cryptowire/widget",
     "check:widget-sync": "npm run build:widget && git diff --exit-code -- apps/frontend/public/widget/widget.js",
     "build": "npm --workspaces run build --if-present",
+    "test:api": "npm run test -w @cryptowire/api",
+    "test:adapters": "npm run test -w @cryptowire/adapters",
     "lint": "eslint .",
     "format": "prettier --write ."
   },

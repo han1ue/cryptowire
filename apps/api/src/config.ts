@@ -3,13 +3,12 @@ import { z } from "zod";
 const EnvSchema = z.object({
     PORT: z.coerce.number().int().positive().default(3001),
 
-    // Public site URL (e.g. https://cryptowi.re). Used for canonical links in feeds.
+    // Public site URL (e.g. https://cryptowi.re). Required in production.
     SITE_URL: z.string().url().optional(),
 
     NEWS_RETENTION_DAYS: z.coerce.number().int().positive().default(7),
     NEWS_CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(180),
     NEWS_REFRESH_SECRET: z.string().optional(),
-    NEWS_SUMMARY_FILE_PATH: z.string().optional(),
     CORS_ORIGIN: z.string().optional(),
 
     GEMINI_API_KEY: z.string().optional(),
@@ -29,6 +28,13 @@ export const getConfig = (): AppConfig => {
     const parsed = EnvSchema.safeParse(process.env);
     if (!parsed.success) {
         throw new Error(`Invalid environment configuration: ${parsed.error.message}`);
+    }
+
+    if (process.env.NODE_ENV === "production") {
+        const siteUrl = parsed.data.SITE_URL?.trim() ?? "";
+        if (!siteUrl) {
+            throw new Error("Invalid environment configuration: SITE_URL is required in production");
+        }
     }
 
     return parsed.data;
