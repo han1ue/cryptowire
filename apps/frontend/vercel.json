@@ -2,7 +2,7 @@
     "rewrites": [
         {
             "source": "/rss.xml",
-            "destination": "https://cryptowire-api.vercel.app/rss.xml"
+            "destination": "https://api.cryptowi.re/rss.xml"
         },
         {
             "source": "/widget",
@@ -14,27 +14,27 @@
         },
         {
             "source": "/news",
-            "destination": "https://cryptowire-api.vercel.app/news"
+            "destination": "https://api.cryptowi.re/news"
         },
         {
             "source": "/news/(.*)",
-            "destination": "https://cryptowire-api.vercel.app/news/$1"
+            "destination": "https://api.cryptowi.re/news/$1"
         },
         {
             "source": "/prices",
-            "destination": "https://cryptowire-api.vercel.app/prices"
+            "destination": "https://api.cryptowi.re/prices"
         },
         {
             "source": "/market",
-            "destination": "https://cryptowire-api.vercel.app/market"
+            "destination": "https://api.cryptowi.re/market"
         },
         {
             "source": "/health",
-            "destination": "https://cryptowire-api.vercel.app/health"
+            "destination": "https://api.cryptowi.re/health"
         },
         {
             "source": "/stats",
-            "destination": "https://cryptowire-api.vercel.app/stats"
+            "destination": "https://api.cryptowi.re/stats"
         },
         {
             "source": "/(.*)",

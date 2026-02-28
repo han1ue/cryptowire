@@ -29,8 +29,6 @@ export const createNewsRouter = (
             .replaceAll('"', "&quot;")
             .replaceAll("'", "&apos;");
 
-    const normalizeSiteUrl = (raw: string) => raw.replace(/\/+$/, "");
-
     const SUPPORTED_SOURCES = SUPPORTED_NEWS_SOURCES;
     const sourceNameByKey = new Map<string, string>();
     for (const source of SUPPORTED_SOURCES) {
@@ -38,23 +36,11 @@ export const createNewsRouter = (
         sourceNameByKey.set(source.name.trim().toLowerCase(), source.name);
     }
 
-    const getPublicSiteUrl = (req: Request) => {
-        const configured = typeof opts?.siteUrl === "string" ? opts.siteUrl : null;
-        if (configured && configured.startsWith("http")) return normalizeSiteUrl(configured);
-
-        const proto = (req.header("x-forwarded-proto") as string | undefined) ?? "https";
-        const host =
-            (req.header("x-forwarded-host") as string | undefined) ??
-            (req.header("host") as string | undefined) ??
-            null;
-        if (host) return normalizeSiteUrl(`${proto}://${host}`);
-
-        return "https://cryptowi.re";
-    };
+    const canonicalSiteUrl = "https://cryptowi.re";
 
     // RSS feed for discovery/syndication (served at /rss.xml).
-    router.get("/rss.xml", asyncHandler(async (req, res) => {
-        const siteUrl = getPublicSiteUrl(req);
+    router.get("/rss.xml", asyncHandler(async (_req, res) => {
+        const siteUrl = canonicalSiteUrl;
         const items = await newsStore.getPage({ limit: 50, offset: 0 });
         const lastBuildDate = new Date(items[0]?.publishedAt ?? Date.now()).toUTCString();
 
