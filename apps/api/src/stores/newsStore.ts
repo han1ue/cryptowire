@@ -14,13 +14,18 @@ export interface NewsStore {
     pruneOlderThan(isoCutoff: string): Promise<void>;
 }
 
+const comparePublishedAtDesc = (left: NewsItem, right: NewsItem): number => {
+    if (left.publishedAt === right.publishedAt) return 0;
+    return left.publishedAt > right.publishedAt ? -1 : 1;
+};
+
 class InMemoryNewsStore implements NewsStore {
     private items: NewsItem[] = [];
 
     async putMany(items: NewsItem[]): Promise<void> {
         const byId = new Map(this.items.map((x) => [x.id, x] as const));
         for (const item of items) byId.set(item.id, item);
-        this.items = Array.from(byId.values()).sort((a, b) => (a.publishedAt > b.publishedAt ? -1 : 1));
+        this.items = Array.from(byId.values()).sort(comparePublishedAtDesc);
     }
 
     async getPage(params: NewsPageParams): Promise<NewsItem[]> {
@@ -101,7 +106,7 @@ export const createNewsStore = (): NewsStore => {
                 if (validated.success) parsed.push(validated.data);
             }
             // Keep consistent ordering (most recent first)
-            parsed.sort((a, b) => (a.publishedAt > b.publishedAt ? -1 : 1));
+            parsed.sort(comparePublishedAtDesc);
             return parsed;
         },
 

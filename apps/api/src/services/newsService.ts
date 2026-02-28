@@ -46,7 +46,10 @@ export class NewsService {
 
             const merged = lists
                 .flat()
-                .sort((a, b) => (a.publishedAt > b.publishedAt ? -1 : 1))
+                .sort((a, b) => {
+                    if (a.publishedAt === b.publishedAt) return 0;
+                    return a.publishedAt > b.publishedAt ? -1 : 1;
+                })
                 .slice(0, params.limit);
 
             this.cache.set(params.cacheKey, merged, this.config.NEWS_CACHE_TTL_SECONDS * 1000);

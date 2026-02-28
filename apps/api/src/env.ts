@@ -17,11 +17,15 @@ export const loadDotEnvIfPresent = async () => {
     // Optional: local dev convenience. In Vercel, env vars are already injected.
     const envPath = findUp(".env", process.cwd());
     if (!envPath) {
-        console.error("[env] .env not found starting from", process.cwd());
+        if (process.env.NODE_ENV !== "production") {
+            console.info("[env] .env not found; relying on process environment variables");
+        }
         return;
     }
 
     const dotenv = await import("dotenv");
     const result = dotenv.config({ path: envPath });
-    console.error("[env] Loaded .env from", envPath, "error?", result.error);
+    if (result.error) {
+        console.warn("[env] Failed to load .env from", envPath, result.error.message);
+    }
 };

@@ -1,4 +1,4 @@
-import { Router, type Request } from "express";
+import { Router, type Request, type Response } from "express";
 import { z } from "zod";
 import { NewsCategoriesResponseSchema, NewsListResponseSchema, NewsSummaryResponseSchema, type NewsItem } from "@cryptowire/types";
 import { SUPPORTED_NEWS_SOURCES } from "@cryptowire/types/sources";
@@ -13,11 +13,13 @@ export const createNewsRouter = (
     newsStore: NewsStore,
     newsSummaryService: NewsSummaryService,
     newsSummaryStore: NewsSummaryStore,
-    opts?: { refreshSecret?: string; siteUrl?: string },
+    opts?: { refreshSecret?: string; siteUrl?: string; defaultRetentionDays?: number },
 ) => {
     const router = Router();
 
     const isProd = process.env.NODE_ENV === "production";
+    const DIAGNOSE_UPSTREAM_TIMEOUT_MS = 12_000;
+    const defaultRetentionDays = Math.min(Math.max(1, opts?.defaultRetentionDays ?? 7), 7);
     let devLastAutoRefreshAtMs = 0;
     let devAutoRefreshInFlight: Promise<void> | null = null;
 
@@ -30,6 +32,30 @@ export const createNewsRouter = (
             .replaceAll("'", "&apos;");
 
     const SUPPORTED_SOURCES = SUPPORTED_NEWS_SOURCES;
+    const supportedSourceIds = new Set<string>(SUPPORTED_SOURCES.map((s) => s.id));
+
+    const parseSourceIdsFromCsv = (raw: string | undefined): string[] => {
+        return (raw ?? "")
+            .split(",")
+            .map((x) => x.trim().toLowerCase())
+            .filter(Boolean);
+    };
+
+    const filterSupportedSourceIds = (sourceIds: string[]): string[] => {
+        return sourceIds.filter((id) => supportedSourceIds.has(id));
+    };
+
+    const uniqueSourceIds = (sourceIds: string[]): string[] => {
+        return Array.from(new Set(sourceIds));
+    };
+    const sendEmptyNewsList = (res: Response) => {
+        const payload = { items: [] };
+        const validated = NewsListResponseSchema.safeParse(payload);
+        if (!validated.success) {
+            return res.status(500).json({ error: "Invalid response shape" });
+        }
+        return res.json(payload);
+    };
     const sourceNameByKey = new Map<string, string>();
     for (const source of SUPPORTED_SOURCES) {
         sourceNameByKey.set(source.id.trim().toLowerCase(), source.name);
@@ -135,10 +161,7 @@ export const createNewsRouter = (
             return res.status(400).json({ error: parsed.error.message });
         }
 
-        const requestedSourceIds = (parsed.data.sources ?? "")
-            .split(",")
-            .map((x) => x.trim().toLowerCase())
-            .filter(Boolean);
+        const requestedSourceIds = parseSourceIdsFromCsv(parsed.data.sources);
 
         // If sources aren't specified, return no categories.
         // The product requirement is that categories are scoped to selected sources.
@@ -151,8 +174,7 @@ export const createNewsRouter = (
             return res.json(payload);
         }
 
-        const supportedIds = new Set<string>(SUPPORTED_SOURCES.map((s) => s.id));
-        const requested = requestedSourceIds.filter((id) => supportedIds.has(id));
+        const requested = filterSupportedSourceIds(requestedSourceIds);
 
         // Categories are updated during refresh (cron/manual) and cached in KV (or memory).
         // This endpoint never triggers provider fetches.
@@ -476,13 +498,9 @@ export const createNewsRouter = (
     const SUMMARY_MAX_AGE_HOURS = 12;
 
     const getRequestedSourceIds = (raw: string | undefined): string[] => {
-        const requestedSourceIds = (raw ?? "")
-            .split(",")
-            .map((x) => x.trim().toLowerCase())
-            .filter(Boolean);
-        const supportedIds = new Set<string>(SUPPORTED_SOURCES.map((s) => s.id));
-        const requested = requestedSourceIds.filter((id) => supportedIds.has(id));
-        return Array.from(new Set(requested.length > 0 ? requested : SUPPORTED_SOURCES.map((s) => s.id)));
+        const requestedSourceIds = parseSourceIdsFromCsv(raw);
+        const requested = filterSupportedSourceIds(requestedSourceIds);
+        return uniqueSourceIds(requested.length > 0 ? requested : SUPPORTED_SOURCES.map((s) => s.id));
     };
 
     const collectSummaryItems = async (params: {
@@ -731,15 +749,10 @@ export const createNewsRouter = (
 
         // CoinDesk commonly rejects very large limits; keep this conservative.
         const limit = Math.min(parsed.data.limit, 100);
-        const retentionDays = Math.min(parsed.data.retentionDays ?? 7, 7);
+        const retentionDays = Math.min(parsed.data.retentionDays ?? defaultRetentionDays, 7);
 
-        const requestedSourceIds = (parsed.data.sources ?? "")
-            .split(",")
-            .map((x) => x.trim().toLowerCase())
-            .filter(Boolean);
-
-        const supportedIds = new Set<string>(SUPPORTED_SOURCES.map((s) => s.id));
-        const requested = requestedSourceIds.filter((id) => supportedIds.has(id));
+        const requestedSourceIds = parseSourceIdsFromCsv(parsed.data.sources);
+        const requested = filterSupportedSourceIds(requestedSourceIds);
         const sourceIdsForFetch = requested.length > 0 ? requested.join(",") : SUPPORTED_SOURCES.map((s) => s.id).join(",");
 
         const items = await newsService.refreshHeadlines({
@@ -795,6 +808,11 @@ export const createNewsRouter = (
         const baseUrl = process.env.COINDESK_BASE_URL ?? "https://data-api.coindesk.com";
         const endpointPath = process.env.COINDESK_NEWS_ENDPOINT_PATH ?? "/news/v1/article/list";
         const sourceIds = (parsed.data.sources ?? "").trim();
+        const getSafeUrl = (url: URL): string => {
+            const safe = new URL(url.toString());
+            safe.searchParams.delete("api_key");
+            return safe.toString();
+        };
 
         const buildUrl = (includeSources: boolean) => {
             const url = new URL(endpointPath, baseUrl);
@@ -808,8 +826,13 @@ export const createNewsRouter = (
 
         const probeOnce = async (includeSources: boolean) => {
             const url = buildUrl(includeSources);
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), DIAGNOSE_UPSTREAM_TIMEOUT_MS);
             try {
-                const resp = await fetch(url.toString(), { headers: { Accept: "application/json" } });
+                const resp = await fetch(url.toString(), {
+                    headers: { Accept: "application/json" },
+                    signal: controller.signal,
+                });
                 const text = await resp.text();
 
                 let json: unknown = null;
@@ -831,7 +854,7 @@ export const createNewsRouter = (
 
                 return {
                     includeSources,
-                    url: url.origin + url.pathname + "?" + url.searchParams.toString().replace(process.env.COINDESK_API_KEY ?? "", "***"),
+                    url: getSafeUrl(url),
                     status: resp.status,
                     ok: resp.ok,
                     bodyIsJson: json !== null,
@@ -843,7 +866,7 @@ export const createNewsRouter = (
             } catch (err: unknown) {
                 return {
                     includeSources,
-                    url: url.toString().replace(process.env.COINDESK_API_KEY ?? "", "***"),
+                    url: getSafeUrl(url),
                     status: null,
                     ok: false,
                     bodyIsJson: false,
@@ -852,6 +875,8 @@ export const createNewsRouter = (
                     firstItemKeys: [],
                     error: err instanceof Error ? err.message : String(err),
                 };
+            } finally {
+                clearTimeout(timeout);
             }
         };
 
@@ -889,36 +914,22 @@ export const createNewsRouter = (
 
         const limit = Math.min(parsed.data.limit, 100);
         const offset = parsed.data.offset;
-        const retentionDays = Math.min(parsed.data.retentionDays ?? 7, 7);
+        const retentionDays = Math.min(parsed.data.retentionDays ?? defaultRetentionDays, 7);
 
-        const requestedSourceIds = (parsed.data.sources ?? "")
-            .split(",")
-            .map((x) => x.trim().toLowerCase())
-            .filter(Boolean);
+        const requestedSourceIds = parseSourceIdsFromCsv(parsed.data.sources);
 
         // API has no concept of default sources: clients must specify sources.
         if (requestedSourceIds.length === 0) {
-            const payload = { items: [] };
-            const validated = NewsListResponseSchema.safeParse(payload);
-            if (!validated.success) {
-                return res.status(500).json({ error: "Invalid response shape" });
-            }
-            return res.json(payload);
+            return sendEmptyNewsList(res);
         }
 
         const requestedCategory = (parsed.data.category ?? "").trim();
         const requestedCategoryKey = requestedCategory.length > 0 ? requestedCategory.toLowerCase() : null;
 
-        const supportedIds = new Set<string>(SUPPORTED_SOURCES.map((s) => s.id));
-        const requested = requestedSourceIds.filter((id) => supportedIds.has(id));
+        const requested = filterSupportedSourceIds(requestedSourceIds);
 
         if (requested.length === 0) {
-            const payload = { items: [] };
-            const validated = NewsListResponseSchema.safeParse(payload);
-            if (!validated.success) {
-                return res.status(500).json({ error: "Invalid response shape" });
-            }
-            return res.json(payload);
+            return sendEmptyNewsList(res);
         }
 
         const maybeDevAutoRefreshIfEmpty = async () => {

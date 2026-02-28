@@ -27,9 +27,15 @@ const publicEndpoints = {
     market: "/market",
 };
 
-const corsOrigin = config.CORS_ORIGIN
-    ? config.CORS_ORIGIN.split(",").map((x) => x.trim()).filter(Boolean)
-    : true;
+const corsOrigin = (() => {
+    if (config.CORS_ORIGIN) {
+        return config.CORS_ORIGIN.split(",").map((x) => x.trim()).filter(Boolean);
+    }
+    if (process.env.NODE_ENV === "production") {
+        return [new URL(config.SITE_URL ?? "http://localhost:8080").origin];
+    }
+    return true;
+})();
 
 app.use(cors({ origin: corsOrigin }));
 app.use(express.json());
@@ -55,7 +61,7 @@ const newsSummaryService = new NewsSummaryService({
 });
 const newsStore = createNewsStore();
 const newsSummaryStore = createNewsSummaryStore();
-const priceService = new PriceService(config);
+const priceService = new PriceService();
 const marketService = new MarketService();
 
 const getLastRefreshAt = async (): Promise<string | null> => {
@@ -81,7 +87,6 @@ app.get("/stats", asyncHandler(async (_req, res) => {
         ok: true,
         now,
         kvEnabled,
-        coindeskApiKeyPresent: Boolean(process.env.COINDESK_API_KEY),
         coindeskBaseUrl: process.env.COINDESK_BASE_URL ?? null,
         coindeskNewsEndpointPath: process.env.COINDESK_NEWS_ENDPOINT_PATH ?? null,
         retentionDays: config.NEWS_RETENTION_DAYS,
@@ -106,6 +111,7 @@ app.get("/", (_req, res) => {
 app.use(createNewsRouter(newsService, newsStore, newsSummaryService, newsSummaryStore, {
     refreshSecret: config.NEWS_REFRESH_SECRET,
     siteUrl: config.SITE_URL,
+    defaultRetentionDays: config.NEWS_RETENTION_DAYS,
 }));
 app.use(createPricesRouter(priceService));
 app.use(createMarketRouter(marketService));

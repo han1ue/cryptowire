@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { SUPPORTED_NEWS_SOURCES } from "@cryptowire/types/sources";
+const DEFAULT_COINDESK_UPSTREAM_TIMEOUT_MS = 12_000;
 const optionalString = z.string().nullish();
 const CoindeskSourceDataSchema = z
     .object({
@@ -155,15 +156,21 @@ export class CoindeskNewsProvider {
         // CoinDesk Data API supports api_key as a query param.
         url.searchParams.set("api_key", this.options.apiKey);
         let res;
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), DEFAULT_COINDESK_UPSTREAM_TIMEOUT_MS);
         try {
             res = await fetch(url.toString(), {
                 headers: {
                     Accept: "application/json",
                 },
+                signal: controller.signal,
             });
         }
         catch {
             return [];
+        }
+        finally {
+            clearTimeout(timeout);
         }
         if (!res.ok) {
             return [];

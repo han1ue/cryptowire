@@ -104,3 +104,35 @@ test("filters out old items by retention window", async () => {
 
     assert.deepEqual(items, []);
 });
+
+test("passes an AbortSignal to upstream requests", async () => {
+    let sawSignal = false;
+    const nowSecs = Math.floor(Date.now() / 1000);
+
+    globalThis.fetch = async (_input, init) => {
+        sawSignal = Boolean(init?.signal);
+        return new Response(
+            JSON.stringify({
+                Data: [
+                    {
+                        ID: "1",
+                        TITLE: "Signal test",
+                        SUBTITLE: "Summary",
+                        URL: "https://www.coindesk.com/example",
+                        PUBLISHED_ON: nowSecs,
+                        SOURCE_DATA: { SOURCE_KEY: "coindesk" },
+                    },
+                ],
+            }),
+            {
+                status: 200,
+                headers: { "content-type": "application/json" },
+            },
+        );
+    };
+
+    const provider = new CoindeskNewsProvider({ apiKey: "test-key" });
+    await provider.fetchHeadlines({ limit: 5, retentionDays: 7 });
+
+    assert.equal(sawSignal, true);
+});

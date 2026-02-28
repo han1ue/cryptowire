@@ -8,6 +8,7 @@ import { createNewsRouter } from "./news.js";
 
 const runningServers = new Set<Server>();
 const refreshSecret = "test-refresh-secret";
+const originalFetch = globalThis.fetch;
 
 const startServer = async (server: Server) => {
     await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
@@ -70,6 +71,7 @@ after(async () => {
         await stopServer(server);
     }
     runningServers.clear();
+    globalThis.fetch = originalFetch;
 });
 
 test("GET /news returns empty list when all requested sources are invalid", async () => {
@@ -240,4 +242,85 @@ test("POST /news/summary/refresh skip cache keys include sources and limit", asy
     assert.equal(fourth.status, 200);
     assert.equal((fourth.json as Record<string, unknown>)?.skipped, false);
     assert.equal(summarizeCalls, 3);
+});
+
+test("POST /news/diagnose redacts api_key from probe urls", async () => {
+    process.env.NODE_ENV = "production";
+
+    const testApiKey = "secret+token/with=special";
+    process.env.COINDESK_API_KEY = testApiKey;
+
+    const newsStore = makeStore([]);
+    const newsSummaryStore = {
+        async getLatest() {
+            return null;
+        },
+        async putLatest(_summary: NewsSummaryResponse) {
+            // no-op
+        },
+    };
+    const newsSummaryService = {
+        async summarize() {
+            throw new Error("not used in this test");
+        },
+    };
+    const newsService = {
+        async refreshHeadlines() {
+            return [];
+        },
+    };
+
+    const app = express();
+    app.use(express.json());
+    app.use(createNewsRouter(
+        newsService as never,
+        newsStore as never,
+        newsSummaryService as never,
+        newsSummaryStore as never,
+        { refreshSecret, siteUrl: "https://cryptowi.re" },
+    ));
+
+    const server = createServer(app);
+    const baseUrl = await startServer(server);
+
+    globalThis.fetch = async (input, init) => {
+        const url = String(input);
+        if (url.startsWith(baseUrl)) {
+            return await originalFetch(input, init);
+        }
+        return new Response(
+            JSON.stringify({
+                Data: [],
+            }),
+            {
+                status: 200,
+                headers: { "content-type": "application/json" },
+            },
+        );
+    };
+
+    const res = await request(baseUrl, "/news/diagnose", {
+        method: "POST",
+        headers: {
+            "content-type": "application/json",
+            "x-refresh-secret": refreshSecret,
+        },
+        body: JSON.stringify({ limit: 5, sources: "coindesk" }),
+    });
+
+    assert.equal(res.status, 200);
+
+    const payload = res.json as Record<string, unknown>;
+    const probes = payload.probes as Record<string, unknown>;
+    const withSources = probes.withSources as Record<string, unknown>;
+    const withoutSources = probes.withoutSources as Record<string, unknown>;
+
+    const urls = [withSources.url, withoutSources.url].filter((value): value is string => typeof value === "string");
+    assert.equal(urls.length, 2);
+    const encodedApiKey = encodeURIComponent(testApiKey);
+    for (const url of urls) {
+        assert.equal(url.includes("api_key="), false);
+        assert.equal(url.includes(testApiKey), false);
+        assert.equal(url.includes(encodedApiKey), false);
+    }
 });

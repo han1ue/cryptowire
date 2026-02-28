@@ -1,3 +1,4 @@
+const DEFAULT_COINGECKO_UPSTREAM_TIMEOUT_MS = 12_000;
 const SYMBOL_TO_ID = {
     BTC: "bitcoin",
     ETH: "ethereum",
@@ -22,9 +23,12 @@ export class CoinGeckoPriceProvider {
         url.searchParams.set("vs_currencies", "usd");
         url.searchParams.set("include_24hr_change", "true");
         let data;
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), DEFAULT_COINGECKO_UPSTREAM_TIMEOUT_MS);
         try {
             const res = await fetch(url.toString(), {
                 headers: { Accept: "application/json" },
+                signal: controller.signal,
             });
             if (!res.ok)
                 return [];
@@ -32,6 +36,9 @@ export class CoinGeckoPriceProvider {
         }
         catch {
             return [];
+        }
+        finally {
+            clearTimeout(timeout);
         }
         const fetchedAt = new Date().toISOString();
         const idToSymbol = Object.fromEntries(Object.entries(SYMBOL_TO_ID).map(([sym, id]) => [id, sym]));

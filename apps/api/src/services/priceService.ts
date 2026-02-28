@@ -2,7 +2,6 @@ import type { PriceQuote } from "@cryptowire/types";
 import type { PriceProvider } from "@cryptowire/types";
 import { CoinGeckoPriceProvider } from "@cryptowire/adapters";
 import { SimpleTtlCache } from "../lib/cache.js";
-import type { AppConfig } from "../config.js";
 
 const PRICE_CACHE_TTL_MS = 5 * 60 * 1000;
 
@@ -10,7 +9,7 @@ export class PriceService {
     private readonly cache = new SimpleTtlCache();
     private readonly provider: PriceProvider;
 
-    constructor(private readonly config: AppConfig) {
+    constructor() {
         this.provider = new CoinGeckoPriceProvider();
     }
 

@@ -1,5 +1,7 @@
 import type { PriceProvider, FetchPricesParams, PriceQuote } from "@cryptowire/types";
 
+const DEFAULT_COINGECKO_UPSTREAM_TIMEOUT_MS = 12_000;
+
 const SYMBOL_TO_ID: Record<string, string> = {
     BTC: "bitcoin",
     ETH: "ethereum",
@@ -28,14 +30,19 @@ export class CoinGeckoPriceProvider implements PriceProvider {
         url.searchParams.set("include_24hr_change", "true");
 
         let data: Record<string, { usd?: number; usd_24h_change?: number }>;
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), DEFAULT_COINGECKO_UPSTREAM_TIMEOUT_MS);
         try {
             const res = await fetch(url.toString(), {
                 headers: { Accept: "application/json" },
+                signal: controller.signal,
             });
             if (!res.ok) return [];
             data = (await res.json()) as Record<string, { usd?: number; usd_24h_change?: number }>;
         } catch {
             return [];
+        } finally {
+            clearTimeout(timeout);
         }
 
         const fetchedAt = new Date().toISOString();

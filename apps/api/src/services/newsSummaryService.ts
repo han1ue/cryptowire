@@ -539,9 +539,9 @@ export class NewsSummaryService {
         > => {
             if (!this.geminiApiKey) return { ok: false, model, errorModel: toErrorModel("gemini-no-key") };
 
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), this.aiRequestTimeoutMs);
             try {
-                const controller = new AbortController();
-                const timeout = setTimeout(() => controller.abort(), this.aiRequestTimeoutMs);
                 const endpoint =
                     `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent` +
                     `?key=${encodeURIComponent(this.geminiApiKey)}`;
@@ -565,7 +565,6 @@ export class NewsSummaryService {
                     }),
                     signal: controller.signal,
                 });
-                clearTimeout(timeout);
 
                 if (!response.ok) {
                     let detail = "";
@@ -598,6 +597,8 @@ export class NewsSummaryService {
                     return { ok: false, model, errorModel: toErrorModel("gemini-timeout", model) };
                 }
                 return { ok: false, model, errorModel: toErrorModel("gemini-request-failed", model) };
+            } finally {
+                clearTimeout(timeout);
             }
         };
 
@@ -606,9 +607,9 @@ export class NewsSummaryService {
         > => {
             if (!this.openAiApiKey) return { ok: false, model: this.openAiModel, errorModel: toErrorModel("openai-no-key") };
 
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), this.aiRequestTimeoutMs);
             try {
-                const controller = new AbortController();
-                const timeout = setTimeout(() => controller.abort(), this.aiRequestTimeoutMs);
                 const response = await fetch("https://api.openai.com/v1/chat/completions", {
                     method: "POST",
                     headers: {
@@ -626,7 +627,6 @@ export class NewsSummaryService {
                     }),
                     signal: controller.signal,
                 });
-                clearTimeout(timeout);
 
                 if (!response.ok) {
                     let detail = "";
@@ -664,6 +664,8 @@ export class NewsSummaryService {
                     return { ok: false, model: this.openAiModel, errorModel: toErrorModel("openai-timeout", this.openAiModel) };
                 }
                 return { ok: false, model: this.openAiModel, errorModel: toErrorModel("openai-request-failed", this.openAiModel) };
+            } finally {
+                clearTimeout(timeout);
             }
         };
 
