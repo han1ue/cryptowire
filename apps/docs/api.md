@@ -216,7 +216,13 @@ Status codes:
 
 ### `GET /prices`
 
-Returns quotes for requested symbols.
+Returns the latest stored quotes for requested symbols.
+
+Notes:
+
+- This endpoint serves cached/stored values (KV in production, memory fallback otherwise).
+- It does not fetch CoinGecko on each request.
+- Prices are updated by calling `POST /prices/refresh` (typically from a scheduled workflow).
 
 Query params:
 
@@ -360,6 +366,28 @@ Status codes:
 - `400` invalid body
 - `401` unauthorized
 - `405` wrong method (`GET /news/refresh`)
+
+### `POST /prices/refresh`
+
+Body fields:
+
+- `symbols` (optional, comma-separated symbols; default `BTC,ETH,SOL,BNB,XRP,ADA,DOGE,AVAX`)
+
+Example:
+
+```sh
+curl -X POST "https://api.cryptowi.re/prices/refresh" \
+  -H "content-type: application/json" \
+  -H "x-refresh-secret: YOUR_SECRET" \
+  --data-raw '{"symbols":"BTC,ETH,SOL,BNB,XRP,ADA,DOGE,AVAX"}'
+```
+
+Status codes:
+
+- `200` success
+- `400` invalid body
+- `401` unauthorized
+- `405` wrong method (`GET /prices/refresh`)
 
 ### `POST /news/summary/refresh`
 

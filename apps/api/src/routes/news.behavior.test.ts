@@ -289,6 +289,67 @@ test("GET /news/categories returns 400 when any requested source is invalid", as
     assert.match(String(payload.error), /invalid source ids/i);
 });
 
+test("GET /news/summary normalizes response without writing back", async () => {
+    process.env.NODE_ENV = "production";
+
+    const nowIso = new Date().toISOString();
+    const newsStore = makeStore([]);
+
+    let putLatestCalls = 0;
+    const newsSummaryStore = {
+        async getLatest(): Promise<NewsSummaryResponse | null> {
+            return {
+                generatedAt: nowIso,
+                windowStart: nowIso,
+                windowEnd: nowIso,
+                windowHours: 24,
+                articleCount: 1,
+                model: "error-timeout",
+                aiError: null,
+                summary: "Summary",
+                highlights: [],
+                sourceCoverage: [],
+            };
+        },
+        async putLatest(_summary: NewsSummaryResponse) {
+            putLatestCalls++;
+        },
+    };
+
+    const newsSummaryService = {
+        async summarize() {
+            throw new Error("not used in this test");
+        },
+    };
+
+    const newsService = {
+        async refreshHeadlines() {
+            return [];
+        },
+    };
+
+    const app = express();
+    app.use(express.json());
+    app.use(createNewsRouter(
+        newsService as never,
+        newsStore as never,
+        newsSummaryService as never,
+        newsSummaryStore as never,
+        { refreshSecret, siteUrl: "https://cryptowi.re" },
+    ));
+
+    const server = createServer(app);
+    const baseUrl = await startServer(server);
+    const res = await request(baseUrl, "/news/summary");
+
+    assert.equal(res.status, 200);
+    assert.equal(putLatestCalls, 0);
+
+    const payload = res.json as NewsSummaryResponse;
+    assert.equal(payload.model, "unknown-model");
+    assert.equal(payload.aiError, "error-timeout");
+});
+
 test("POST /news/summary/refresh skip cache keys include sources and limit", async () => {
     process.env.NODE_ENV = "production";
 

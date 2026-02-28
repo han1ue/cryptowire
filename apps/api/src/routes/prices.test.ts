@@ -7,6 +7,7 @@ import type { ErrorRequestHandler } from "express";
 import { createPricesRouter } from "./prices.js";
 
 const runningServers = new Set<Server>();
+const refreshSecret = "test-refresh-secret";
 
 const startServer = async (server: Server) => {
     await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
@@ -34,7 +35,17 @@ after(async () => {
 
 test("GET /prices returns quotes from price service", async () => {
     const priceService = {
-        async getPrices() {
+        async getStoredPrices() {
+            return [
+                {
+                    symbol: "BTC",
+                    usd: 100_000,
+                    usd24hChange: 1.23,
+                    fetchedAt: new Date("2026-02-01T00:00:00.000Z").toISOString(),
+                },
+            ];
+        },
+        async refreshPrices() {
             return [
                 {
                     symbol: "BTC",
@@ -47,7 +58,8 @@ test("GET /prices returns quotes from price service", async () => {
     };
 
     const app = express();
-    app.use(createPricesRouter(priceService as never));
+    app.use(express.json());
+    app.use(createPricesRouter(priceService as never, { refreshSecret }));
     const server = createServer(app);
     const baseUrl = await startServer(server);
 
@@ -62,13 +74,17 @@ test("GET /prices returns quotes from price service", async () => {
 
 test("GET /prices returns 500 when price service throws", async () => {
     const priceService = {
-        async getPrices() {
+        async getStoredPrices() {
             throw new Error("provider unavailable");
+        },
+        async refreshPrices() {
+            return [];
         },
     };
 
     const app = express();
-    app.use(createPricesRouter(priceService as never));
+    app.use(express.json());
+    app.use(createPricesRouter(priceService as never, { refreshSecret }));
 
     const errorHandler: ErrorRequestHandler = (_error, _req, res, _next) => {
         if (res.headersSent) return;
@@ -85,4 +101,98 @@ test("GET /prices returns 500 when price service throws", async () => {
     assert.equal(response.status, 500);
     assert.equal(payload.ok, false);
     assert.equal(payload.error, "Internal server error");
+});
+
+test("POST /prices/refresh rejects unauthorized requests", async () => {
+    const priceService = {
+        async getStoredPrices() {
+            return [];
+        },
+        async refreshPrices() {
+            return [];
+        },
+    };
+
+    const app = express();
+    app.use(express.json());
+    app.use(createPricesRouter(priceService as never, { refreshSecret }));
+    const server = createServer(app);
+    const baseUrl = await startServer(server);
+
+    const response = await fetch(`${baseUrl}/prices/refresh`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: "{}",
+    });
+    const payload = (await response.json()) as { error: string };
+
+    assert.equal(response.status, 401);
+    assert.equal(payload.error, "Unauthorized");
+});
+
+test("POST /prices/refresh succeeds with x-refresh-secret", async () => {
+    const priceService = {
+        async getStoredPrices() {
+            return [];
+        },
+        async refreshPrices() {
+            return [
+                {
+                    symbol: "BTC",
+                    usd: 100_000,
+                    usd24hChange: 1.23,
+                    fetchedAt: new Date("2026-02-01T00:00:00.000Z").toISOString(),
+                },
+                {
+                    symbol: "ETH",
+                    usd: 5_000,
+                    usd24hChange: 0.42,
+                    fetchedAt: new Date("2026-02-01T00:00:00.000Z").toISOString(),
+                },
+            ];
+        },
+    };
+
+    const app = express();
+    app.use(express.json());
+    app.use(createPricesRouter(priceService as never, { refreshSecret }));
+    const server = createServer(app);
+    const baseUrl = await startServer(server);
+
+    const response = await fetch(`${baseUrl}/prices/refresh`, {
+        method: "POST",
+        headers: {
+            "content-type": "application/json",
+            "x-refresh-secret": refreshSecret,
+        },
+        body: "{}",
+    });
+    const payload = (await response.json()) as { ok: boolean; count: number };
+
+    assert.equal(response.status, 200);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.count, 2);
+});
+
+test("GET /prices/refresh is method-restricted", async () => {
+    const priceService = {
+        async getStoredPrices() {
+            return [];
+        },
+        async refreshPrices() {
+            return [];
+        },
+    };
+
+    const app = express();
+    app.use(express.json());
+    app.use(createPricesRouter(priceService as never, { refreshSecret }));
+    const server = createServer(app);
+    const baseUrl = await startServer(server);
+
+    const response = await fetch(`${baseUrl}/prices/refresh`);
+    const payload = (await response.json()) as { error: string };
+
+    assert.equal(response.status, 405);
+    assert.equal(payload.error, "Method not allowed. Use POST with x-refresh-secret header.");
 });

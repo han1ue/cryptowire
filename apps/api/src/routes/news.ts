@@ -628,11 +628,7 @@ export const createNewsRouter = (
         if (cached) {
             const validated = NewsSummaryResponseSchema.safeParse(cached);
             if (!validated.success) return res.status(500).json({ error: "Invalid response shape" });
-            const normalized = normalizeSummaryAiError(validated.data);
-            if (normalized !== validated.data) {
-                await newsSummaryStore.putLatest(normalized);
-            }
-            return res.json(normalized);
+            return res.json(normalizeSummaryAiError(validated.data));
         }
 
         // Local dev convenience: auto-generate once when no daily file/cache exists.

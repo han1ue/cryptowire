@@ -104,7 +104,7 @@ Vercel Hobby cron jobs are limited; this repo uses GitHub Actions to periodicall
 	- `CRYPTOWIRE_API_BASE_URL` = your API deployment root URL (no trailing slash), e.g. `https://api.cryptowi.re`
 	- `CRYPTOWIRE_REFRESH_SECRET` = same value as `NEWS_REFRESH_SECRET`
 - Workflows:
-	- `.github/workflows/refresh-news.yml` (keeps raw news cache warm)
+	- `.github/workflows/refresh-news-prices.yml` (keeps raw news and prices cache warm)
 	- `.github/workflows/refresh-summary.yml` (generates one AI summary every 12 hours)
 
 To persist cached news on Vercel (recommended), also set KV env vars in the API project:

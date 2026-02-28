@@ -1,4 +1,4 @@
-name: Refresh CryptoWire news cache
+name: Refresh CryptoWire news + prices cache
 
 on:
   schedule:
@@ -12,7 +12,7 @@ jobs:
     timeout-minutes: 2
 
     steps:
-      - name: Call API refresh endpoint
+      - name: Call API refresh endpoints
         env:
           API_BASE_URL: ${{ secrets.CRYPTOWIRE_API_BASE_URL }}
           REFRESH_SECRET: ${{ secrets.CRYPTOWIRE_REFRESH_SECRET }}
@@ -65,8 +65,37 @@ jobs:
             return 1
           }
 
-          # Explicit sources list keeps the store warm across all supported sources.
-          try_refresh && exit 0
+          try_refresh_prices() {
+            url="${base}/prices/refresh"
+            payload='{"symbols":"BTC,ETH,SOL,BNB,XRP,ADA,DOGE,AVAX"}'
+            echo "Requesting: ${url}"
+            http_code=$(curl -sS -o /tmp/refresh_prices_body.json -w "%{http_code}" \
+              --retry 3 --retry-all-errors --retry-delay 5 \
+              -X POST \
+              -H "content-type: application/json" \
+              -H "x-refresh-secret: ${REFRESH_SECRET}" \
+              --data-raw "${payload}" \
+              "${url}" || true)
 
-          echo "Refresh failed."
-          exit 22
+            if [ "${http_code}" = "200" ]; then
+              cat /tmp/refresh_prices_body.json
+              return 0
+            fi
+
+            echo "HTTP ${http_code}"
+            cat /tmp/refresh_prices_body.json || true
+            return 1
+          }
+
+          # Explicit sources list keeps the store warm across all supported sources.
+          try_refresh || {
+            echo "News refresh failed."
+            exit 22
+          }
+
+          try_refresh_prices || {
+            echo "Prices refresh failed."
+            exit 23
+          }
+
+          exit 0

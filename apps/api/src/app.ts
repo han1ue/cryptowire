@@ -10,6 +10,7 @@ import { createPricesRouter } from "./routes/prices.js";
 import { createMarketRouter } from "./routes/market.js";
 import { createNewsStore } from "./stores/newsStore.js";
 import { createNewsSummaryStore } from "./stores/newsSummaryStore.js";
+import { createPriceStore } from "./stores/priceStore.js";
 import { asyncHandler } from "./lib/asyncHandler.js";
 
 export const app = express();
@@ -61,7 +62,8 @@ const newsSummaryService = new NewsSummaryService({
 });
 const newsStore = createNewsStore();
 const newsSummaryStore = createNewsSummaryStore();
-const priceService = new PriceService();
+const priceStore = createPriceStore();
+const priceService = new PriceService(priceStore);
 const marketService = new MarketService();
 
 const getLastRefreshAt = async (): Promise<string | null> => {
@@ -113,7 +115,7 @@ app.use(createNewsRouter(newsService, newsStore, newsSummaryService, newsSummary
     siteUrl: config.SITE_URL,
     defaultRetentionDays: config.NEWS_RETENTION_DAYS,
 }));
-app.use(createPricesRouter(priceService));
+app.use(createPricesRouter(priceService, { refreshSecret: config.NEWS_REFRESH_SECRET }));
 app.use(createMarketRouter(marketService));
 
 const errorHandler: ErrorRequestHandler = (error, _req, res, _next) => {

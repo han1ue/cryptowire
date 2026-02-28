@@ -1,29 +1,55 @@
 import type { PriceQuote } from "@cryptowire/types";
 import type { PriceProvider } from "@cryptowire/types";
 import { CoinGeckoPriceProvider } from "@cryptowire/adapters";
-import { SimpleTtlCache } from "../lib/cache.js";
-
-const PRICE_CACHE_TTL_MS = 5 * 60 * 1000;
+import type { PriceStore } from "../stores/priceStore.js";
 
 export class PriceService {
-    private readonly cache = new SimpleTtlCache();
     private readonly provider: PriceProvider;
 
-    constructor() {
-        this.provider = new CoinGeckoPriceProvider();
+    constructor(
+        private readonly store: PriceStore,
+        provider?: PriceProvider,
+    ) {
+        this.provider = provider ?? new CoinGeckoPriceProvider();
     }
 
-    async getPrices(params: { symbols: string[] }): Promise<PriceQuote[]> {
-        const symbols = Array.from(
-            new Set(params.symbols.map((s) => s.trim().toUpperCase()).filter(Boolean)),
+    private normalizeSymbols(symbols: string[]): string[] {
+        return Array.from(
+            new Set(symbols.map((s) => s.trim().toUpperCase()).filter(Boolean)),
         ).sort((a, b) => a.localeCompare(b));
-        const cacheKey = `prices:${symbols.join(",")}`;
+    }
 
-        const cached = this.cache.get<PriceQuote[]>(cacheKey);
-        if (cached) return cached;
+    async getStoredPrices(params: { symbols: string[] }): Promise<PriceQuote[]> {
+        const symbols = this.normalizeSymbols(params.symbols);
+        if (symbols.length === 0) return [];
+
+        const all = await this.store.getAll();
+        if (all.length === 0) return [];
+
+        const requested = new Set(symbols);
+        return all.filter((quote) => requested.has(quote.symbol.trim().toUpperCase()));
+    }
+
+    async refreshPrices(params: { symbols: string[] }): Promise<PriceQuote[]> {
+        const symbols = this.normalizeSymbols(params.symbols);
+        if (symbols.length === 0) return [];
 
         const quotes = await this.provider.fetchPrices({ symbols });
-        this.cache.set(cacheKey, quotes, PRICE_CACHE_TTL_MS);
-        return quotes;
+
+        if (quotes.length > 0) {
+            const existing = await this.store.getAll();
+            const bySymbol = new Map<string, PriceQuote>();
+
+            for (const quote of existing) {
+                bySymbol.set(quote.symbol.trim().toUpperCase(), quote);
+            }
+            for (const quote of quotes) {
+                bySymbol.set(quote.symbol.trim().toUpperCase(), quote);
+            }
+
+            await this.store.putAll(Array.from(bySymbol.values()));
+        }
+
+        return this.getStoredPrices({ symbols });
     }
 }
