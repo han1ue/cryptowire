@@ -20,7 +20,7 @@ const KV_LAST_REFRESH_KEY = "news:lastRefreshAt";
 const publicEndpoints = {
     stats: "/stats",
     health: "/health",
-    news: "/news?limit=40&offset=0",
+    news: "/news?sources=coindesk,decrypt&limit=40",
     summary: "/news/summary",
     sources: "/news/sources",
     prices: "/prices?symbols=BTC,ETH,SOL",

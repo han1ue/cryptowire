@@ -12,19 +12,18 @@ export const useInfiniteNews = (params?: { pageSize?: number; retentionDays?: nu
             (params?.sources ?? []).join(","),
             params?.category ?? null,
         ],
-        initialPageParam: 0,
+        initialPageParam: undefined as string | undefined,
         queryFn: ({ pageParam }) =>
             fetchNews({
                 limit: pageSize,
                 retentionDays: params?.retentionDays,
                 sources: params?.sources,
                 category: params?.category,
-                offset: typeof pageParam === "number" ? pageParam : 0,
+                cursor: typeof pageParam === "string" ? pageParam : undefined,
             }),
-        getNextPageParam: (lastPage, allPages) => {
-            const loaded = allPages.reduce((sum, p) => sum + (p.items?.length ?? 0), 0);
+        getNextPageParam: (lastPage) => {
             if (!lastPage.items || lastPage.items.length < pageSize) return undefined;
-            return loaded;
+            return lastPage.items[lastPage.items.length - 1]?.id;
         },
         staleTime: 60_000,
         retry: 1,

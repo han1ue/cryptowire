@@ -871,26 +871,24 @@ export const createNewsRouter = (
         return res.status(405).json({ error: "Method not allowed. Use POST with x-refresh-secret header." });
     }));
 
-        router.get("/news", asyncHandler(async (req, res) => {
-            const querySchema = z.object({
-                // Accept a larger input range but clamp below to keep providers happy.
-                limit: z.coerce.number().int().positive().max(500).default(30),
-                offset: z.coerce.number().int().min(0).max(10_000).default(0),
-                retentionDays: z.coerce.number().int().positive().max(30).optional(),
-                sources: z.string().optional(),
-                category: z.string().optional(),
-                cursor: z.string().optional(),
-            });
+    router.get("/news", asyncHandler(async (req, res) => {
+        const querySchema = z.object({
+            // Accept a larger input range but clamp below to keep providers happy.
+            limit: z.coerce.number().int().positive().max(500).default(30),
+            retentionDays: z.coerce.number().int().positive().max(30).optional(),
+            sources: z.string().optional(),
+            category: z.string().optional(),
+            cursor: z.string().optional(),
+        });
 
         const parsed = querySchema.safeParse(req.query);
         if (!parsed.success) {
             return res.status(400).json({ error: parsed.error.message });
         }
 
-            const limit = Math.min(parsed.data.limit, 100);
-            const offset = parsed.data.offset;
-            const retentionDays = Math.min(parsed.data.retentionDays ?? defaultRetentionDays, 7);
-            const cursorId = ((parsed.data.cursor ?? "").trim() || undefined);
+        const limit = Math.min(parsed.data.limit, 100);
+        const retentionDays = Math.min(parsed.data.retentionDays ?? defaultRetentionDays, 7);
+        const cursorId = ((parsed.data.cursor ?? "").trim() || undefined);
 
         const requestedSourceIds = parseSourceIdsFromCsv(parsed.data.sources);
 
@@ -958,14 +956,12 @@ export const createNewsRouter = (
             : null;
 
         const getFilteredPageFromStore = async (): Promise<NewsItem[]> => {
-
-            // Implement offset/limit on the *filtered* sequence by scanning the
-            // underlying store in chunks.
+            // Implement limit on the filtered sequence by scanning the underlying
+            // store in chunks.
             const chunkSize = Math.max(50, Math.min(400, limit * 4));
             const maxChunks = 30; // Hard cap to avoid unbounded scans
 
             let rawOffset = 0;
-            let filteredSeen = 0;
             const out: NewsItem[] = [];
 
             for (let i = 0; i < maxChunks; i++) {
@@ -982,11 +978,6 @@ export const createNewsRouter = (
                         const cats = sanitizeCategories(item.categories);
                         const matches = cats.some((c) => (typeof c === "string" ? c.trim().toLowerCase() : "") === requestedCategoryKey);
                         if (!matches) continue;
-                    }
-
-                    if (filteredSeen < offset) {
-                        filteredSeen++;
-                        continue;
                     }
 
                     out.push(sanitizeItemCategories(item));

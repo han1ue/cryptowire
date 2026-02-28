@@ -25,7 +25,6 @@ Query params:
 
 - `sources` (required, comma-separated source ids; see [References > Sources](/references/sources))
 - `limit` (default `30`, max effective `100`)
-- `offset` (default `0`)
 - `cursor` (optional, use the last item `id` from the previous page)
 - `retentionDays` (max effective `7`)
 - `category` (optional category filter)
@@ -33,7 +32,7 @@ Query params:
 Example:
 
 ```sh
-curl "https://api.cryptowi.re/news?sources=coindesk,decrypt,cointelegraph&limit=20&offset=0"
+curl "https://api.cryptowi.re/news?sources=coindesk,decrypt,cointelegraph&limit=20"
 ```
 
 Cursor pagination example:
@@ -50,7 +49,6 @@ Notes:
 
 - `cursor` should be the last returned item id from the same query shape.
 - Keep `sources` and `category` the same between pages when using `cursor`.
-- `offset` is still applied to the filtered results after the cursor anchor.
 
 Example response:
 

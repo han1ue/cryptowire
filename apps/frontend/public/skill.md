@@ -18,7 +18,7 @@ description: |
 
 1. Call `GET /news/sources` first to fetch valid source ids.
 2. If the user does not specify sources, apply the default source policy below.
-3. Call `GET /news` with selected `sources`, plus optional `limit`, `offset`, `category`, and `retentionDays`.
+3. Call `GET /news` with selected `sources`, plus optional `limit`, `cursor`, `category`, and `retentionDays`.
 4. If needed, enrich with:
    - `GET /news/summary` for 24h recap
    - `GET /prices` for symbol quotes
@@ -91,7 +91,7 @@ curl -X POST "https://api.cryptowi.re/news/refresh" \
 
 ```sh
 curl "https://api.cryptowi.re/news/sources"
-curl "https://api.cryptowi.re/news?sources=coindesk,decrypt,cointelegraph&limit=10&offset=0"
+curl "https://api.cryptowi.re/news?sources=coindesk,decrypt,cointelegraph&limit=10"
 curl "https://api.cryptowi.re/news/summary"
 curl "https://api.cryptowi.re/prices?symbols=BTC,ETH,SOL"
 curl "https://api.cryptowi.re/market"
