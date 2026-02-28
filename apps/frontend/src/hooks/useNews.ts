@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchNews } from "@/lib/apiClient";
 
 export const useNews = (params?: { limit?: number; retentionDays?: number; sources?: string[]; category?: string }) => {
+    const enabled = (params?.sources?.length ?? 0) > 0;
     return useQuery({
         queryKey: [
             "news",
@@ -11,6 +12,7 @@ export const useNews = (params?: { limit?: number; retentionDays?: number; sourc
             params?.category ?? null,
         ],
         queryFn: () => fetchNews(params),
+        enabled,
         staleTime: 60_000,
         refetchInterval: 180_000,
         retry: 1,

@@ -81,7 +81,7 @@ after(async () => {
     globalThis.fetch = originalFetch;
 });
 
-test("GET /news returns empty list when all requested sources are invalid", async () => {
+test("GET /news returns 400 when sources are missing", async () => {
     process.env.NODE_ENV = "production";
 
     const nowIso = new Date().toISOString();
@@ -130,10 +130,71 @@ test("GET /news returns empty list when all requested sources are invalid", asyn
 
     const server = createServer(app);
     const baseUrl = await startServer(server);
-    const res = await request(baseUrl, "/news?sources=not-a-real-source");
+    const res = await request(baseUrl, "/news");
 
-    assert.equal(res.status, 200);
-    assert.deepEqual(res.json, { items: [] });
+    assert.equal(res.status, 400);
+    const payload = res.json as Record<string, unknown> | null;
+    assert(payload && typeof payload === "object");
+    assert.equal(typeof payload.error, "string");
+    assert.match(String(payload.error), /sources is required/i);
+});
+
+test("GET /news returns 400 when any requested source is invalid", async () => {
+    process.env.NODE_ENV = "production";
+
+    const nowIso = new Date().toISOString();
+    const newsStore = makeStore([
+        {
+            id: "1",
+            title: "CoinDesk story",
+            summary: "Summary",
+            source: "CoinDesk",
+            categories: ["News"],
+            publishedAt: nowIso,
+            url: "https://www.coindesk.com/example",
+        },
+    ]);
+
+    const newsSummaryStore = {
+        async getLatest() {
+            return null;
+        },
+        async putLatest(_summary: NewsSummaryResponse) {
+            // no-op
+        },
+    };
+
+    const newsSummaryService = {
+        async summarize() {
+            throw new Error("not used in this test");
+        },
+    };
+
+    const newsService = {
+        async refreshHeadlines() {
+            return [];
+        },
+    };
+
+    const app = express();
+    app.use(express.json());
+    app.use(createNewsRouter(
+        newsService as never,
+        newsStore as never,
+        newsSummaryService as never,
+        newsSummaryStore as never,
+        { refreshSecret, siteUrl: "https://cryptowi.re" },
+    ));
+
+    const server = createServer(app);
+    const baseUrl = await startServer(server);
+    const res = await request(baseUrl, "/news?sources=coindesk,not-a-real-source");
+
+    assert.equal(res.status, 400);
+    const payload = res.json as Record<string, unknown> | null;
+    assert(payload && typeof payload === "object");
+    assert.equal(typeof payload.error, "string");
+    assert.match(String(payload.error), /invalid source ids/i);
 });
 
 test("POST /news/summary/refresh skip cache keys include sources and limit", async () => {

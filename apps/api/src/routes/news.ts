@@ -892,19 +892,24 @@ export const createNewsRouter = (
 
         const requestedSourceIds = parseSourceIdsFromCsv(parsed.data.sources);
 
-        // API has no concept of default sources: clients must specify sources.
+        // API has no concept of default sources: clients must specify valid source ids.
         if (requestedSourceIds.length === 0) {
-            return sendEmptyNewsList(res);
+            return res.status(400).json({
+                error: "sources is required (comma-separated source ids).",
+            });
+        }
+
+        const invalidSourceIds = requestedSourceIds.filter((id) => !supportedSourceIds.has(id));
+        if (invalidSourceIds.length > 0) {
+            return res.status(400).json({
+                error: `Invalid source ids: ${Array.from(new Set(invalidSourceIds)).join(", ")}. Use GET /news/sources.`,
+            });
         }
 
         const requestedCategory = (parsed.data.category ?? "").trim();
         const requestedCategoryKey = requestedCategory.length > 0 ? requestedCategory.toLowerCase() : null;
 
-        const requested = filterSupportedSourceIds(requestedSourceIds);
-
-        if (requested.length === 0) {
-            return sendEmptyNewsList(res);
-        }
+        const requested = uniqueSourceIds(requestedSourceIds);
 
         const maybeDevAutoRefreshIfEmpty = async () => {
             if (isProd) return;

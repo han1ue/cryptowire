@@ -59,11 +59,18 @@ Quality checks:
 
 ## API
 
+- Full reference: `apps/docs/api.md` (or https://docs.cryptowi.re/api)
 - `GET /news?sources=coindesk,decrypt&limit=30&cursor=<last_id>`
-- `GET /news/summary` (returns last generated summary from file/cache)
+- `GET /news/sources`
+- `GET /news/categories?sources=...`
+- `GET /news/status`
+- `GET /news/summary` (returns latest generated summary from cache/store)
 - `POST /news/refresh` (admin; send `x-refresh-secret` header)
 - `POST /news/summary/refresh` (admin; send `x-refresh-secret` header)
+- `POST /news/diagnose` (admin; send `x-refresh-secret` header)
 - `GET /prices?symbols=BTC,ETH,SOL`
+- `GET /market`
+- `GET /rss.xml`
 
 ## Widget Package
 

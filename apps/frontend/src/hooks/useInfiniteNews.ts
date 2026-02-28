@@ -3,6 +3,7 @@ import { fetchNews } from "@/lib/apiClient";
 
 export const useInfiniteNews = (params?: { pageSize?: number; retentionDays?: number; sources?: string[]; category?: string }) => {
     const pageSize = params?.pageSize ?? 25;
+    const enabled = (params?.sources?.length ?? 0) > 0;
 
     return useInfiniteQuery({
         queryKey: [
@@ -25,6 +26,7 @@ export const useInfiniteNews = (params?: { pageSize?: number; retentionDays?: nu
             if (!lastPage.items || lastPage.items.length < pageSize) return undefined;
             return lastPage.items[lastPage.items.length - 1]?.id;
         },
+        enabled,
         staleTime: 60_000,
         retry: 1,
     });

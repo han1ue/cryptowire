@@ -54,7 +54,7 @@ Selection rules:
 
 ## Required Behavior
 
-1. `GET /news` requires `sources` (comma-separated source ids).
+1. `GET /news` requires `sources` (comma-separated source ids), and any invalid source id causes `400`.
 2. Always query `GET /news/sources` if source ids are unknown or stale.
 3. Keep `/news` `limit` in `1-100`.
 4. Keep `/news` `retentionDays` in `1-7`.
@@ -65,7 +65,7 @@ Selection rules:
 ## Error Handling
 
 - `GET /news/summary` may return `503` when daily summary is not ready; report that and suggest retry later.
-- `400` means query/body validation error; correct inputs and retry.
+- `400` means query/body validation error (including missing or invalid `/news` source ids); correct inputs and retry.
 - `401` on restricted endpoints means missing/invalid `x-refresh-secret`.
 - `405` on restricted endpoints means wrong method (must use `POST`).
 
