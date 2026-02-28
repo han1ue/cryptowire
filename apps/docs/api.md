@@ -48,7 +48,7 @@ curl "https://api.cryptowi.re/news?sources=coindesk&category=Markets&limit=20&cu
 Notes:
 
 - `cursor` should be the last returned item id from the same query shape.
-- Keep `sources` and `category` the same between pages when using `cursor`.
+- Keep `sources`, `category`, and `retentionDays` the same between pages when using `cursor` to avoid skips and duplicates.
 
 Example response:
 

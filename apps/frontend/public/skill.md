@@ -58,8 +58,9 @@ Selection rules:
 2. Always query `GET /news/sources` if source ids are unknown or stale.
 3. Keep `/news` `limit` in `1-100`.
 4. Keep `/news` `retentionDays` in `1-7`.
-5. Use `/market` for macro context and `/prices` for per-symbol spot quotes.
-6. Do not hardcode the source-id list in prompts or responses.
+5. When paginating with `cursor`, keep `sources`, `category`, and `retentionDays` unchanged to avoid skips and duplicates.
+6. Use `/market` for macro context and `/prices` for per-symbol spot quotes.
+7. Do not hardcode the source-id list in prompts or responses.
 
 ## Error Handling
 
