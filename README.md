@@ -59,7 +59,7 @@ Quality checks:
 
 ## API
 
-- `GET /news?limit=30&retentionDays=7`
+- `GET /news?sources=coindesk,decrypt&limit=30&offset=0&cursor=<last_id>`
 - `GET /news/summary` (returns last generated summary from file/cache)
 - `POST /news/refresh` (admin; send `x-refresh-secret` header)
 - `POST /news/summary/refresh` (admin; send `x-refresh-secret` header)

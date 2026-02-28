@@ -51,8 +51,15 @@ const makeStore = (seedItems: NewsItem[]) => {
         async putMany(nextItems: NewsItem[]) {
             items = [...nextItems];
         },
-        async getPage(params: { limit: number; offset: number }) {
-            return items.slice(params.offset, params.offset + params.limit);
+        async getPage(params: { limit: number; offset: number; afterId?: string }) {
+            const afterId = typeof params.afterId === "string" ? params.afterId.trim() : "";
+            if (!afterId) {
+                return items.slice(params.offset, params.offset + params.limit);
+            }
+            const anchorIndex = items.findIndex((item) => item.id === afterId);
+            if (anchorIndex < 0) return [];
+            const start = anchorIndex + 1 + params.offset;
+            return items.slice(start, start + params.limit);
         },
         async getById(id: string) {
             return items.find((item) => item.id === id) ?? null;
@@ -242,6 +249,99 @@ test("POST /news/summary/refresh skip cache keys include sources and limit", asy
     assert.equal(fourth.status, 200);
     assert.equal((fourth.json as Record<string, unknown>)?.skipped, false);
     assert.equal(summarizeCalls, 3);
+});
+
+test("GET /news supports cursor pagination via last item id", async () => {
+    process.env.NODE_ENV = "production";
+
+    const now = Date.now();
+    const newsStore = makeStore([
+        {
+            id: "a1",
+            title: "Item 1",
+            summary: "Summary 1",
+            source: "CoinDesk",
+            categories: ["News"],
+            publishedAt: new Date(now).toISOString(),
+            url: "https://www.coindesk.com/item-1",
+        },
+        {
+            id: "a2",
+            title: "Item 2",
+            summary: "Summary 2",
+            source: "CoinDesk",
+            categories: ["News"],
+            publishedAt: new Date(now - 1_000).toISOString(),
+            url: "https://www.coindesk.com/item-2",
+        },
+        {
+            id: "a3",
+            title: "Item 3",
+            summary: "Summary 3",
+            source: "CoinDesk",
+            categories: ["News"],
+            publishedAt: new Date(now - 2_000).toISOString(),
+            url: "https://www.coindesk.com/item-3",
+        },
+        {
+            id: "a4",
+            title: "Item 4",
+            summary: "Summary 4",
+            source: "CoinDesk",
+            categories: ["News"],
+            publishedAt: new Date(now - 3_000).toISOString(),
+            url: "https://www.coindesk.com/item-4",
+        },
+    ]);
+
+    const newsSummaryStore = {
+        async getLatest() {
+            return null;
+        },
+        async putLatest(_summary: NewsSummaryResponse) {
+            // no-op
+        },
+    };
+
+    const newsSummaryService = {
+        async summarize() {
+            throw new Error("not used in this test");
+        },
+    };
+
+    const newsService = {
+        async refreshHeadlines() {
+            return [];
+        },
+    };
+
+    const app = express();
+    app.use(express.json());
+    app.use(createNewsRouter(
+        newsService as never,
+        newsStore as never,
+        newsSummaryService as never,
+        newsSummaryStore as never,
+        { refreshSecret, siteUrl: "https://cryptowi.re" },
+    ));
+
+    const server = createServer(app);
+    const baseUrl = await startServer(server);
+
+    const first = await request(baseUrl, "/news?sources=coindesk&limit=2");
+    assert.equal(first.status, 200);
+    const firstPayload = first.json as { items: NewsItem[] };
+    assert.equal(firstPayload.items.length, 2);
+    const firstIds = firstPayload.items.map((item) => item.id);
+    assert.deepEqual(firstIds, ["a1", "a2"]);
+
+    const cursor = firstPayload.items[1]?.id;
+    assert.equal(typeof cursor, "string");
+    const second = await request(baseUrl, `/news?sources=coindesk&limit=2&cursor=${encodeURIComponent(cursor ?? "")}`);
+    assert.equal(second.status, 200);
+    const secondPayload = second.json as { items: NewsItem[] };
+    const secondIds = secondPayload.items.map((item) => item.id);
+    assert.deepEqual(secondIds, ["a3", "a4"]);
 });
 
 test("POST /news/diagnose redacts api_key from probe urls", async () => {

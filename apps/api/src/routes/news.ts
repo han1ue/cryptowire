@@ -871,24 +871,26 @@ export const createNewsRouter = (
         return res.status(405).json({ error: "Method not allowed. Use POST with x-refresh-secret header." });
     }));
 
-    router.get("/news", asyncHandler(async (req, res) => {
-        const querySchema = z.object({
-            // Accept a larger input range but clamp below to keep providers happy.
-            limit: z.coerce.number().int().positive().max(500).default(30),
-            offset: z.coerce.number().int().min(0).max(10_000).default(0),
-            retentionDays: z.coerce.number().int().positive().max(30).optional(),
-            sources: z.string().optional(),
-            category: z.string().optional(),
-        });
+        router.get("/news", asyncHandler(async (req, res) => {
+            const querySchema = z.object({
+                // Accept a larger input range but clamp below to keep providers happy.
+                limit: z.coerce.number().int().positive().max(500).default(30),
+                offset: z.coerce.number().int().min(0).max(10_000).default(0),
+                retentionDays: z.coerce.number().int().positive().max(30).optional(),
+                sources: z.string().optional(),
+                category: z.string().optional(),
+                cursor: z.string().optional(),
+            });
 
         const parsed = querySchema.safeParse(req.query);
         if (!parsed.success) {
             return res.status(400).json({ error: parsed.error.message });
         }
 
-        const limit = Math.min(parsed.data.limit, 100);
-        const offset = parsed.data.offset;
-        const retentionDays = Math.min(parsed.data.retentionDays ?? defaultRetentionDays, 7);
+            const limit = Math.min(parsed.data.limit, 100);
+            const offset = parsed.data.offset;
+            const retentionDays = Math.min(parsed.data.retentionDays ?? defaultRetentionDays, 7);
+            const cursorId = ((parsed.data.cursor ?? "").trim() || undefined);
 
         const requestedSourceIds = parseSourceIdsFromCsv(parsed.data.sources);
 
@@ -967,7 +969,7 @@ export const createNewsRouter = (
             const out: NewsItem[] = [];
 
             for (let i = 0; i < maxChunks; i++) {
-                const chunk = await newsStore.getPage({ limit: chunkSize, offset: rawOffset });
+                const chunk = await newsStore.getPage({ limit: chunkSize, offset: rawOffset, afterId: cursorId });
                 if (chunk.length === 0) break;
 
                 rawOffset += chunk.length;

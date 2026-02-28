@@ -4,6 +4,7 @@ import { NewsItemSchema } from "@cryptowire/types";
 export type NewsPageParams = {
     limit: number;
     offset: number;
+    afterId?: string;
 };
 
 export interface NewsStore {
@@ -29,7 +30,15 @@ class InMemoryNewsStore implements NewsStore {
     }
 
     async getPage(params: NewsPageParams): Promise<NewsItem[]> {
-        return this.items.slice(params.offset, params.offset + params.limit);
+        const afterId = typeof params.afterId === "string" ? params.afterId.trim() : "";
+        if (!afterId) {
+            return this.items.slice(params.offset, params.offset + params.limit);
+        }
+
+        const anchorIndex = this.items.findIndex((item) => item.id === afterId);
+        if (anchorIndex < 0) return [];
+        const start = anchorIndex + 1 + params.offset;
+        return this.items.slice(start, start + params.limit);
     }
 
     async getById(id: string): Promise<NewsItem | null> {
@@ -83,12 +92,18 @@ export const createNewsStore = (): NewsStore => {
 
         async getPage(params: NewsPageParams): Promise<NewsItem[]> {
             const { kv } = await import("@vercel/kv");
-            const start = params.offset;
-            const stop = params.offset + params.limit - 1;
+            const afterId = typeof params.afterId === "string" ? params.afterId.trim() : "";
+            let start = params.offset;
+            if (afterId) {
+                const rank = await kv.zrevrank(KV_NEWS_ZSET_KEY, afterId);
+                if (typeof rank !== "number") return [];
+                start = rank + 1 + params.offset;
+            }
+            const effectiveStop = start + params.limit - 1;
 
             // @vercel/kv (Upstash) doesn't expose a separate `zrevrange` helper;
             // use `zrange` with the `rev` option to read most-recent-first.
-            const ids = (await kv.zrange(KV_NEWS_ZSET_KEY, start, stop, { rev: true })) as string[];
+            const ids = (await kv.zrange(KV_NEWS_ZSET_KEY, start, effectiveStop, { rev: true })) as string[];
             if (!ids || ids.length === 0) return [];
 
             const raw = (await kv.hmget<Record<string, unknown>>(KV_NEWS_HASH_KEY, ...ids)) as unknown;
