@@ -3,6 +3,9 @@
         "api/news/summary/refresh.ts": {
             "maxDuration": 180
         },
+        "api/prices/refresh.ts": {
+            "maxDuration": 30
+        },
         "api/[...path].ts": {
             "maxDuration": 10
         }

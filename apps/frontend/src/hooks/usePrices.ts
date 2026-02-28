@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchPrices } from "@/lib/apiClient";
 
-const PRICE_REFRESH_MS = 5 * 60 * 1000;
+const PRICE_REFRESH_MS = 12 * 60 * 1000;
 
 export const usePrices = (symbols: string[]) => {
     return useQuery({
