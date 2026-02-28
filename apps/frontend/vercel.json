@@ -25,6 +25,10 @@
             "destination": "https://api.cryptowi.re/prices"
         },
         {
+            "source": "/prices/(.*)",
+            "destination": "https://api.cryptowi.re/prices/$1"
+        },
+        {
             "source": "/market",
             "destination": "https://api.cryptowi.re/market"
         },
