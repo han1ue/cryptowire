@@ -108,7 +108,7 @@ Returns available categories for selected sources.
 
 Query params:
 
-- `sources` (optional, comma-separated source ids; see [References > Sources](/references/sources))
+- `sources` (required, comma-separated source ids; see [References > Sources](/references/sources))
 
 Example:
 
@@ -127,7 +127,7 @@ Example response:
 Status codes:
 
 - `200` success
-- `400` invalid query params
+- `400` missing `sources`, invalid source ids, or malformed `sources` query
 
 ### `GET /news/status`
 

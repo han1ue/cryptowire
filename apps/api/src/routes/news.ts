@@ -163,18 +163,20 @@ export const createNewsRouter = (
 
         const requestedSourceIds = parseSourceIdsFromCsv(parsed.data.sources);
 
-        // If sources aren't specified, return no categories.
-        // The product requirement is that categories are scoped to selected sources.
         if (requestedSourceIds.length === 0) {
-            const payload = { categories: [] };
-            const validated = NewsCategoriesResponseSchema.safeParse(payload);
-            if (!validated.success) {
-                return res.status(500).json({ error: "Invalid response shape" });
-            }
-            return res.json(payload);
+            return res.status(400).json({
+                error: "sources is required (comma-separated source ids).",
+            });
         }
 
-        const requested = filterSupportedSourceIds(requestedSourceIds);
+        const invalidSourceIds = requestedSourceIds.filter((id) => !supportedSourceIds.has(id));
+        if (invalidSourceIds.length > 0) {
+            return res.status(400).json({
+                error: `Invalid source ids: ${Array.from(new Set(invalidSourceIds)).join(", ")}. Use GET /news/sources.`,
+            });
+        }
+
+        const requested = uniqueSourceIds(requestedSourceIds);
 
         // Categories are updated during refresh (cron/manual) and cached in KV (or memory).
         // This endpoint never triggers provider fetches.
