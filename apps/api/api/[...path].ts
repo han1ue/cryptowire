@@ -6,7 +6,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (url === "/api") req.url = "/";
         else if (url.startsWith("/api/")) req.url = url.slice(4);
 
-        const { app } = await import("../src/app.js");
+        const { default: app } = await import("../src/app.js");
         return (app as unknown as (req: unknown, res: unknown) => unknown)(req, res);
     } catch (error) {
         // Ensure we always return a response instead of letting the function crash.

@@ -343,32 +343,6 @@ export const createNewsRouter = (
             .filter(Boolean)
             .sort((a, b) => a.localeCompare(b));
 
-    const mergeCategoryLists = (existing: string[], incoming: string[]) => {
-        const out: string[] = [];
-        const seen = new Set<string>();
-
-        const add = (value: string) => {
-            const v = value.trim();
-            if (!v) return;
-            const key = v.toLowerCase();
-            if (seen.has(key)) return;
-            seen.add(key);
-            out.push(v);
-        };
-
-        for (const c of existing) add(c);
-        for (const c of incoming) add(c);
-        return sortCategories(out);
-    };
-
-    const sameCategorySet = (a: string[], b: string[]) => {
-        if (a.length !== b.length) return false;
-        const ak = a.map((x) => x.trim().toLowerCase()).sort();
-        const bk = b.map((x) => x.trim().toLowerCase()).sort();
-        for (let i = 0; i < ak.length; i++) if (ak[i] !== bk[i]) return false;
-        return true;
-    };
-
     const safeParseJsonArray = (raw: unknown): string[] => {
         const parseStringToArray = (text: string): unknown[] => {
             const t = text.trim();
@@ -394,7 +368,18 @@ export const createNewsRouter = (
         };
 
         const arr = Array.isArray(raw) ? raw : typeof raw === "string" ? parseStringToArray(raw) : [];
-        return sortCategories(sanitizeCategories(arr));
+        const out: string[] = [];
+        const seen = new Set<string>();
+        for (const rawCategory of arr) {
+            const value = typeof rawCategory === "string" ? rawCategory.trim() : "";
+            if (!value) continue;
+            if (value.toLowerCase() === "cryptocurrency") continue;
+            const key = value.toLowerCase();
+            if (seen.has(key)) continue;
+            seen.add(key);
+            out.push(value);
+        }
+        return sortCategories(out);
     };
 
     const sourceKeyToId = (() => {
@@ -406,58 +391,47 @@ export const createNewsRouter = (
         return m;
     })();
 
-    const updateCategoriesFromItems = async (items: NewsItem[]): Promise<void> => {
-        if (!items || items.length === 0) return;
-
-        const incomingBySource = new Map<string, Set<string>>();
-
-        for (const item of items) {
-            const srcKey = item.source.trim().toLowerCase();
-            const id = sourceKeyToId.get(srcKey) ?? null;
-            if (!id) continue;
-            const set = incomingBySource.get(id) ?? new Set<string>();
-
-            const cats = Array.isArray(item.categories) && item.categories.length > 0 ? item.categories : ["News"];
-            for (const rawCat of cats) {
-                const cat = normalizeCategory(rawCat);
-                set.add(cat);
-            }
-            incomingBySource.set(id, set);
+    const rebuildCategoriesFromStore = async (): Promise<void> => {
+        const categoriesBySource = new Map<string, Set<string>>();
+        for (const source of SUPPORTED_SOURCES) {
+            categoriesBySource.set(source.id, new Set<string>());
         }
 
-        for (const [id, set] of incomingBySource) {
-            const existing = categoriesBySourceMemory.get(id) ?? [];
-            categoriesBySourceMemory.set(id, mergeCategoryLists(existing, Array.from(set)));
+        const chunkSize = 300;
+        const maxChunks = 80;
+        let offset = 0;
+
+        for (let i = 0; i < maxChunks; i++) {
+            const chunk = await newsStore.getPage({ limit: chunkSize, offset });
+            if (chunk.length === 0) break;
+            offset += chunk.length;
+
+            for (const item of chunk) {
+                const srcKey = item.source.trim().toLowerCase();
+                const id = sourceKeyToId.get(srcKey) ?? null;
+                if (!id) continue;
+                const set = categoriesBySource.get(id);
+                if (!set) continue;
+                const categories = sanitizeCategories(item.categories);
+                for (const rawCategory of categories) {
+                    set.add(normalizeCategory(rawCategory));
+                }
+            }
+        }
+
+        categoriesBySourceMemory.clear();
+        const serialized: Record<string, unknown> = {};
+        for (const source of SUPPORTED_SOURCES) {
+            const id = source.id;
+            const list = sortCategories(Array.from(categoriesBySource.get(id) ?? new Set<string>()));
+            categoriesBySourceMemory.set(id, list);
+            serialized[id] = list;
         }
 
         if (!kvEnabled) return;
-
         try {
             const { kv } = await import("@vercel/kv");
-            const touchedSourceIds = Array.from(incomingBySource.keys());
-
-            const rawBySource = await (touchedSourceIds.length > 0
-                ? kv.hmget<Record<string, unknown>>(KV_CATEGORIES_BY_SOURCE_HASH_KEY, ...touchedSourceIds)
-                : Promise.resolve([] as unknown));
-
-            const rows: Array<unknown | null> = Array.isArray(rawBySource)
-                ? (rawBySource as Array<unknown | null>)
-                : rawBySource && typeof rawBySource === "object"
-                    ? touchedSourceIds.map((id) => (rawBySource as Record<string, unknown>)[id] ?? null)
-                    : [];
-            const updates: Record<string, unknown> = {};
-
-            for (let i = 0; i < touchedSourceIds.length; i++) {
-                const id = touchedSourceIds[i]!;
-                const existingForSource = safeParseJsonArray(rows[i]);
-                const incomingForSource = sortCategories(Array.from(incomingBySource.get(id) ?? new Set<string>()));
-                const merged = mergeCategoryLists(existingForSource, incomingForSource);
-                if (!sameCategorySet(existingForSource, merged)) updates[id] = merged;
-            }
-
-            if (Object.keys(updates).length > 0) {
-                await kv.hset(KV_CATEGORIES_BY_SOURCE_HASH_KEY, updates);
-            }
+            await kv.hset(KV_CATEGORIES_BY_SOURCE_HASH_KEY, serialized);
         } catch {
             // ignore
         }
@@ -617,7 +591,9 @@ export const createNewsRouter = (
     const refreshSecret = opts?.refreshSecret?.trim() ?? "";
     const isRefreshAuthorized = (req: Request) => {
         // Local dev convenience: allow refresh without a secret in non-production.
-        if (!refreshSecret) return !isProd;
+        if (!refreshSecret) {
+            return !isProd;
+        }
         return req.header("x-refresh-secret") === refreshSecret;
     };
 
@@ -764,12 +740,10 @@ export const createNewsRouter = (
 
         await newsStore.putMany(items);
 
-        // Incrementally update cached categories from this refresh batch.
-        await updateCategoriesFromItems(items);
-
         // Keep only up to one week old in storage.
         const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000).toISOString();
         await newsStore.pruneOlderThan(cutoff);
+        await rebuildCategoriesFromStore();
 
         await setLastRefreshAt(new Date().toISOString());
 
@@ -958,9 +932,9 @@ export const createNewsRouter = (
 
                     if (items.length > 0) {
                         await newsStore.putMany(items);
-                        await updateCategoriesFromItems(items);
                         const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000).toISOString();
                         await newsStore.pruneOlderThan(cutoff);
+                        await rebuildCategoriesFromStore();
                         await setLastRefreshAt(new Date().toISOString());
                     }
                 } catch (error) {

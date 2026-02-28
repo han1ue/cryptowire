@@ -11,6 +11,15 @@ export class NewsService {
     constructor(private readonly config: AppConfig) {
     }
 
+    private canonicalizeSourceIds(raw: string | undefined): string | undefined {
+        const values = (raw ?? "")
+            .split(",")
+            .map((x) => x.trim().toLowerCase())
+            .filter(Boolean);
+        const uniqueSorted = Array.from(new Set(values)).sort((a, b) => a.localeCompare(b));
+        return uniqueSorted.length > 0 ? uniqueSorted.join(",") : undefined;
+    }
+
     private createProviders(params?: { sourceIds?: string }): NewsProvider[] {
         return [
             new CoindeskNewsProvider({
@@ -66,34 +75,35 @@ export class NewsService {
 
     async listHeadlines(params: { limit: number; retentionDays?: number; sourceIds?: string }): Promise<NewsItem[]> {
         const retentionDays = params.retentionDays ?? this.config.NEWS_RETENTION_DAYS;
-
-        const sourceKey = (params.sourceIds ?? "").trim() || "__all__";
+        const sourceIds = this.canonicalizeSourceIds(params.sourceIds);
+        const sourceKey = sourceIds ?? "__all__";
         const cacheKey = `news:${params.limit}:${retentionDays}:${sourceKey}`;
         const cached = this.cache.getWithStale<NewsItem[]>(cacheKey);
         if (cached && !cached.isStale) return cached.value;
 
         // Serve stale data immediately, and refresh in the background.
         if (cached && cached.isStale) {
-            void this.fetchAndCache({ cacheKey, limit: params.limit, retentionDays, sourceIds: params.sourceIds }).catch(() => {
+            void this.fetchAndCache({ cacheKey, limit: params.limit, retentionDays, sourceIds }).catch(() => {
                 // Best-effort background refresh; keep serving stale until next success.
             });
             return cached.value;
         }
 
         // Cold start: no cache yet.
-        return await this.fetchAndCache({ cacheKey, limit: params.limit, retentionDays, sourceIds: params.sourceIds });
+        return await this.fetchAndCache({ cacheKey, limit: params.limit, retentionDays, sourceIds });
     }
 
     async refreshHeadlines(params: { limit: number; retentionDays?: number; force?: boolean; sourceIds?: string }): Promise<NewsItem[]> {
         const retentionDays = params.retentionDays ?? this.config.NEWS_RETENTION_DAYS;
-        const sourceKey = (params.sourceIds ?? "").trim() || "__all__";
+        const sourceIds = this.canonicalizeSourceIds(params.sourceIds);
+        const sourceKey = sourceIds ?? "__all__";
         const cacheKey = `news:${params.limit}:${retentionDays}:${sourceKey}`;
 
         if (!params.force) {
             // Warm using normal behavior (may be cached).
-            return await this.listHeadlines({ limit: params.limit, retentionDays, sourceIds: params.sourceIds });
+            return await this.listHeadlines({ limit: params.limit, retentionDays, sourceIds });
         }
 
-        return await this.fetchAndCache({ cacheKey, limit: params.limit, retentionDays, sourceIds: params.sourceIds });
+        return await this.fetchAndCache({ cacheKey, limit: params.limit, retentionDays, sourceIds });
     }
 }

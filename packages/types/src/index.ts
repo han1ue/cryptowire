@@ -1,6 +1,8 @@
 import { z } from "zod";
 export * from "./sources.js";
 
+const IsoDateTimeSchema = z.string().datetime({ offset: true });
+
 export const NewsItemSchema = z.object({
     id: z.string(),
     title: z.string(),
@@ -8,7 +10,7 @@ export const NewsItemSchema = z.object({
     url: z.string().url().optional(),
     source: z.string(),
     categories: z.array(z.string().min(1)).min(1).default(["News"]),
-    publishedAt: z.string(),
+    publishedAt: IsoDateTimeSchema,
     imageUrl: z.string().url().optional(),
 });
 
@@ -52,9 +54,9 @@ export const NewsSummarySourceCoverageSchema = z.object({
 export type NewsSummarySourceCoverage = z.infer<typeof NewsSummarySourceCoverageSchema>;
 
 export const NewsSummaryResponseSchema = z.object({
-    generatedAt: z.string(),
-    windowStart: z.string(),
-    windowEnd: z.string(),
+    generatedAt: IsoDateTimeSchema,
+    windowStart: IsoDateTimeSchema,
+    windowEnd: IsoDateTimeSchema,
     windowHours: z.number().int().positive(),
     articleCount: z.number().int().nonnegative(),
     model: z
@@ -77,7 +79,7 @@ export const PriceQuoteSchema = z.object({
     symbol: z.string(),
     usd: z.number(),
     usd24hChange: z.number().optional(),
-    fetchedAt: z.string(),
+    fetchedAt: IsoDateTimeSchema,
 });
 
 export type PriceQuote = z.infer<typeof PriceQuoteSchema>;

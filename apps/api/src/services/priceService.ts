@@ -14,7 +14,9 @@ export class PriceService {
     }
 
     async getPrices(params: { symbols: string[] }): Promise<PriceQuote[]> {
-        const symbols = params.symbols.map((s) => s.trim().toUpperCase()).filter(Boolean);
+        const symbols = Array.from(
+            new Set(params.symbols.map((s) => s.trim().toUpperCase()).filter(Boolean)),
+        ).sort((a, b) => a.localeCompare(b));
         const cacheKey = `prices:${symbols.join(",")}`;
 
         const cached = this.cache.get<PriceQuote[]>(cacheKey);
