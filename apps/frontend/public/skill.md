@@ -14,6 +14,16 @@ description: |
 
 - `https://api.cryptowi.re`
 
+## Retrieval and Update Policy
+
+Use this file as a remote instruction source:
+
+1. Fetch `https://cryptowi.re/skill.md` before first use (or at agent/session startup).
+2. Cache for at most 24 hours, then re-fetch.
+3. Re-fetch immediately when `GET /news` returns `400` for source validation (stale source ids likely).
+4. If supported, use conditional requests (`If-None-Match` / `If-Modified-Since`) and keep the cached `skill.md` on `304`.
+5. Do not rely on hardcoded source ids or pinned instruction copies without periodic refresh.
+
 ## Default Workflow
 
 1. Call `GET /news/sources` first to fetch valid source ids.
