@@ -169,6 +169,17 @@ export const Header = ({
             <Menu className="h-5 w-5 text-muted-foreground" />
           </button>
 
+          <button
+            type="button"
+            onClick={onSourcesClick}
+            className="inline-flex items-center gap-1.5 rounded border border-border bg-muted/30 px-2.5 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground lg:hidden"
+            title="Manage sources"
+            aria-label="Manage sources"
+          >
+            <Newspaper className="h-3.5 w-3.5 text-primary" />
+            <span className="text-primary">{activeSourceCount}/{totalSourceCount}</span>
+          </button>
+
           <a href="/" className="hidden lg:flex items-center gap-2 group cursor-pointer select-none">
             <img
               src="/logo-mark.svg"
@@ -259,7 +270,7 @@ export const Header = ({
             <button
               type="button"
               onClick={onSourcesClick}
-              className="inline-flex items-center gap-1.5 rounded border border-border bg-muted/30 px-2.5 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+              className="hidden lg:inline-flex items-center gap-1.5 rounded border border-border bg-muted/30 px-2.5 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
               title="Manage sources"
               aria-label="Manage sources"
             >
@@ -268,8 +279,10 @@ export const Header = ({
               <span className="text-primary">{activeSourceCount}/{totalSourceCount}</span>
             </button>
             <button
-              className="p-2 hover:bg-muted rounded transition-colors"
+              className="hidden lg:inline-flex p-2 hover:bg-muted rounded transition-colors"
               onClick={onSettingsClick}
+              aria-label="Open settings"
+              title="Open settings"
             >
               <Settings className="h-4 w-4 text-muted-foreground" />
             </button>

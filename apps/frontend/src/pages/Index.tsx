@@ -737,6 +737,10 @@ const Index = () => {
                   setSidebarOpen(false);
                   openSourcesDialog();
                 }}
+                onSettingsClick={() => {
+                  setSidebarOpen(false);
+                  openSettingsDialog();
+                }}
                 activeSourceCount={activeSourceCount}
                 totalSourceCount={totalSourceCount}
                 loadedArticlesCount={loadedArticlesCount}

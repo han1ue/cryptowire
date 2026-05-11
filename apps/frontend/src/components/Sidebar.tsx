@@ -9,7 +9,8 @@ import {
   ChevronDown,
   ChevronUp,
   Github,
-  Rss
+  Rss,
+  Settings
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
@@ -99,6 +100,7 @@ interface SidebarProps {
   selectedCategory?: string;
   onCategorySelect?: (cat: string) => void;
   onSourcesClick?: () => void;
+  onSettingsClick?: () => void;
   activeSourceCount?: number;
   totalSourceCount?: number;
   loadedArticlesCount?: number;
@@ -121,6 +123,7 @@ export const Sidebar = ({
   selectedCategory = 'All News',
   onCategorySelect = () => { },
   onSourcesClick = () => { },
+  onSettingsClick,
   activeSourceCount = 0,
   totalSourceCount = 0,
   loadedArticlesCount = 0,
@@ -207,19 +210,30 @@ export const Sidebar = ({
     <aside className="w-64 border-r border-border bg-card flex flex-col h-full overflow-y-auto">
       {/* Mobile identity/status */}
       <div className="p-4 border-b border-border lg:hidden">
-        <a href="/" className="flex items-center gap-2 group cursor-pointer select-none">
-          <img
-            src="/logo-mark.svg"
-            alt=""
-            aria-hidden="true"
-            className="h-5 w-5"
-          />
-          <span className="text-lg font-bold text-foreground tracking-tight group-hover:text-primary transition-colors">
-            CRYPTO<span className="text-primary">WI</span>
-            <span className="text-primary">.</span>
-            <span className="text-primary">RE</span>
-          </span>
-        </a>
+        <div className="flex items-center justify-between gap-3">
+          <a href="/" className="flex items-center gap-2 group cursor-pointer select-none">
+            <img
+              src="/logo-mark.svg"
+              alt=""
+              aria-hidden="true"
+              className="h-5 w-5"
+            />
+            <span className="text-lg font-bold text-foreground tracking-tight group-hover:text-primary transition-colors">
+              CRYPTO<span className="text-primary">WI</span>
+              <span className="text-primary">.</span>
+              <span className="text-primary">RE</span>
+            </span>
+          </a>
+          <button
+            type="button"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded hover:bg-muted/30 transition-colors"
+            onClick={onSettingsClick}
+            aria-label="Open settings"
+            title="Open settings"
+          >
+            <Settings className="h-4 w-4 text-muted-foreground" />
+          </button>
+        </div>
 
         <div className="mt-3 flex items-center justify-between gap-2">
           <span className="inline-flex items-center gap-1 rounded bg-muted/50 px-2 py-1">
