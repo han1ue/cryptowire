@@ -3,7 +3,7 @@ name: Refresh CryptoWire 12h AI summary
 on:
   schedule:
     # Every 12 hours, offset from the busiest scheduler minute.
-    - cron: "17 */12 * * *"
+    - cron: "17 0,12 * * *"
   workflow_dispatch: {}
 
 jobs:
